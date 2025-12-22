@@ -6,6 +6,10 @@ on:
       - 'v*'  # v1.0, v1.1 등 태그 푸시 시 실행
   workflow_dispatch:  # 수동 실행 가능
 
+# 권한 설정 추가
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -52,5 +56,3 @@ jobs:
           - 📊 이상값 처리 (2σ, 2.5σ, 3σ, IQR)
           - 📈 정규화 (Z-Score, Min-Max)
           - ⏳ 진행률 표시 (대용량 데이터 지원)
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
