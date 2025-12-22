@@ -333,10 +333,12 @@ https://github.com/lee-minki/data-preprocessing-tool
         text.config(state=tk.DISABLED)
     
     def _show_about(self):
-        """프로그램 정보 창 표시"""
+        """프로그램 정보 창 표시 (내장 정보 사용)"""
+        from version import __version__, APP_NAME, FEATURES, CHANGELOG, get_developer_info
+        
         about_window = tk.Toplevel(self.root)
         about_window.title("프로그램 정보")
-        about_window.geometry("400x350")
+        about_window.geometry("450x500")
         about_window.resizable(False, False)
         about_window.transient(self.root)
         
@@ -344,68 +346,46 @@ https://github.com/lee-minki/data-preprocessing-tool
         version_frame = ttk.LabelFrame(about_window, text="버전 정보", padding=15)
         version_frame.pack(fill=tk.X, padx=15, pady=10)
         
-        ttk.Label(version_frame, text="시계열 데이터 전처리 프로그램", 
+        ttk.Label(version_frame, text=APP_NAME, 
                  font=('맑은 고딕', 12, 'bold')).pack()
-        ttk.Label(version_frame, text="Version 1.3.0", font=('맑은 고딕', 10)).pack()
-        ttk.Label(version_frame, text="").pack()  # 빈 줄
+        ttk.Label(version_frame, text=f"Version {__version__}", font=('맑은 고딕', 10)).pack()
+        ttk.Label(version_frame, text="플랫폼: Windows (tkinter)", font=('맑은 고딕', 9)).pack()
+        ttk.Label(version_frame, text="").pack()
         
-        features = "• 다중 조건 필터링 (AND)\n• 이상값 처리 (σ, IQR)\n• 시간 정규화/재정렬\n• 프리셋 저장/불러오기"
-        ttk.Label(version_frame, text=features, justify=tk.LEFT).pack(anchor=tk.W)
+        features_text = "\n".join(FEATURES)
+        ttk.Label(version_frame, text=features_text, justify=tk.LEFT).pack(anchor=tk.W)
         
-        # 개발자 정보 (외부 파일에서 로드)
+        # 개발자 정보
         dev_frame = ttk.LabelFrame(about_window, text="개발자 정보", padding=15)
         dev_frame.pack(fill=tk.X, padx=15, pady=10)
         
-        # developer_info.json 파일에서 로드
-        dev_info = self._load_developer_info()
+        dev_info = get_developer_info()
+        ttk.Label(dev_frame, text=f"개발자: {dev_info.get('name', '-')}").pack(anchor=tk.W)
+        if dev_info.get('organization'):
+            ttk.Label(dev_frame, text=f"조직: {dev_info.get('organization', '')}").pack(anchor=tk.W)
+        if dev_info.get('email'):
+            ttk.Label(dev_frame, text=f"이메일: {dev_info.get('email', '')}").pack(anchor=tk.W)
         
-        if dev_info:
-            ttk.Label(dev_frame, text=f"개발자: {dev_info.get('name', '')}").pack(anchor=tk.W)
-            if dev_info.get('company'):
-                ttk.Label(dev_frame, text=f"회사: {dev_info.get('company', '')}").pack(anchor=tk.W)
-            if dev_info.get('phone'):
-                ttk.Label(dev_frame, text=f"전화: {dev_info.get('phone', '')}").pack(anchor=tk.W)
-            if dev_info.get('email'):
-                ttk.Label(dev_frame, text=f"이메일: {dev_info.get('email', '')}").pack(anchor=tk.W)
-        else:
-            ttk.Label(dev_frame, text="개발자 정보가 설정되지 않았습니다.").pack(anchor=tk.W)
-            ttk.Label(dev_frame, text="developer_info.json 파일을 생성하세요.", 
-                     foreground="gray").pack(anchor=tk.W)
+        # 패치노트 버튼
+        btn_frame = ttk.Frame(about_window)
+        btn_frame.pack(fill=tk.X, padx=15, pady=10)
         
-        # GitHub 링크
-        link_frame = ttk.Frame(about_window)
-        link_frame.pack(fill=tk.X, padx=15, pady=10)
+        def show_changelog():
+            ch_window = tk.Toplevel(about_window)
+            ch_window.title("패치노트")
+            ch_window.geometry("500x400")
+            ch_window.transient(about_window)
+            
+            ch_text = ScrolledText(ch_window, wrap=tk.WORD, font=('맑은 고딕', 9))
+            ch_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            ch_text.insert(tk.END, CHANGELOG.strip())
+            ch_text.config(state=tk.DISABLED)
+            
+            ttk.Button(ch_window, text="닫기", command=ch_window.destroy).pack(pady=10)
         
-        ttk.Label(link_frame, text="GitHub:", font=('맑은 고딕', 9)).pack(side=tk.LEFT)
-        github_link = ttk.Label(link_frame, text="github.com/lee-minki/data-preprocessing-tool", 
-                               foreground="blue", cursor="hand2", font=('맑은 고딕', 9))
-        github_link.pack(side=tk.LEFT, padx=5)
-        
-        # 닫기 버튼
-        ttk.Button(about_window, text="닫기", command=about_window.destroy).pack(pady=10)
+        ttk.Button(btn_frame, text="📋 패치노트 보기", command=show_changelog).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="닫기", command=about_window.destroy).pack(side=tk.RIGHT, padx=5)
     
-    def _load_developer_info(self) -> Optional[Dict]:
-        """개발자 정보 로드 (developer_info.json)"""
-        import json
-        from pathlib import Path
-        
-        # 실행 파일 위치에서 찾기
-        possible_paths = [
-            Path(__file__).parent / "developer_info.json",
-            Path.cwd() / "developer_info.json",
-            Path.home() / ".data_preprocessor" / "developer_info.json"
-        ]
-        
-        for path in possible_paths:
-            if path.exists():
-                try:
-                    with open(path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        return data.get('developer', {})
-                except:
-                    continue
-        
-        return None
     
     def _create_widgets(self):
         """위젯 생성"""

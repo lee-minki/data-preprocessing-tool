@@ -743,20 +743,60 @@ class DataPreprocessorMac(QMainWindow):
         dialog.exec_()
     
     def _show_about(self):
-        """프로그램 정보"""
-        about_text = """시계열 데이터 전처리 프로그램
-
-Version 1.3.2 (Mac)
-
-주요 기능:
-• 다중 조건 필터링 (AND)
-• 이상값 처리 (σ, IQR)
-• 시간 정규화/재정렬
-• 프리셋 저장/불러오기
-
-GitHub: github.com/lee-minki/data-preprocessing-tool"""
+        """프로그램 정보 (내장 정보 사용)"""
+        from version import __version__, APP_NAME, FEATURES, CHANGELOG, get_developer_info
         
-        QMessageBox.about(self, "프로그램 정보", about_text)
+        dev = get_developer_info()
+        
+        # About 다이얼로그
+        dialog = QDialog(self)
+        dialog.setWindowTitle("프로그램 정보")
+        dialog.resize(500, 500)
+        layout = QVBoxLayout(dialog)
+        
+        # 프로그램 정보
+        info_text = f"""<h2>{APP_NAME}</h2>
+<p><b>버전:</b> {__version__}</p>
+<p><b>플랫폼:</b> Mac (PyQt5)</p>
+
+<h3>주요 기능</h3>
+<ul>
+{"".join(f"<li>{f}</li>" for f in FEATURES)}
+</ul>
+
+<h3>개발자 정보</h3>
+<p><b>이름:</b> {dev.get('name', '-')}</p>
+<p><b>조직:</b> {dev.get('organization', '-')}</p>
+<p><b>이메일:</b> {dev.get('email', '-')}</p>
+"""
+        
+        info_label = QLabel(info_text)
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # 패치노트 버튼
+        changelog_btn = QPushButton("📋 패치노트 보기")
+        def show_changelog():
+            ch_dialog = QDialog(dialog)
+            ch_dialog.setWindowTitle("패치노트")
+            ch_dialog.resize(500, 400)
+            ch_layout = QVBoxLayout(ch_dialog)
+            ch_text = QTextEdit()
+            ch_text.setReadOnly(True)
+            ch_text.setPlainText(CHANGELOG.strip())
+            ch_layout.addWidget(ch_text)
+            QPushButton("닫기", clicked=ch_dialog.close).setParent(ch_dialog)
+            ch_layout.addWidget(QPushButton("닫기", clicked=ch_dialog.close))
+            ch_dialog.exec_()
+        changelog_btn.clicked.connect(show_changelog)
+        layout.addWidget(changelog_btn)
+        
+        # 닫기
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.exec_()
     
     def _show_trend_chart(self):
         """트렌드 차트 표시 (다중 컬럼 지원)"""
