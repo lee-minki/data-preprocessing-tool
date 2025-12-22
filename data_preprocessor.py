@@ -1,0 +1,428 @@
+"""
+데이터 전처리 모듈 (Data Preprocessing Module)
+- 시계열 데이터 로드, 필터링, 이상값 처리, 정규화
+"""
+
+import pandas as pd
+import numpy as np
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Tuple, Optional, Any
+
+
+class DataPreprocessor:
+    """시계열 데이터 전처리 클래스"""
+    
+    def __init__(self):
+        self.original_df: Optional[pd.DataFrame] = None
+        self.processed_df: Optional[pd.DataFrame] = None
+        self.columns: List[str] = []
+        self.numeric_columns: List[str] = []
+        self.date_column: Optional[str] = None
+        self.stats: Dict[str, Any] = {}
+    
+    def load_data(self, file_path: str) -> Tuple[bool, str]:
+        """
+        Excel 또는 CSV 파일을 로드하고 컬럼을 자동 감지합니다.
+        
+        Args:
+            file_path: 파일 경로
+            
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            path = Path(file_path)
+            
+            if path.suffix.lower() in ['.xlsx', '.xls']:
+                self.original_df = pd.read_excel(file_path)
+            elif path.suffix.lower() == '.csv':
+                # 인코딩 자동 감지 시도
+                try:
+                    self.original_df = pd.read_csv(file_path, encoding='utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        self.original_df = pd.read_csv(file_path, encoding='cp949')
+                    except UnicodeDecodeError:
+                        self.original_df = pd.read_csv(file_path, encoding='euc-kr')
+            else:
+                return False, f"지원하지 않는 파일 형식입니다: {path.suffix}"
+            
+            self.processed_df = self.original_df.copy()
+            self.columns = list(self.original_df.columns)
+            
+            # 날짜 컬럼 자동 감지
+            self._detect_date_column()
+            
+            # 숫자 컬럼 감지
+            self._detect_numeric_columns()
+            
+            self.stats['original_rows'] = len(self.original_df)
+            self.stats['columns'] = len(self.columns)
+            self.stats['numeric_columns'] = len(self.numeric_columns)
+            
+            return True, f"파일 로드 완료: {len(self.original_df)}행, {len(self.columns)}열"
+            
+        except Exception as e:
+            return False, f"파일 로드 실패: {str(e)}"
+    
+    def _detect_date_column(self):
+        """날짜 컬럼을 자동 감지합니다."""
+        date_keywords = ['date', 'time', 'datetime', '날짜', '시간', 'timestamp']
+        
+        for col in self.columns:
+            if any(keyword in col.lower() for keyword in date_keywords):
+                self.date_column = col
+                # 날짜 형식으로 변환 시도
+                try:
+                    self.original_df[col] = pd.to_datetime(self.original_df[col])
+                    self.processed_df[col] = pd.to_datetime(self.processed_df[col])
+                except:
+                    pass
+                break
+    
+    def _detect_numeric_columns(self):
+        """숫자 컬럼을 감지합니다."""
+        self.numeric_columns = []
+        for col in self.columns:
+            if col != self.date_column:
+                if pd.api.types.is_numeric_dtype(self.original_df[col]):
+                    self.numeric_columns.append(col)
+    
+    def get_column_stats(self, column: str) -> Dict[str, float]:
+        """특정 컬럼의 통계 정보를 반환합니다."""
+        if column not in self.numeric_columns:
+            return {}
+        
+        data = self.processed_df[column].dropna()
+        
+        return {
+            'count': len(data),
+            'mean': data.mean(),
+            'std': data.std(),
+            'min': data.min(),
+            'max': data.max(),
+            'q1': data.quantile(0.25),
+            'median': data.median(),
+            'q3': data.quantile(0.75)
+        }
+    
+    def apply_filters(self, filters: List[Dict]) -> Tuple[bool, str]:
+        """
+        다중 조건으로 데이터를 필터링합니다 (AND 조건).
+        
+        Args:
+            filters: 필터 조건 목록
+                [
+                    {'column': 'AMBIENT_TEMP', 'operator': '>=', 'value': 15},
+                    {'column': 'FAN_CURRENT', 'operator': 'range', 'min': 30, 'max': 50}
+                ]
+        
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.original_df is None:
+                return False, "먼저 데이터를 로드해주세요."
+            
+            # 원본에서 다시 시작
+            self.processed_df = self.original_df.copy()
+            
+            before_count = len(self.processed_df)
+            
+            mask = pd.Series([True] * len(self.processed_df))
+            
+            for f in filters:
+                column = f.get('column')
+                operator = f.get('operator')
+                
+                if column not in self.columns:
+                    continue
+                
+                col_data = self.processed_df[column]
+                
+                if operator == '>=':
+                    mask &= col_data >= f.get('value', 0)
+                elif operator == '<=':
+                    mask &= col_data <= f.get('value', 0)
+                elif operator == '>':
+                    mask &= col_data > f.get('value', 0)
+                elif operator == '<':
+                    mask &= col_data < f.get('value', 0)
+                elif operator == '=':
+                    mask &= col_data == f.get('value', 0)
+                elif operator == '!=':
+                    mask &= col_data != f.get('value', 0)
+                elif operator == 'range':
+                    min_val = f.get('min', float('-inf'))
+                    max_val = f.get('max', float('inf'))
+                    mask &= (col_data >= min_val) & (col_data <= max_val)
+            
+            self.processed_df = self.processed_df[mask].reset_index(drop=True)
+            
+            after_count = len(self.processed_df)
+            self.stats['filtered_rows'] = after_count
+            self.stats['filter_removed'] = before_count - after_count
+            
+            return True, f"필터링 완료: {before_count} → {after_count}행 ({after_count/before_count*100:.1f}%)"
+            
+        except Exception as e:
+            return False, f"필터링 실패: {str(e)}"
+    
+    def remove_outliers(self, 
+                       method: str = '2.5sigma',
+                       columns: Optional[List[str]] = None,
+                       action: str = 'nan') -> Tuple[bool, str]:
+        """
+        이상값을 제거합니다.
+        
+        Args:
+            method: 이상값 탐지 방법
+                - '2sigma': ±2 표준편차 (95.4% 포함)
+                - '2.5sigma': ±2.5 표준편차 (98.8% 포함) [권장]
+                - '3sigma': ±3 표준편차 (99.7% 포함)
+                - 'iqr': IQR 방식
+            columns: 적용할 컬럼 목록 (None이면 모든 숫자 컬럼)
+            action: 이상값 처리 방법
+                - 'nan': 해당 값만 NaN으로 변경
+                - 'drop': 해당 행 전체 삭제
+        
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.processed_df is None:
+                return False, "먼저 데이터를 로드해주세요."
+            
+            target_columns = columns if columns else self.numeric_columns
+            outlier_count = 0
+            
+            for col in target_columns:
+                if col not in self.numeric_columns:
+                    continue
+                
+                data = self.processed_df[col]
+                
+                if method == 'iqr':
+                    q1 = data.quantile(0.25)
+                    q3 = data.quantile(0.75)
+                    iqr = q3 - q1
+                    lower = q1 - 1.5 * iqr
+                    upper = q3 + 1.5 * iqr
+                else:
+                    # 표준편차 기반
+                    sigma_map = {
+                        '2sigma': 2.0,
+                        '2.5sigma': 2.5,
+                        '3sigma': 3.0
+                    }
+                    n = sigma_map.get(method, 2.5)
+                    
+                    mean = data.mean()
+                    std = data.std()
+                    lower = mean - n * std
+                    upper = mean + n * std
+                
+                # 이상값 마스크
+                outlier_mask = (data < lower) | (data > upper)
+                col_outliers = outlier_mask.sum()
+                outlier_count += col_outliers
+                
+                if action == 'nan':
+                    self.processed_df.loc[outlier_mask, col] = np.nan
+                elif action == 'drop':
+                    self.processed_df = self.processed_df[~outlier_mask]
+            
+            if action == 'drop':
+                self.processed_df = self.processed_df.reset_index(drop=True)
+            
+            self.stats['outliers_removed'] = outlier_count
+            self.stats['rows_after_outlier'] = len(self.processed_df)
+            
+            method_names = {
+                '2sigma': '2σ (95.4%)',
+                '2.5sigma': '2.5σ (98.8%)',
+                '3sigma': '3σ (99.7%)',
+                'iqr': 'IQR'
+            }
+            
+            return True, f"이상값 처리 완료 ({method_names.get(method, method)}): {outlier_count}개 처리"
+            
+        except Exception as e:
+            return False, f"이상값 처리 실패: {str(e)}"
+    
+    def normalize_data(self, 
+                      method: str = 'zscore',
+                      columns: Optional[List[str]] = None) -> Tuple[bool, str]:
+        """
+        데이터를 정규화합니다.
+        
+        Args:
+            method: 정규화 방법
+                - 'zscore': Z-Score 정규화 (x - μ) / σ
+                - 'minmax': Min-Max 정규화 (0~1 범위)
+            columns: 적용할 컬럼 목록 (None이면 모든 숫자 컬럼)
+        
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.processed_df is None:
+                return False, "먼저 데이터를 로드해주세요."
+            
+            target_columns = columns if columns else self.numeric_columns
+            normalized_count = 0
+            
+            for col in target_columns:
+                if col not in self.numeric_columns:
+                    continue
+                
+                data = self.processed_df[col]
+                
+                if method == 'zscore':
+                    mean = data.mean()
+                    std = data.std()
+                    if std != 0:
+                        self.processed_df[col] = (data - mean) / std
+                        normalized_count += 1
+                        
+                elif method == 'minmax':
+                    min_val = data.min()
+                    max_val = data.max()
+                    if max_val != min_val:
+                        self.processed_df[col] = (data - min_val) / (max_val - min_val)
+                        normalized_count += 1
+            
+            method_names = {
+                'zscore': 'Z-Score',
+                'minmax': 'Min-Max'
+            }
+            
+            return True, f"정규화 완료 ({method_names.get(method, method)}): {normalized_count}개 컬럼"
+            
+        except Exception as e:
+            return False, f"정규화 실패: {str(e)}"
+    
+    def save_data(self, 
+                 output_path: Optional[str] = None,
+                 original_path: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        전처리된 데이터를 저장합니다.
+        
+        Args:
+            output_path: 저장 경로 (None이면 자동 생성)
+            original_path: 원본 파일 경로 (파일명 생성용)
+        
+        Returns:
+            (성공 여부, 메시지 또는 저장 경로)
+        """
+        try:
+            if self.processed_df is None:
+                return False, "저장할 데이터가 없습니다."
+            
+            if output_path is None:
+                if original_path:
+                    orig_path = Path(original_path)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    output_path = orig_path.parent / f"{orig_path.stem}_processed_{timestamp}{orig_path.suffix}"
+                else:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    output_path = f"processed_data_{timestamp}.csv"
+            
+            output_path = Path(output_path)
+            
+            if output_path.suffix.lower() in ['.xlsx', '.xls']:
+                self.processed_df.to_excel(output_path, index=False)
+            else:
+                self.processed_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+            
+            return True, str(output_path)
+            
+        except Exception as e:
+            return False, f"저장 실패: {str(e)}"
+    
+    def get_preview(self, rows: int = 10) -> pd.DataFrame:
+        """미리보기용 데이터 반환"""
+        if self.processed_df is not None:
+            return self.processed_df.head(rows)
+        return pd.DataFrame()
+    
+    def get_summary(self) -> str:
+        """처리 결과 요약 문자열 반환"""
+        lines = []
+        lines.append(f"📊 전처리 결과 요약")
+        lines.append(f"{'─' * 40}")
+        
+        if 'original_rows' in self.stats:
+            lines.append(f"원본 데이터: {self.stats['original_rows']:,}행")
+        
+        if 'filtered_rows' in self.stats:
+            removed = self.stats.get('filter_removed', 0)
+            lines.append(f"필터링 후: {self.stats['filtered_rows']:,}행 (-{removed:,})")
+        
+        if 'outliers_removed' in self.stats:
+            lines.append(f"이상값 처리: {self.stats['outliers_removed']:,}개")
+        
+        if 'rows_after_outlier' in self.stats:
+            lines.append(f"최종 데이터: {self.stats['rows_after_outlier']:,}행")
+        
+        return "\n".join(lines)
+
+
+# 테스트용 샘플 데이터 생성 함수
+def create_sample_data(output_path: str = "sample_data.csv"):
+    """테스트용 샘플 데이터 생성"""
+    np.random.seed(42)
+    n = 1000
+    
+    dates = pd.date_range(start='2025-11-27', periods=n, freq='h')
+    
+    data = {
+        'Date': dates,
+        'AMBIENT_TEMP': np.random.normal(20, 5, n),
+        'FAN_CURRENT': np.random.normal(45, 10, n),
+        'GEARBOX_OIL_TEMP': np.random.normal(65, 8, n),
+        'CWP_INTK_PIT_TEMP': np.random.normal(30, 3, n),
+        'CONDR_TEMP_RISE': np.random.normal(10, 2, n)
+    }
+    
+    # 이상값 추가
+    data['FAN_CURRENT'][50] = 150  # 극단적 이상값
+    data['FAN_CURRENT'][100] = -20
+    data['AMBIENT_TEMP'][200] = 60
+    
+    df = pd.DataFrame(data)
+    df.to_csv(output_path, index=False)
+    print(f"샘플 데이터 생성 완료: {output_path}")
+    return output_path
+
+
+if __name__ == "__main__":
+    # 테스트
+    sample_path = create_sample_data()
+    
+    preprocessor = DataPreprocessor()
+    
+    # 1. 데이터 로드
+    success, msg = preprocessor.load_data(sample_path)
+    print(msg)
+    print(f"감지된 숫자 컬럼: {preprocessor.numeric_columns}")
+    
+    # 2. 필터링
+    filters = [
+        {'column': 'AMBIENT_TEMP', 'operator': '>=', 'value': 15},
+        {'column': 'FAN_CURRENT', 'operator': 'range', 'min': 30, 'max': 60}
+    ]
+    success, msg = preprocessor.apply_filters(filters)
+    print(msg)
+    
+    # 3. 이상값 제거
+    success, msg = preprocessor.remove_outliers(method='2.5sigma', action='nan')
+    print(msg)
+    
+    # 4. 저장
+    success, output = preprocessor.save_data(original_path=sample_path)
+    print(f"저장 완료: {output}")
+    
+    # 5. 요약
+    print("\n" + preprocessor.get_summary())
