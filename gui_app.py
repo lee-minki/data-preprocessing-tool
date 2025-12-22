@@ -343,18 +343,31 @@ class DataPreprocessorApp:
         rb_minmax.pack(side=tk.LEFT, padx=10)
         HelpTooltip(rb_minmax, DataPreprocessor.get_help_text('minmax'))
         
-        # === 시간 재정렬 섹션 ===
-        time_frame = ttk.LabelFrame(main_frame, text="🕐 시간 재정렬 (선택사항)", padding=10)
+        # === 시간 처리 섹션 ===
+        time_frame = ttk.LabelFrame(main_frame, text="🕐 시간 처리 (선택사항)", padding=10)
         time_frame.pack(fill=tk.X, pady=5)
         
+        # 시간 정규화 (2분 간격으로 스냅)
+        self.apply_time_normalize = tk.BooleanVar(value=False)
+        time_norm_check = ttk.Checkbutton(time_frame, text="시간 정규화 (2분 간격으로 스냅)", 
+                       variable=self.apply_time_normalize)
+        time_norm_check.pack(anchor=tk.W)
+        HelpTooltip(time_norm_check, "엑셀 자동채우기로 인한 시간 밀림 보정\n예: 00:01:00 → 00:00:00, 00:05:59 → 00:06:00")
+        
+        ttk.Label(time_frame, text="   ※ 00:01:00, 00:02:01 같은 틀어진 시간을 정확한 2분 간격으로 보정",
+                 foreground="gray").pack(anchor=tk.W)
+        
+        ttk.Separator(time_frame, orient='horizontal').pack(fill=tk.X, pady=5)
+        
+        # 시간 재정렬
         self.apply_time_realign = tk.BooleanVar(value=False)
-        ttk.Checkbutton(time_frame, text="시간 재정렬 적용", 
+        ttk.Checkbutton(time_frame, text="시간 재정렬 (새 시작 시간부터 재배열)", 
                        variable=self.apply_time_realign).pack(anchor=tk.W)
         
         time_inner = ttk.Frame(time_frame)
         time_inner.pack(fill=tk.X, pady=5)
         
-        ttk.Label(time_inner, text="시작 시간:").pack(side=tk.LEFT)
+        ttk.Label(time_inner, text="   시작 시간:").pack(side=tk.LEFT)
         self.start_time_entry = ttk.Entry(time_inner, width=20)
         self.start_time_entry.pack(side=tk.LEFT, padx=5)
         self.start_time_entry.insert(0, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -364,7 +377,7 @@ class DataPreprocessorApp:
         self.interval_entry.pack(side=tk.LEFT, padx=5)
         self.interval_entry.insert(0, "2")
         
-        ttk.Label(time_frame, text="※ 기본: 필터링된 시간 그대로 유지. 설정 시: 지정된 시작 시간부터 일정 간격으로 재배열",
+        ttk.Label(time_frame, text="   ※ 필터링된 데이터를 지정된 시작 시간부터 일정 간격으로 재배열",
                  foreground="gray").pack(anchor=tk.W)
         
         # === 진행률 표시 섹션 ===
@@ -624,9 +637,20 @@ class DataPreprocessorApp:
             
             self._update_progress(85, "정규화 완료", time.time() - start_time)
             
-            # 4. 시간 재정렬
+            # 4. 시간 정규화 (2분 간격으로 스냅)
+            if self.apply_time_normalize.get():
+                self._update_progress(87, "시간 정규화 중...", time.time() - start_time)
+                
+                try:
+                    interval = int(self.interval_entry.get())
+                    success, msg = self.preprocessor.normalize_timestamps(interval)
+                    self.root.after(0, lambda m=msg, s=success: self._log(f"{'✅' if s else '❌'} {m}"))
+                except Exception as e:
+                    self.root.after(0, lambda e=e: self._log(f"⚠️ 시간 정규화 실패: {str(e)}"))
+            
+            # 5. 시간 재정렬
             if self.apply_time_realign.get():
-                self._update_progress(88, "시간 재정렬 중...", time.time() - start_time)
+                self._update_progress(90, "시간 재정렬 중...", time.time() - start_time)
                 
                 try:
                     start_time_str = self.start_time_entry.get()

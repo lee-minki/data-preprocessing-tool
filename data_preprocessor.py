@@ -328,6 +328,65 @@ class DataPreprocessor:
         except Exception as e:
             return False, f"정규화 실패: {str(e)}"
     
+    def normalize_timestamps(self, interval_minutes: int = 2) -> Tuple[bool, str]:
+        """
+        시간을 가장 가까운 지정된 간격으로 정규화(스냅)합니다.
+        예: 00:01:00 → 00:00:00, 00:02:01 → 00:02:00, 00:05:59 → 00:06:00
+        
+        엑셀 자동채우기에서 발생하는 시간 밀림 현상을 보정합니다.
+        
+        Args:
+            interval_minutes: 간격 (분), 기본값 2분
+        
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.processed_df is None or self.date_column is None:
+                return False, "데이터 또는 날짜 컬럼이 없습니다."
+            
+            # 날짜 컬럼을 datetime으로 변환
+            dates = pd.to_datetime(self.processed_df[self.date_column])
+            
+            corrected_count = 0
+            new_times = []
+            
+            for dt in dates:
+                # 원본 시간의 총 분 계산 (초 포함)
+                total_minutes = dt.hour * 60 + dt.minute + dt.second / 60 + dt.microsecond / 60000000
+                
+                # 가장 가까운 간격으로 반올림
+                snapped_minutes = round(total_minutes / interval_minutes) * interval_minutes
+                
+                # 24시간 넘어가면 다음 날로
+                days_add = int(snapped_minutes // (24 * 60))
+                snapped_minutes = snapped_minutes % (24 * 60)
+                
+                snapped_hour = int(snapped_minutes // 60)
+                snapped_min = int(snapped_minutes % 60)
+                
+                # 새 시간 생성
+                try:
+                    new_dt = dt.replace(hour=snapped_hour, minute=snapped_min, second=0, microsecond=0)
+                    if days_add > 0:
+                        new_dt = new_dt + timedelta(days=days_add)
+                except:
+                    new_dt = dt
+                
+                # 변경 여부 확인
+                if dt.minute != snapped_min or dt.second != 0 or dt.microsecond != 0:
+                    corrected_count += 1
+                
+                new_times.append(new_dt)
+            
+            # 날짜 컬럼 업데이트
+            self.processed_df[self.date_column] = new_times
+            
+            return True, f"시간 정규화 완료: {corrected_count}개 시간 보정 ({interval_minutes}분 간격)"
+            
+        except Exception as e:
+            return False, f"시간 정규화 실패: {str(e)}"
+    
     def realign_timestamps(self, 
                           start_time: str,
                           interval_minutes: int = 2) -> Tuple[bool, str]:
