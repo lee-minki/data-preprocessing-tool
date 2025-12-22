@@ -185,6 +185,7 @@ class DataPreprocessorApp:
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="도움말", menu=help_menu)
+        help_menu.add_command(label="사용자 매뉴얼", command=self._show_manual, accelerator="F1")
         help_menu.add_command(label="용어 설명", command=self._show_help)
         help_menu.add_separator()
         help_menu.add_command(label="프로그램 정보", command=self._show_about)
@@ -192,6 +193,90 @@ class DataPreprocessorApp:
         self.root.bind("<Control-o>", lambda e: self._load_file())
         self.root.bind("<Control-s>", lambda e: self._save_file())
         self.root.bind("<Control-p>", lambda e: self._save_preset())
+        self.root.bind("<F1>", lambda e: self._show_manual())
+    
+    def _show_manual(self):
+        """사용자 매뉴얼 창 표시"""
+        from pathlib import Path
+        
+        manual_window = tk.Toplevel(self.root)
+        manual_window.title("사용자 매뉴얼")
+        manual_window.geometry("700x600")
+        manual_window.transient(self.root)
+        
+        # 매뉴얼 텍스트 로드
+        manual_content = ""
+        possible_paths = [
+            Path(__file__).parent / "MANUAL.md",
+            Path.cwd() / "MANUAL.md",
+        ]
+        
+        for path in possible_paths:
+            if path.exists():
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        manual_content = f.read()
+                    break
+                except:
+                    continue
+        
+        if not manual_content:
+            manual_content = self._get_embedded_manual()
+        
+        text = ScrolledText(manual_window, wrap=tk.WORD, font=('맑은 고딕', 10))
+        text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        text.insert(tk.END, manual_content)
+        text.config(state=tk.DISABLED)
+        
+        # 닫기 버튼
+        ttk.Button(manual_window, text="닫기", command=manual_window.destroy).pack(pady=10)
+    
+    def _get_embedded_manual(self) -> str:
+        """내장 매뉴얼 반환"""
+        return """# 시계열 데이터 전처리 프로그램 - 사용자 매뉴얼
+
+Version 1.3.1
+
+## 기본 사용법
+
+1. 파일 → 열기로 Excel/CSV 파일 불러오기
+2. + 필터 추가로 필터 조건 설정
+3. 이상값 처리 방법 선택 (2.5σ 권장)
+4. 🚀 전처리 실행 버튼 클릭
+5. 💾 결과 저장 버튼으로 저장
+
+## 필터 연산자
+
+- >=, <=, >, <, =, !=
+- range: 범위 지정 (예: 30~50)
+
+## 이상값 처리
+
+- 2σ (95.4%): 엄격한 필터링
+- 2.5σ (98.8%): 권장
+- 3σ (99.7%): 느슨한 필터링
+- IQR: 비대칭 분포용
+
+## 시간 처리
+
+- 시간 정규화: 틀어진 시간을 2분 간격으로 보정
+- 시간 재정렬: 새 시작 시간부터 재배열
+
+## 프리셋
+
+- Ctrl+P: 프리셋 저장
+- 프리셋 → 파일+프리셋 한번에 열기: 원클릭 전처리
+
+## 단축키
+
+- Ctrl+O: 파일 열기
+- Ctrl+S: 결과 저장
+- Ctrl+P: 프리셋 저장
+- F1: 매뉴얼
+
+자세한 내용은 GitHub의 MANUAL.md를 참조하세요.
+https://github.com/lee-minki/data-preprocessing-tool
+"""
     
     def _show_help(self):
         """도움말 창 표시"""
