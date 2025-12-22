@@ -18,6 +18,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Get version from tag
+      id: get_version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -31,28 +43,29 @@ jobs:
     
     - name: Build EXE
       run: |
-        pyinstaller --onefile --windowed --name "DataPreprocessor" --icon=NONE gui_app.py
+        pyinstaller --onefile --windowed --name "DataPreprocessor_${{ steps.get_version.outputs.VERSION }}" --icon=NONE gui_app.py
     
     - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
       with:
-        name: DataPreprocessor-Windows
-        path: dist/DataPreprocessor.exe
+        name: DataPreprocessor-${{ steps.get_version.outputs.VERSION }}-Windows
+        path: dist/DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe
     
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/DataPreprocessor.exe
+        files: dist/DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe
         body: |
-          ## 시계열 데이터 전처리 프로그램
+          ## 시계열 데이터 전처리 프로그램 ${{ steps.get_version.outputs.VERSION }}
           
           ### 다운로드
-          - `DataPreprocessor.exe` - Windows 실행 파일 (Python 설치 불필요)
+          - `DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe` - Windows 실행 파일 (Python 설치 불필요)
           
           ### 주요 기능
           - 📁 Excel/CSV 파일 로드
           - 🔧 다중 조건 필터링 (AND)
           - 📊 이상값 처리 (2σ, 2.5σ, 3σ, IQR)
-          - 📈 정규화 (Z-Score, Min-Max)
+          - 📈 트렌드 차트 (다중 컬럼, 인터랙티브 커서)
+          - 💾 프리셋 저장/불러오기
           - ⏳ 진행률 표시 (대용량 데이터 지원)

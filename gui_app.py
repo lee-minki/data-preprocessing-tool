@@ -16,6 +16,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from data_preprocessor import DataPreprocessor
 from preset_manager import PresetManager, create_settings_from_gui, apply_settings_to_gui
+from version import __version__
 
 
 class HelpTooltip:
@@ -143,7 +144,7 @@ class DataPreprocessorApp:
     
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("시계열 데이터 전처리 프로그램")
+        self.root.title(f"시계열 데이터 전처리 프로그램 v{__version__}")
         self.root.geometry("950x950")
         self.root.minsize(850, 850)
         

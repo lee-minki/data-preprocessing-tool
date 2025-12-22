@@ -27,6 +27,7 @@ from PyQt5.QtGui import QFont
 # 핵심 로직 임포트
 from data_preprocessor import DataPreprocessor
 from preset_manager import PresetManager, create_settings_from_gui, apply_settings_to_gui
+from version import __version__
 
 
 class FilterWidget(QFrame):
@@ -291,7 +292,7 @@ class DataPreprocessorMac(QMainWindow):
     
     def _setup_ui(self):
         """UI 설정"""
-        self.setWindowTitle("시계열 데이터 전처리 프로그램 (Mac)")
+        self.setWindowTitle(f"시계열 데이터 전처리 프로그램 (Mac) v{__version__}")
         self.setMinimumSize(900, 800)
         
         # 메인 위젯
