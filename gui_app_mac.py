@@ -758,7 +758,7 @@ GitHub: github.com/lee-minki/data-preprocessing-tool"""
         QMessageBox.about(self, "프로그램 정보", about_text)
     
     def _show_trend_chart(self):
-        """트렌드 차트 표시"""
+        """트렌드 차트 표시 (다중 컬럼 지원)"""
         if self.preprocessor.processed_df is None:
             QMessageBox.warning(self, "경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
             return
@@ -766,113 +766,192 @@ GitHub: github.com/lee-minki/data-preprocessing-tool"""
         try:
             import matplotlib
             matplotlib.use('Qt5Agg')
-            import matplotlib.pyplot as plt
             from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
             from matplotlib.figure import Figure
-            import numpy as np
         except ImportError:
             QMessageBox.critical(self, "오류", "matplotlib이 설치되지 않았습니다.\npip install matplotlib")
             return
         
         # 트렌드 차트 다이얼로그
         dialog = QDialog(self)
-        dialog.setWindowTitle("📊 트렌드 차트")
-        dialog.resize(900, 700)
+        dialog.setWindowTitle("📊 트렌드 차트 (다중 비교)")
+        dialog.resize(1000, 750)
         layout = QVBoxLayout(dialog)
         
-        # 컬럼 선택
-        column_layout = QHBoxLayout()
-        column_layout.addWidget(QLabel("컬럼 선택:"))
+        # 상단 컨트롤 영역
+        control_layout = QHBoxLayout()
         
-        column_combo = QComboBox()
-        column_combo.addItems(self.preprocessor.numeric_columns)
-        column_combo.setMinimumWidth(200)
-        column_layout.addWidget(column_combo)
+        # 컬럼 선택 (다중 선택 리스트)
+        column_frame = QGroupBox("컬럼 선택 (Ctrl+클릭으로 다중 선택)")
+        column_layout = QVBoxLayout(column_frame)
         
-        # 자동 스케일 옵션
+        column_list = QListWidget()
+        column_list.setSelectionMode(QListWidget.ExtendedSelection)
+        column_list.addItems(self.preprocessor.numeric_columns)
+        column_list.setMaximumHeight(120)
+        if self.preprocessor.numeric_columns:
+            column_list.item(0).setSelected(True)
+        column_layout.addWidget(column_list)
+        
+        control_layout.addWidget(column_frame)
+        
+        # 옵션
+        option_frame = QGroupBox("옵션")
+        option_layout = QVBoxLayout(option_frame)
+        
         auto_scale_check = QCheckBox("자동 스케일 (여유 20%)")
         auto_scale_check.setChecked(True)
-        column_layout.addWidget(auto_scale_check)
+        option_layout.addWidget(auto_scale_check)
         
-        # 새로고침 버튼
+        show_mean_check = QCheckBox("평균선 표시")
+        show_mean_check.setChecked(True)
+        option_layout.addWidget(show_mean_check)
+        
+        normalize_check = QCheckBox("정규화하여 비교 (0~1)")
+        normalize_check.setToolTip("스케일이 다른 컬럼을 비교할 때 유용")
+        option_layout.addWidget(normalize_check)
+        
+        control_layout.addWidget(option_frame)
+        
+        # 버튼
+        btn_frame = QGroupBox("실행")
+        btn_layout = QVBoxLayout(btn_frame)
+        
         refresh_btn = QPushButton("🔄 차트 업데이트")
-        column_layout.addWidget(refresh_btn)
+        btn_layout.addWidget(refresh_btn)
         
-        column_layout.addStretch()
-        layout.addLayout(column_layout)
+        control_layout.addWidget(btn_frame)
+        control_layout.addStretch()
+        
+        layout.addLayout(control_layout)
         
         # matplotlib Figure
-        fig = Figure(figsize=(10, 5), dpi=100)
+        fig = Figure(figsize=(12, 5), dpi=100)
         canvas = FigureCanvas(fig)
         layout.addWidget(canvas)
         
         # 통계 정보
-        stats_label = QLabel("")
-        stats_label.setStyleSheet("font-family: Menlo; background: #f5f5f5; padding: 10px;")
-        layout.addWidget(stats_label)
+        stats_text = QTextEdit()
+        stats_text.setReadOnly(True)
+        stats_text.setMaximumHeight(100)
+        stats_text.setStyleSheet("font-family: Menlo; font-size: 10px;")
+        layout.addWidget(stats_text)
+        
+        # 색상 팔레트
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
         
         def update_chart():
             """차트 업데이트"""
-            column = column_combo.currentText()
-            if not column:
+            selected_items = column_list.selectedItems()
+            if not selected_items:
                 return
+            
+            selected_columns = [item.text() for item in selected_items][:5]  # 최대 5개
             
             df = self.preprocessor.processed_df
-            data = df[column].dropna()
-            
-            if len(data) == 0:
-                return
             
             fig.clear()
             ax = fig.add_subplot(111)
             
-            # X축: 인덱스 또는 날짜
+            # X축: 날짜 또는 인덱스
             if self.preprocessor.date_column and self.preprocessor.date_column in df.columns:
                 x_data = df[self.preprocessor.date_column]
                 ax.set_xlabel("시간")
             else:
-                x_data = range(len(data))
+                x_data = range(len(df))
                 ax.set_xlabel("인덱스")
             
-            # 트렌드 플롯
-            ax.plot(x_data[:len(data)], data.values, 'b-', linewidth=0.8, alpha=0.8, label=column)
+            stats_lines = []
+            all_min, all_max = float('inf'), float('-inf')
             
-            # 자동 스케일
-            if auto_scale_check.isChecked():
+            for i, column in enumerate(selected_columns):
+                data = df[column].dropna()
+                if len(data) == 0:
+                    continue
+                
+                color = colors[i % len(colors)]
+                
+                # 정규화 옵션
+                if normalize_check.isChecked():
+                    min_v, max_v = data.min(), data.max()
+                    if max_v - min_v > 0:
+                        plot_data = (data - min_v) / (max_v - min_v)
+                    else:
+                        plot_data = data * 0
+                    ylabel = "정규화 값 (0~1)"
+                else:
+                    plot_data = data
+                    ylabel = "값"
+                
+                # 플롯
+                ax.plot(x_data[:len(plot_data)], plot_data.values, 
+                       color=color, linewidth=0.8, alpha=0.8, label=column)
+                
+                # 평균선
+                if show_mean_check.isChecked():
+                    mean_val = plot_data.mean()
+                    ax.axhline(y=mean_val, color=color, linestyle='--', alpha=0.3)
+                
+                # 통계
                 min_val = data.min()
                 max_val = data.max()
-                range_val = max_val - min_val
-                margin = range_val * 0.2  # 20% 여유
+                all_min = min(all_min, plot_data.min())
+                all_max = max(all_max, plot_data.max())
                 
-                y_min = min_val - margin
-                y_max = max_val + margin
-                
-                ax.set_ylim(y_min, y_max)
+                stats_lines.append(
+                    f"📊 {column}: 최소={min_val:.4f}, 최대={max_val:.4f}, "
+                    f"평균={data.mean():.4f}, 표준편차={data.std():.4f}, 데이터={len(data):,}개"
+                )
             
-            # 평균선
-            mean_val = data.mean()
-            ax.axhline(y=mean_val, color='g', linestyle='--', alpha=0.5, label=f'평균: {mean_val:.2f}')
+            # 자동 스케일
+            if auto_scale_check.isChecked() and all_min != float('inf'):
+                range_val = all_max - all_min
+                margin = range_val * 0.2
+                ax.set_ylim(all_min - margin, all_max + margin)
             
             # 스타일
-            ax.set_title(f"{column} 트렌드", fontsize=12, fontweight='bold')
-            ax.set_ylabel(column)
+            title = ", ".join(selected_columns[:3])
+            if len(selected_columns) > 3:
+                title += f" 외 {len(selected_columns)-3}개"
+            ax.set_title(f"트렌드: {title}", fontsize=11, fontweight='bold')
+            ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.3)
-            ax.legend(loc='upper right')
+            ax.legend(loc='upper right', fontsize=9)
             
-            # 회전된 X축 라벨 (날짜인 경우)
             if self.preprocessor.date_column:
                 fig.autofmt_xdate()
             
+            fig.tight_layout()
             canvas.draw()
             
+            # 인터랙티브 커서 추가
+            try:
+                import mplcursors
+                cursor = mplcursors.cursor(ax, hover=True)
+                
+                @cursor.connect("add")
+                def on_add(sel):
+                    line = sel.artist
+                    label = line.get_label()
+                    x_val = sel.target[0]
+                    y_val = sel.target[1]
+                    sel.annotation.set(
+                        text=f"{label}\n값: {y_val:.4f}\n인덱스: {int(x_val)}",
+                        fontsize=9,
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=line.get_color())
+                    )
+            except ImportError:
+                pass  # mplcursors 없으면 기본 동작
+            
             # 통계 정보 업데이트
-            stats_text = f"""📊 통계 정보 | 데이터 수: {len(data):,} | 최소: {min_val:.4f} | 최대: {max_val:.4f} | 범위: {range_val:.4f} | 평균: {mean_val:.4f} | 표준편차: {data.std():.4f}"""
-            stats_label.setText(stats_text)
+            stats_text.setText("\n".join(stats_lines))
         
         # 이벤트 연결
         refresh_btn.clicked.connect(update_chart)
-        column_combo.currentTextChanged.connect(update_chart)
+        column_list.itemSelectionChanged.connect(update_chart)
         auto_scale_check.stateChanged.connect(update_chart)
+        show_mean_check.stateChanged.connect(update_chart)
+        normalize_check.stateChanged.connect(update_chart)
         
         # 초기 차트
         update_chart()

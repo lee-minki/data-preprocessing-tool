@@ -1253,7 +1253,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
     def _show_trend_chart(self):
-        """트렌드 차트 표시"""
+        """트렌드 차트 표시 (다중 컬럼 지원)"""
         if self.preprocessor.processed_df is None:
             messagebox.showwarning("경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
             return
@@ -1261,7 +1261,6 @@ https://github.com/lee-minki/data-preprocessing-tool
         try:
             import matplotlib
             matplotlib.use('TkAgg')
-            import matplotlib.pyplot as plt
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
             from matplotlib.figure import Figure
         except ImportError:
@@ -1270,108 +1269,178 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 트렌드 차트 다이얼로그
         chart_window = tk.Toplevel(self.root)
-        chart_window.title("📊 트렌드 차트")
-        chart_window.geometry("950x700")
+        chart_window.title("📊 트렌드 차트 (다중 비교)")
+        chart_window.geometry("1050x750")
         chart_window.transient(self.root)
         
-        # 상단 컨트롤
+        # 상단 컨트롤 영역
         control_frame = ttk.Frame(chart_window, padding=10)
         control_frame.pack(fill=tk.X)
         
-        ttk.Label(control_frame, text="컬럼 선택:").pack(side=tk.LEFT)
+        # 컬럼 선택 (다중 선택 리스트)
+        column_frame = ttk.LabelFrame(control_frame, text="컬럼 선택 (Ctrl+클릭 다중 선택)", padding=5)
+        column_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
         
-        column_var = tk.StringVar()
-        column_combo = ttk.Combobox(control_frame, textvariable=column_var, width=25)
-        column_combo['values'] = self.preprocessor.numeric_columns
+        column_listbox = tk.Listbox(column_frame, selectmode=tk.EXTENDED, height=5, width=25)
+        for col in self.preprocessor.numeric_columns:
+            column_listbox.insert(tk.END, col)
         if self.preprocessor.numeric_columns:
-            column_combo.current(0)
-        column_combo.pack(side=tk.LEFT, padx=5)
+            column_listbox.selection_set(0)
+        column_listbox.pack()
         
-        # 자동 스케일 체크박스
+        # 옵션
+        option_frame = ttk.LabelFrame(control_frame, text="옵션", padding=5)
+        option_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
+        
         auto_scale_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(control_frame, text="자동 스케일 (여유 20%)", 
-                       variable=auto_scale_var).pack(side=tk.LEFT, padx=10)
+        ttk.Checkbutton(option_frame, text="자동 스케일 (여유 20%)", 
+                       variable=auto_scale_var).pack(anchor=tk.W)
+        
+        show_mean_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(option_frame, text="평균선 표시", 
+                       variable=show_mean_var).pack(anchor=tk.W)
+        
+        normalize_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(option_frame, text="정규화하여 비교 (0~1)", 
+                       variable=normalize_var).pack(anchor=tk.W)
+        
+        # 버튼
+        btn_frame = ttk.Frame(control_frame, padding=5)
+        btn_frame.pack(side=tk.LEFT, padx=10)
         
         # matplotlib Figure
-        fig = Figure(figsize=(10, 5), dpi=100)
+        fig = Figure(figsize=(12, 5), dpi=100)
         canvas = FigureCanvasTkAgg(fig, master=chart_window)
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
-        # 통계 정보 라벨
-        stats_label = ttk.Label(chart_window, text="", font=('맑은 고딕', 9))
-        stats_label.pack(fill=tk.X, padx=10, pady=5)
+        # 통계 정보
+        stats_text = ScrolledText(chart_window, height=4, font=('맑은 고딕', 9))
+        stats_text.pack(fill=tk.X, padx=10, pady=5)
+        
+        # 색상 팔레트
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
         
         def update_chart(*args):
             """차트 업데이트"""
-            column = column_var.get()
-            if not column:
+            selected_indices = column_listbox.curselection()
+            if not selected_indices:
                 return
+            
+            selected_columns = [column_listbox.get(i) for i in selected_indices][:5]
             
             df = self.preprocessor.processed_df
-            if column not in df.columns:
-                return
-            
-            data = df[column].dropna()
-            
-            if len(data) == 0:
-                return
             
             fig.clear()
             ax = fig.add_subplot(111)
             
-            # X축: 인덱스 또는 날짜
+            # X축: 날짜 또는 인덱스
             date_col = self.preprocessor.date_column
             if date_col and date_col in df.columns:
-                x_data = df.loc[data.index, date_col]
+                x_data = df[date_col]
                 ax.set_xlabel("시간")
             else:
-                x_data = range(len(data))
+                x_data = range(len(df))
                 ax.set_xlabel("인덱스")
             
-            # 트렌드 플롯
-            ax.plot(x_data, data.values, 'b-', linewidth=0.8, alpha=0.8, label=column)
+            stats_lines = []
+            all_min, all_max = float('inf'), float('-inf')
             
-            min_val = data.min()
-            max_val = data.max()
-            range_val = max_val - min_val
-            mean_val = data.mean()
-            std_val = data.std()
+            for i, column in enumerate(selected_columns):
+                if column not in df.columns:
+                    continue
+                data = df[column].dropna()
+                if len(data) == 0:
+                    continue
+                
+                color = colors[i % len(colors)]
+                
+                # 정규화 옵션
+                if normalize_var.get():
+                    min_v, max_v = data.min(), data.max()
+                    if max_v - min_v > 0:
+                        plot_data = (data - min_v) / (max_v - min_v)
+                    else:
+                        plot_data = data * 0
+                    ylabel = "정규화 값 (0~1)"
+                else:
+                    plot_data = data
+                    ylabel = "값"
+                
+                # 플롯
+                ax.plot(list(range(len(plot_data))), plot_data.values, 
+                       color=color, linewidth=0.8, alpha=0.8, label=column)
+                
+                # 평균선
+                if show_mean_var.get():
+                    mean_val = plot_data.mean()
+                    ax.axhline(y=mean_val, color=color, linestyle='--', alpha=0.3)
+                
+                # 통계
+                min_val = data.min()
+                max_val = data.max()
+                all_min = min(all_min, plot_data.min())
+                all_max = max(all_max, plot_data.max())
+                
+                stats_lines.append(
+                    f"📊 {column}: 최소={min_val:.4f}, 최대={max_val:.4f}, "
+                    f"평균={data.mean():.4f}, 표준편차={data.std():.4f}, 데이터={len(data):,}개"
+                )
             
             # 자동 스케일
-            if auto_scale_var.get():
-                margin = range_val * 0.2  # 20% 여유
-                y_min = min_val - margin
-                y_max = max_val + margin
-                ax.set_ylim(y_min, y_max)
-            
-            # 평균선
-            ax.axhline(y=mean_val, color='g', linestyle='--', alpha=0.5, 
-                      label=f'평균: {mean_val:.2f}')
+            if auto_scale_var.get() and all_min != float('inf'):
+                range_val = all_max - all_min
+                margin = range_val * 0.2
+                ax.set_ylim(all_min - margin, all_max + margin)
             
             # 스타일
-            ax.set_title(f"{column} 트렌드", fontsize=12, fontweight='bold')
-            ax.set_ylabel(column)
+            title = ", ".join(selected_columns[:3])
+            if len(selected_columns) > 3:
+                title += f" 외 {len(selected_columns)-3}개"
+            ax.set_title(f"트렌드: {title}", fontsize=11, fontweight='bold')
+            ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.3)
-            ax.legend(loc='upper right')
+            ax.legend(loc='upper right', fontsize=9)
             
-            # 회전된 X축 라벨 (날짜인 경우)
             if date_col and date_col in df.columns:
                 fig.autofmt_xdate()
             
             fig.tight_layout()
             canvas.draw()
             
+            # 인터랙티브 커서 추가
+            try:
+                import mplcursors
+                cursor = mplcursors.cursor(ax, hover=True)
+                
+                @cursor.connect("add")
+                def on_add(sel):
+                    line = sel.artist
+                    label = line.get_label()
+                    x_val = sel.target[0]
+                    y_val = sel.target[1]
+                    sel.annotation.set(
+                        text=f"{label}\n값: {y_val:.4f}\n인덱스: {int(x_val)}",
+                        fontsize=9,
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=line.get_color())
+                    )
+            except ImportError:
+                pass  # mplcursors 없으면 기본 동작
+            
             # 통계 정보 업데이트
-            stats_text = f"📊 통계 | 데이터: {len(data):,}개 | 최소: {min_val:.4f} | 최대: {max_val:.4f} | 범위: {range_val:.4f} | 평균: {mean_val:.4f} | 표준편차: {std_val:.4f}"
-            stats_label.config(text=stats_text)
+            stats_text.config(state=tk.NORMAL)
+            stats_text.delete(1.0, tk.END)
+            stats_text.insert(tk.END, "\n".join(stats_lines))
+            stats_text.config(state=tk.DISABLED)
         
         # 새로고침 버튼
-        refresh_btn = ttk.Button(control_frame, text="🔄 업데이트", command=update_chart)
-        refresh_btn.pack(side=tk.LEFT, padx=10)
+        refresh_btn = ttk.Button(btn_frame, text="🔄 업데이트", command=update_chart)
+        refresh_btn.pack()
         
         # 이벤트 연결
-        column_combo.bind('<<ComboboxSelected>>', update_chart)
-        auto_scale_var.trace_add('write', lambda *args: update_chart())
+        column_listbox.bind('<<ListboxSelect>>', update_chart)
+        auto_scale_var.trace_add('write', update_chart)
+        show_mean_var.trace_add('write', update_chart)
+        normalize_var.trace_add('write', update_chart)
         
         # 초기 차트
         update_chart()
