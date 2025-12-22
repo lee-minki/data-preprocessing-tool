@@ -15,6 +15,7 @@ import time
 from typing import List, Dict, Optional
 from datetime import datetime
 from data_preprocessor import DataPreprocessor
+from preset_manager import PresetManager, create_settings_from_gui, apply_settings_to_gui
 
 
 class HelpTooltip:
@@ -147,9 +148,11 @@ class DataPreprocessorApp:
         self.root.minsize(850, 850)
         
         self.preprocessor = DataPreprocessor()
+        self.preset_manager = PresetManager()
         self.current_file: Optional[str] = None
         self.filter_frames: List[FilterFrame] = []
         self.is_processing = False
+        self.current_preset_name: Optional[str] = None
         
         self._create_widgets()
         self._create_menu()
@@ -166,6 +169,19 @@ class DataPreprocessorApp:
         file_menu.add_separator()
         file_menu.add_command(label="종료", command=self.root.quit)
         
+        # 프리셋 메뉴
+        preset_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="프리셋", menu=preset_menu)
+        preset_menu.add_command(label="프리셋 저장...", command=self._save_preset, accelerator="Ctrl+P")
+        preset_menu.add_command(label="프리셋 불러오기...", command=self._load_preset)
+        preset_menu.add_separator()
+        preset_menu.add_command(label="프리셋 관리...", command=self._manage_presets)
+        preset_menu.add_separator()
+        preset_menu.add_command(label="프리셋 내보내기...", command=self._export_preset)
+        preset_menu.add_command(label="프리셋 가져오기...", command=self._import_preset)
+        preset_menu.add_separator()
+        preset_menu.add_command(label="파일+프리셋 한번에 열기...", command=self._load_file_with_preset)
+        
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="도움말", menu=help_menu)
@@ -173,6 +189,7 @@ class DataPreprocessorApp:
         
         self.root.bind("<Control-o>", lambda e: self._load_file())
         self.root.bind("<Control-s>", lambda e: self._save_file())
+        self.root.bind("<Control-p>", lambda e: self._save_preset())
     
     def _show_help(self):
         """도움말 창 표시"""
@@ -739,6 +756,333 @@ class DataPreprocessorApp:
             _do_log()
         else:
             self.root.after(0, _do_log)
+    
+    # ===== 프리셋 관련 메서드 =====
+    
+    def _save_preset(self):
+        """현재 설정을 프리셋으로 저장"""
+        # 프리셋 저장 다이얼로그
+        dialog = tk.Toplevel(self.root)
+        dialog.title("프리셋 저장")
+        dialog.geometry("400x200")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text="프리셋 이름:").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        name_entry = ttk.Entry(dialog, width=40)
+        name_entry.pack(padx=10, pady=5)
+        name_entry.focus()
+        
+        ttk.Label(dialog, text="설명 (선택):").pack(anchor=tk.W, padx=10)
+        desc_entry = ttk.Entry(dialog, width=40)
+        desc_entry.pack(padx=10, pady=5)
+        
+        def save():
+            name = name_entry.get().strip()
+            if not name:
+                messagebox.showwarning("경고", "프리셋 이름을 입력하세요.")
+                return
+            
+            settings = create_settings_from_gui(self)
+            description = desc_entry.get().strip()
+            
+            if self.preset_manager.save_preset(name, settings, description):
+                self.current_preset_name = name
+                self._log(f"💾 프리셋 저장 완료: {name}")
+                messagebox.showinfo("저장 완료", f"프리셋 '{name}'이(가) 저장되었습니다.")
+                dialog.destroy()
+            else:
+                messagebox.showerror("오류", "프리셋 저장에 실패했습니다.")
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=20)
+        ttk.Button(btn_frame, text="저장", command=save).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+        
+        dialog.bind("<Return>", lambda e: save())
+    
+    def _load_preset(self):
+        """프리셋 불러오기"""
+        presets = self.preset_manager.list_presets()
+        
+        if not presets:
+            messagebox.showinfo("알림", "저장된 프리셋이 없습니다.")
+            return
+        
+        # 프리셋 선택 다이얼로그
+        dialog = tk.Toplevel(self.root)
+        dialog.title("프리셋 불러오기")
+        dialog.geometry("500x350")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text="불러올 프리셋을 선택하세요:").pack(anchor=tk.W, padx=10, pady=10)
+        
+        # 프리셋 목록
+        list_frame = ttk.Frame(dialog)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10)
+        
+        listbox = tk.Listbox(list_frame, height=10)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=listbox.yview)
+        listbox.configure(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        listbox.pack(fill=tk.BOTH, expand=True)
+        
+        for p in presets:
+            display = f"{p['name']}"
+            if p['description']:
+                display += f" - {p['description'][:30]}"
+            listbox.insert(tk.END, display)
+        
+        if presets:
+            listbox.selection_set(0)
+        
+        # 자동 전처리 옵션
+        auto_process = tk.BooleanVar(value=False)
+        ttk.Checkbutton(dialog, text="불러온 후 자동으로 전처리 실행", 
+                       variable=auto_process).pack(anchor=tk.W, padx=10, pady=5)
+        
+        def load():
+            selection = listbox.curselection()
+            if not selection:
+                return
+            
+            preset = presets[selection[0]]
+            preset_data = self.preset_manager.load_preset(preset['path'])
+            
+            if preset_data:
+                settings = preset_data.get('settings', {})
+                apply_settings_to_gui(self, settings)
+                self.current_preset_name = preset['name']
+                self._log(f"📂 프리셋 로드 완료: {preset['name']}")
+                dialog.destroy()
+                
+                if auto_process.get() and self.preprocessor.original_df is not None:
+                    self._run_preprocessing_threaded()
+            else:
+                messagebox.showerror("오류", "프리셋을 불러오는데 실패했습니다.")
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=10)
+        ttk.Button(btn_frame, text="불러오기", command=load).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+        
+        listbox.bind("<Double-Button-1>", lambda e: load())
+    
+    def _manage_presets(self):
+        """프리셋 관리 다이얼로그"""
+        presets = self.preset_manager.list_presets()
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("프리셋 관리")
+        dialog.geometry("600x400")
+        dialog.transient(self.root)
+        
+        ttk.Label(dialog, text="저장된 프리셋 목록:").pack(anchor=tk.W, padx=10, pady=10)
+        
+        # 프리셋 목록
+        columns = ('name', 'description', 'created')
+        tree = ttk.Treeview(dialog, columns=columns, show='headings', height=12)
+        tree.heading('name', text='이름')
+        tree.heading('description', text='설명')
+        tree.heading('created', text='생성일')
+        tree.column('name', width=150)
+        tree.column('description', width=250)
+        tree.column('created', width=150)
+        
+        scrollbar = ttk.Scrollbar(dialog, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0), pady=5)
+        scrollbar.pack(side=tk.LEFT, fill=tk.Y, pady=5)
+        
+        def refresh():
+            tree.delete(*tree.get_children())
+            for p in self.preset_manager.list_presets():
+                created = p.get('created_at', '')[:10] if p.get('created_at') else ''
+                tree.insert('', tk.END, values=(p['name'], p['description'], created), 
+                           tags=(p['path'],))
+        
+        refresh()
+        
+        def delete_selected():
+            selection = tree.selection()
+            if not selection:
+                return
+            
+            item = tree.item(selection[0])
+            name = item['values'][0]
+            path = item['tags'][0]
+            
+            if messagebox.askyesno("확인", f"프리셋 '{name}'을(를) 삭제하시겠습니까?"):
+                if self.preset_manager.delete_preset(path):
+                    refresh()
+                    self._log(f"🗑️ 프리셋 삭제: {name}")
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+        ttk.Button(btn_frame, text="삭제", command=delete_selected).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="새로고침", command=refresh).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="닫기", command=dialog.destroy).pack(side=tk.RIGHT, padx=5)
+    
+    def _export_preset(self):
+        """프리셋 내보내기"""
+        presets = self.preset_manager.list_presets()
+        
+        if not presets:
+            messagebox.showinfo("알림", "내보낼 프리셋이 없습니다.")
+            return
+        
+        # 간단히 현재 프리셋 또는 선택
+        if self.current_preset_name:
+            name = self.current_preset_name
+        else:
+            # 첫 번째 프리셋
+            name = presets[0]['name']
+        
+        file_path = filedialog.asksaveasfilename(
+            title="프리셋 내보내기",
+            initialfile=f"{name}.json",
+            defaultextension=".json",
+            filetypes=[("JSON 파일", "*.json")]
+        )
+        
+        if file_path:
+            if self.preset_manager.export_preset(name, file_path):
+                self._log(f"📤 프리셋 내보내기 완료: {file_path}")
+                messagebox.showinfo("완료", f"프리셋이 내보내졌습니다:\n{file_path}")
+            else:
+                messagebox.showerror("오류", "프리셋 내보내기에 실패했습니다.")
+    
+    def _import_preset(self):
+        """프리셋 가져오기"""
+        file_path = filedialog.askopenfilename(
+            title="프리셋 가져오기",
+            filetypes=[("JSON 파일", "*.json")]
+        )
+        
+        if file_path:
+            name = self.preset_manager.import_preset(file_path)
+            if name:
+                self._log(f"📥 프리셋 가져오기 완료: {name}")
+                messagebox.showinfo("완료", f"프리셋 '{name}'을(를) 가져왔습니다.")
+            else:
+                messagebox.showerror("오류", "프리셋 가져오기에 실패했습니다.")
+    
+    def _load_file_with_preset(self):
+        """파일과 프리셋을 한번에 열고 자동 전처리"""
+        presets = self.preset_manager.list_presets()
+        
+        if not presets:
+            messagebox.showinfo("알림", "저장된 프리셋이 없습니다.\n먼저 프리셋을 저장하세요.")
+            return
+        
+        # 프리셋 선택 다이얼로그
+        dialog = tk.Toplevel(self.root)
+        dialog.title("파일 + 프리셋 열기")
+        dialog.geometry("500x400")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text="1. 적용할 프리셋을 선택하세요:", font=('맑은 고딕', 10, 'bold')).pack(anchor=tk.W, padx=10, pady=10)
+        
+        # 프리셋 목록
+        list_frame = ttk.Frame(dialog)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10)
+        
+        listbox = tk.Listbox(list_frame, height=8)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=listbox.yview)
+        listbox.configure(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        listbox.pack(fill=tk.BOTH, expand=True)
+        
+        for p in presets:
+            display = f"{p['name']}"
+            if p['description']:
+                display += f" - {p['description'][:30]}"
+            listbox.insert(tk.END, display)
+        
+        listbox.selection_set(0)
+        
+        ttk.Label(dialog, text="2. 파일 선택 후 자동 전처리가 진행됩니다.", 
+                 font=('맑은 고딕', 10, 'bold')).pack(anchor=tk.W, padx=10, pady=(15, 5))
+        
+        auto_save = tk.BooleanVar(value=False)
+        ttk.Checkbutton(dialog, text="전처리 후 자동 저장 (원본파일명_processed_...)", 
+                       variable=auto_save).pack(anchor=tk.W, padx=10)
+        
+        def proceed():
+            selection = listbox.curselection()
+            if not selection:
+                messagebox.showwarning("경고", "프리셋을 선택하세요.")
+                return
+            
+            preset = presets[selection[0]]
+            dialog.destroy()
+            
+            # 파일 선택
+            file_path = filedialog.askopenfilename(
+                title="데이터 파일 선택",
+                filetypes=[
+                    ("Excel/CSV 파일", "*.xlsx *.xls *.csv"),
+                    ("Excel 파일", "*.xlsx *.xls"),
+                    ("CSV 파일", "*.csv"),
+                    ("모든 파일", "*.*")
+                ]
+            )
+            
+            if not file_path:
+                return
+            
+            # 파일 로드
+            success, msg = self.preprocessor.load_data(file_path)
+            if not success:
+                messagebox.showerror("오류", msg)
+                return
+            
+            self.current_file = file_path
+            self.file_label.config(text=os.path.basename(file_path), foreground="black")
+            rows = len(self.preprocessor.original_df)
+            cols = len(self.preprocessor.columns)
+            self.data_info_label.config(text=f"📊 {rows:,}행 × {cols}열")
+            
+            self._update_preview()
+            self._update_filter_columns()
+            self._log(f"✅ {msg}")
+            
+            # 프리셋 적용
+            preset_data = self.preset_manager.load_preset(preset['path'])
+            if preset_data:
+                settings = preset_data.get('settings', {})
+                apply_settings_to_gui(self, settings)
+                self.current_preset_name = preset['name']
+                self._log(f"📂 프리셋 적용: {preset['name']}")
+                
+                # 자동 전처리 실행
+                def auto_process():
+                    time.sleep(0.5)  # UI 업데이트 대기
+                    self._run_preprocessing()
+                    
+                    # 자동 저장
+                    if auto_save.get():
+                        from pathlib import Path
+                        orig = Path(self.current_file)
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        output_path = orig.parent / f"{orig.stem}_processed_{timestamp}{orig.suffix}"
+                        
+                        success, result = self.preprocessor.save_data(str(output_path), self.current_file)
+                        if success:
+                            self.root.after(0, lambda: self._log(f"💾 자동 저장 완료: {result}"))
+                
+                thread = threading.Thread(target=auto_process, daemon=True)
+                thread.start()
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=15)
+        ttk.Button(btn_frame, text="파일 선택 및 시작", command=proceed).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
 
 
 # pandas import for preview
