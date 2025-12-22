@@ -182,6 +182,11 @@ class DataPreprocessorApp:
         preset_menu.add_separator()
         preset_menu.add_command(label="파일+프리셋 한번에 열기...", command=self._load_file_with_preset)
         
+        # 분석 메뉴
+        analysis_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="분석", menu=analysis_menu)
+        analysis_menu.add_command(label="📊 트렌드 차트...", command=self._show_trend_chart, accelerator="Ctrl+T")
+        
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="도움말", menu=help_menu)
@@ -193,6 +198,7 @@ class DataPreprocessorApp:
         self.root.bind("<Control-o>", lambda e: self._load_file())
         self.root.bind("<Control-s>", lambda e: self._save_file())
         self.root.bind("<Control-p>", lambda e: self._save_preset())
+        self.root.bind("<Control-t>", lambda e: self._show_trend_chart())
         self.root.bind("<F1>", lambda e: self._show_manual())
     
     def _show_manual(self):
@@ -1245,6 +1251,133 @@ https://github.com/lee-minki/data-preprocessing-tool
         btn_frame.pack(pady=15)
         ttk.Button(btn_frame, text="파일 선택 및 시작", command=proceed).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+    
+    def _show_trend_chart(self):
+        """트렌드 차트 표시"""
+        if self.preprocessor.processed_df is None:
+            messagebox.showwarning("경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
+            return
+        
+        try:
+            import matplotlib
+            matplotlib.use('TkAgg')
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+            from matplotlib.figure import Figure
+        except ImportError:
+            messagebox.showerror("오류", "matplotlib이 설치되지 않았습니다.\npip install matplotlib")
+            return
+        
+        # 트렌드 차트 다이얼로그
+        chart_window = tk.Toplevel(self.root)
+        chart_window.title("📊 트렌드 차트")
+        chart_window.geometry("950x700")
+        chart_window.transient(self.root)
+        
+        # 상단 컨트롤
+        control_frame = ttk.Frame(chart_window, padding=10)
+        control_frame.pack(fill=tk.X)
+        
+        ttk.Label(control_frame, text="컬럼 선택:").pack(side=tk.LEFT)
+        
+        column_var = tk.StringVar()
+        column_combo = ttk.Combobox(control_frame, textvariable=column_var, width=25)
+        column_combo['values'] = self.preprocessor.numeric_columns
+        if self.preprocessor.numeric_columns:
+            column_combo.current(0)
+        column_combo.pack(side=tk.LEFT, padx=5)
+        
+        # 자동 스케일 체크박스
+        auto_scale_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(control_frame, text="자동 스케일 (여유 20%)", 
+                       variable=auto_scale_var).pack(side=tk.LEFT, padx=10)
+        
+        # matplotlib Figure
+        fig = Figure(figsize=(10, 5), dpi=100)
+        canvas = FigureCanvasTkAgg(fig, master=chart_window)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # 통계 정보 라벨
+        stats_label = ttk.Label(chart_window, text="", font=('맑은 고딕', 9))
+        stats_label.pack(fill=tk.X, padx=10, pady=5)
+        
+        def update_chart(*args):
+            """차트 업데이트"""
+            column = column_var.get()
+            if not column:
+                return
+            
+            df = self.preprocessor.processed_df
+            if column not in df.columns:
+                return
+            
+            data = df[column].dropna()
+            
+            if len(data) == 0:
+                return
+            
+            fig.clear()
+            ax = fig.add_subplot(111)
+            
+            # X축: 인덱스 또는 날짜
+            date_col = self.preprocessor.date_column
+            if date_col and date_col in df.columns:
+                x_data = df.loc[data.index, date_col]
+                ax.set_xlabel("시간")
+            else:
+                x_data = range(len(data))
+                ax.set_xlabel("인덱스")
+            
+            # 트렌드 플롯
+            ax.plot(x_data, data.values, 'b-', linewidth=0.8, alpha=0.8, label=column)
+            
+            min_val = data.min()
+            max_val = data.max()
+            range_val = max_val - min_val
+            mean_val = data.mean()
+            std_val = data.std()
+            
+            # 자동 스케일
+            if auto_scale_var.get():
+                margin = range_val * 0.2  # 20% 여유
+                y_min = min_val - margin
+                y_max = max_val + margin
+                ax.set_ylim(y_min, y_max)
+            
+            # 평균선
+            ax.axhline(y=mean_val, color='g', linestyle='--', alpha=0.5, 
+                      label=f'평균: {mean_val:.2f}')
+            
+            # 스타일
+            ax.set_title(f"{column} 트렌드", fontsize=12, fontweight='bold')
+            ax.set_ylabel(column)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper right')
+            
+            # 회전된 X축 라벨 (날짜인 경우)
+            if date_col and date_col in df.columns:
+                fig.autofmt_xdate()
+            
+            fig.tight_layout()
+            canvas.draw()
+            
+            # 통계 정보 업데이트
+            stats_text = f"📊 통계 | 데이터: {len(data):,}개 | 최소: {min_val:.4f} | 최대: {max_val:.4f} | 범위: {range_val:.4f} | 평균: {mean_val:.4f} | 표준편차: {std_val:.4f}"
+            stats_label.config(text=stats_text)
+        
+        # 새로고침 버튼
+        refresh_btn = ttk.Button(control_frame, text="🔄 업데이트", command=update_chart)
+        refresh_btn.pack(side=tk.LEFT, padx=10)
+        
+        # 이벤트 연결
+        column_combo.bind('<<ComboboxSelected>>', update_chart)
+        auto_scale_var.trace_add('write', lambda *args: update_chart())
+        
+        # 초기 차트
+        update_chart()
+        
+        # 닫기 버튼
+        ttk.Button(chart_window, text="닫기", command=chart_window.destroy).pack(pady=10)
 
 
 # pandas import for preview

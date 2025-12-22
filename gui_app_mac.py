@@ -267,6 +267,14 @@ class DataPreprocessorMac(QMainWindow):
         one_click.triggered.connect(self._load_file_with_preset)
         preset_menu.addAction(one_click)
         
+        # 분석 메뉴
+        analysis_menu = menubar.addMenu("분석")
+        
+        trend_action = QAction("📊 트렌드 차트...", self)
+        trend_action.setShortcut("Ctrl+T")
+        trend_action.triggered.connect(self._show_trend_chart)
+        analysis_menu.addAction(trend_action)
+        
         # 도움말 메뉴
         help_menu = menubar.addMenu("도움말")
         
@@ -748,6 +756,133 @@ Version 1.3.2 (Mac)
 GitHub: github.com/lee-minki/data-preprocessing-tool"""
         
         QMessageBox.about(self, "프로그램 정보", about_text)
+    
+    def _show_trend_chart(self):
+        """트렌드 차트 표시"""
+        if self.preprocessor.processed_df is None:
+            QMessageBox.warning(self, "경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
+            return
+        
+        try:
+            import matplotlib
+            matplotlib.use('Qt5Agg')
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+            from matplotlib.figure import Figure
+            import numpy as np
+        except ImportError:
+            QMessageBox.critical(self, "오류", "matplotlib이 설치되지 않았습니다.\npip install matplotlib")
+            return
+        
+        # 트렌드 차트 다이얼로그
+        dialog = QDialog(self)
+        dialog.setWindowTitle("📊 트렌드 차트")
+        dialog.resize(900, 700)
+        layout = QVBoxLayout(dialog)
+        
+        # 컬럼 선택
+        column_layout = QHBoxLayout()
+        column_layout.addWidget(QLabel("컬럼 선택:"))
+        
+        column_combo = QComboBox()
+        column_combo.addItems(self.preprocessor.numeric_columns)
+        column_combo.setMinimumWidth(200)
+        column_layout.addWidget(column_combo)
+        
+        # 자동 스케일 옵션
+        auto_scale_check = QCheckBox("자동 스케일 (여유 20%)")
+        auto_scale_check.setChecked(True)
+        column_layout.addWidget(auto_scale_check)
+        
+        # 새로고침 버튼
+        refresh_btn = QPushButton("🔄 차트 업데이트")
+        column_layout.addWidget(refresh_btn)
+        
+        column_layout.addStretch()
+        layout.addLayout(column_layout)
+        
+        # matplotlib Figure
+        fig = Figure(figsize=(10, 5), dpi=100)
+        canvas = FigureCanvas(fig)
+        layout.addWidget(canvas)
+        
+        # 통계 정보
+        stats_label = QLabel("")
+        stats_label.setStyleSheet("font-family: Menlo; background: #f5f5f5; padding: 10px;")
+        layout.addWidget(stats_label)
+        
+        def update_chart():
+            """차트 업데이트"""
+            column = column_combo.currentText()
+            if not column:
+                return
+            
+            df = self.preprocessor.processed_df
+            data = df[column].dropna()
+            
+            if len(data) == 0:
+                return
+            
+            fig.clear()
+            ax = fig.add_subplot(111)
+            
+            # X축: 인덱스 또는 날짜
+            if self.preprocessor.date_column and self.preprocessor.date_column in df.columns:
+                x_data = df[self.preprocessor.date_column]
+                ax.set_xlabel("시간")
+            else:
+                x_data = range(len(data))
+                ax.set_xlabel("인덱스")
+            
+            # 트렌드 플롯
+            ax.plot(x_data[:len(data)], data.values, 'b-', linewidth=0.8, alpha=0.8, label=column)
+            
+            # 자동 스케일
+            if auto_scale_check.isChecked():
+                min_val = data.min()
+                max_val = data.max()
+                range_val = max_val - min_val
+                margin = range_val * 0.2  # 20% 여유
+                
+                y_min = min_val - margin
+                y_max = max_val + margin
+                
+                ax.set_ylim(y_min, y_max)
+            
+            # 평균선
+            mean_val = data.mean()
+            ax.axhline(y=mean_val, color='g', linestyle='--', alpha=0.5, label=f'평균: {mean_val:.2f}')
+            
+            # 스타일
+            ax.set_title(f"{column} 트렌드", fontsize=12, fontweight='bold')
+            ax.set_ylabel(column)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper right')
+            
+            # 회전된 X축 라벨 (날짜인 경우)
+            if self.preprocessor.date_column:
+                fig.autofmt_xdate()
+            
+            canvas.draw()
+            
+            # 통계 정보 업데이트
+            stats_text = f"""📊 통계 정보 | 데이터 수: {len(data):,} | 최소: {min_val:.4f} | 최대: {max_val:.4f} | 범위: {range_val:.4f} | 평균: {mean_val:.4f} | 표준편차: {data.std():.4f}"""
+            stats_label.setText(stats_text)
+        
+        # 이벤트 연결
+        refresh_btn.clicked.connect(update_chart)
+        column_combo.currentTextChanged.connect(update_chart)
+        auto_scale_check.stateChanged.connect(update_chart)
+        
+        # 초기 차트
+        update_chart()
+        
+        # 닫기 버튼
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.exec_()
 
 
 def main():
