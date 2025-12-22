@@ -186,6 +186,8 @@ class DataPreprocessorApp:
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="도움말", menu=help_menu)
         help_menu.add_command(label="용어 설명", command=self._show_help)
+        help_menu.add_separator()
+        help_menu.add_command(label="프로그램 정보", command=self._show_about)
         
         self.root.bind("<Control-o>", lambda e: self._load_file())
         self.root.bind("<Control-s>", lambda e: self._save_file())
@@ -237,6 +239,81 @@ class DataPreprocessorApp:
 """
         text.insert(tk.END, help_content)
         text.config(state=tk.DISABLED)
+    
+    def _show_about(self):
+        """프로그램 정보 창 표시"""
+        about_window = tk.Toplevel(self.root)
+        about_window.title("프로그램 정보")
+        about_window.geometry("400x350")
+        about_window.resizable(False, False)
+        about_window.transient(self.root)
+        
+        # 버전 정보
+        version_frame = ttk.LabelFrame(about_window, text="버전 정보", padding=15)
+        version_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        ttk.Label(version_frame, text="시계열 데이터 전처리 프로그램", 
+                 font=('맑은 고딕', 12, 'bold')).pack()
+        ttk.Label(version_frame, text="Version 1.3.0", font=('맑은 고딕', 10)).pack()
+        ttk.Label(version_frame, text="").pack()  # 빈 줄
+        
+        features = "• 다중 조건 필터링 (AND)\n• 이상값 처리 (σ, IQR)\n• 시간 정규화/재정렬\n• 프리셋 저장/불러오기"
+        ttk.Label(version_frame, text=features, justify=tk.LEFT).pack(anchor=tk.W)
+        
+        # 개발자 정보 (외부 파일에서 로드)
+        dev_frame = ttk.LabelFrame(about_window, text="개발자 정보", padding=15)
+        dev_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        # developer_info.json 파일에서 로드
+        dev_info = self._load_developer_info()
+        
+        if dev_info:
+            ttk.Label(dev_frame, text=f"개발자: {dev_info.get('name', '')}").pack(anchor=tk.W)
+            if dev_info.get('company'):
+                ttk.Label(dev_frame, text=f"회사: {dev_info.get('company', '')}").pack(anchor=tk.W)
+            if dev_info.get('phone'):
+                ttk.Label(dev_frame, text=f"전화: {dev_info.get('phone', '')}").pack(anchor=tk.W)
+            if dev_info.get('email'):
+                ttk.Label(dev_frame, text=f"이메일: {dev_info.get('email', '')}").pack(anchor=tk.W)
+        else:
+            ttk.Label(dev_frame, text="개발자 정보가 설정되지 않았습니다.").pack(anchor=tk.W)
+            ttk.Label(dev_frame, text="developer_info.json 파일을 생성하세요.", 
+                     foreground="gray").pack(anchor=tk.W)
+        
+        # GitHub 링크
+        link_frame = ttk.Frame(about_window)
+        link_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        ttk.Label(link_frame, text="GitHub:", font=('맑은 고딕', 9)).pack(side=tk.LEFT)
+        github_link = ttk.Label(link_frame, text="github.com/lee-minki/data-preprocessing-tool", 
+                               foreground="blue", cursor="hand2", font=('맑은 고딕', 9))
+        github_link.pack(side=tk.LEFT, padx=5)
+        
+        # 닫기 버튼
+        ttk.Button(about_window, text="닫기", command=about_window.destroy).pack(pady=10)
+    
+    def _load_developer_info(self) -> Optional[Dict]:
+        """개발자 정보 로드 (developer_info.json)"""
+        import json
+        from pathlib import Path
+        
+        # 실행 파일 위치에서 찾기
+        possible_paths = [
+            Path(__file__).parent / "developer_info.json",
+            Path.cwd() / "developer_info.json",
+            Path.home() / ".data_preprocessor" / "developer_info.json"
+        ]
+        
+        for path in possible_paths:
+            if path.exists():
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        return data.get('developer', {})
+                except:
+                    continue
+        
+        return None
     
     def _create_widgets(self):
         """위젯 생성"""

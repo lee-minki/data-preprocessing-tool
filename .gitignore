@@ -4,6 +4,10 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# Developer info (personal contact - do not commit)
+developer_info.json
+
 build/
 develop-eggs/
 dist/
