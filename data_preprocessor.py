@@ -1,11 +1,12 @@
 """
 데이터 전처리 모듈 (Data Preprocessing Module)
 - 시계열 데이터 로드, 필터링, 이상값 처리, 정규화
+- Date 형식 보존 및 시간 재정렬 기능
 """
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Any
 
@@ -13,12 +14,23 @@ from typing import List, Dict, Tuple, Optional, Any
 class DataPreprocessor:
     """시계열 데이터 전처리 클래스"""
     
+    # 용어 도움말
+    HELP_TEXTS = {
+        '2sigma': '2σ (2 표준편차): 평균에서 ±2 표준편차 범위. 정규분포 기준 약 95.4%의 데이터 포함. 엄격한 필터링에 적합.',
+        '2.5sigma': '2.5σ (2.5 표준편차): 평균에서 ±2.5 표준편차 범위. 정규분포 기준 약 98.8%의 데이터 포함. [권장]',
+        '3sigma': '3σ (3 표준편차): 평균에서 ±3 표준편차 범위. 정규분포 기준 약 99.7%의 데이터 포함. 느슨한 필터링에 적합.',
+        'iqr': 'IQR (사분위 범위): Q1-1.5×IQR ~ Q3+1.5×IQR 범위. 비대칭 분포에 적합. 극단적 이상값 탐지에 효과적.',
+        'zscore': 'Z-Score 정규화: (값 - 평균) / 표준편차. 평균=0, 표준편차=1로 변환. 데이터 비교 시 유용.',
+        'minmax': 'Min-Max 정규화: (값 - 최소) / (최대 - 최소). 0~1 범위로 변환. 신경망 입력에 적합.'
+    }
+    
     def __init__(self):
         self.original_df: Optional[pd.DataFrame] = None
         self.processed_df: Optional[pd.DataFrame] = None
         self.columns: List[str] = []
         self.numeric_columns: List[str] = []
         self.date_column: Optional[str] = None
+        self.original_date_format: Optional[str] = None  # 원본 날짜 형식 저장
         self.stats: Dict[str, Any] = {}
     
     def load_data(self, file_path: str) -> Tuple[bool, str]:
@@ -51,10 +63,10 @@ class DataPreprocessor:
             self.processed_df = self.original_df.copy()
             self.columns = list(self.original_df.columns)
             
-            # 날짜 컬럼 자동 감지
+            # 날짜 컬럼 자동 감지 (형식 보존)
             self._detect_date_column()
             
-            # 숫자 컬럼 감지
+            # 숫자 컬럼 감지 (최대 30개)
             self._detect_numeric_columns()
             
             self.stats['original_rows'] = len(self.original_df)
@@ -67,13 +79,19 @@ class DataPreprocessor:
             return False, f"파일 로드 실패: {str(e)}"
     
     def _detect_date_column(self):
-        """날짜 컬럼을 자동 감지합니다."""
+        """날짜 컬럼을 자동 감지합니다. 원본 형식을 보존합니다."""
         date_keywords = ['date', 'time', 'datetime', '날짜', '시간', 'timestamp']
         
         for col in self.columns:
             if any(keyword in col.lower() for keyword in date_keywords):
                 self.date_column = col
-                # 날짜 형식으로 변환 시도
+                
+                # 원본 형식 샘플 저장 (첫 번째 유효한 값)
+                sample_value = self.original_df[col].dropna().iloc[0] if len(self.original_df[col].dropna()) > 0 else None
+                if sample_value is not None:
+                    self.original_date_format = str(sample_value)
+                
+                # 날짜 형식으로 변환 시도 (내부 처리용)
                 try:
                     self.original_df[col] = pd.to_datetime(self.original_df[col])
                     self.processed_df[col] = pd.to_datetime(self.processed_df[col])
@@ -82,12 +100,14 @@ class DataPreprocessor:
                 break
     
     def _detect_numeric_columns(self):
-        """숫자 컬럼을 감지합니다."""
+        """숫자 컬럼을 감지합니다. 최대 30개까지 지원."""
         self.numeric_columns = []
         for col in self.columns:
             if col != self.date_column:
                 if pd.api.types.is_numeric_dtype(self.original_df[col]):
                     self.numeric_columns.append(col)
+                    if len(self.numeric_columns) >= 30:  # 최대 30개
+                        break
     
     def get_column_stats(self, column: str) -> Dict[str, float]:
         """특정 컬럼의 통계 정보를 반환합니다."""
@@ -106,6 +126,11 @@ class DataPreprocessor:
             'median': data.median(),
             'q3': data.quantile(0.75)
         }
+    
+    @classmethod
+    def get_help_text(cls, key: str) -> str:
+        """용어에 대한 도움말 반환"""
+        return cls.HELP_TEXTS.get(key, "도움말이 없습니다.")
     
     def apply_filters(self, filters: List[Dict]) -> Tuple[bool, str]:
         """
@@ -172,7 +197,7 @@ class DataPreprocessor:
     def remove_outliers(self, 
                        method: str = '2.5sigma',
                        columns: Optional[List[str]] = None,
-                       action: str = 'nan') -> Tuple[bool, str]:
+                       action: str = 'drop') -> Tuple[bool, str]:
         """
         이상값을 제거합니다.
         
@@ -185,7 +210,7 @@ class DataPreprocessor:
             columns: 적용할 컬럼 목록 (None이면 모든 숫자 컬럼)
             action: 이상값 처리 방법
                 - 'nan': 해당 값만 NaN으로 변경
-                - 'drop': 해당 행 전체 삭제
+                - 'drop': 해당 행 전체 삭제 [기본값]
         
         Returns:
             (성공 여부, 메시지)
@@ -303,15 +328,49 @@ class DataPreprocessor:
         except Exception as e:
             return False, f"정규화 실패: {str(e)}"
     
+    def realign_timestamps(self, 
+                          start_time: str,
+                          interval_minutes: int = 2) -> Tuple[bool, str]:
+        """
+        시간을 재정렬합니다. 지정된 시작 시간부터 일정 간격으로 재배열.
+        
+        Args:
+            start_time: 시작 시간 (yyyy-mm-dd hh:mm:ss 형식)
+            interval_minutes: 간격 (분), 기본값 2분
+        
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.processed_df is None or self.date_column is None:
+                return False, "데이터 또는 날짜 컬럼이 없습니다."
+            
+            # 시작 시간 파싱
+            start_dt = pd.to_datetime(start_time)
+            
+            # 새로운 시간 생성
+            num_rows = len(self.processed_df)
+            new_times = [start_dt + timedelta(minutes=interval_minutes * i) for i in range(num_rows)]
+            
+            # 날짜 컬럼 업데이트
+            self.processed_df[self.date_column] = new_times
+            
+            return True, f"시간 재정렬 완료: {start_time}부터 {interval_minutes}분 간격, {num_rows}행"
+            
+        except Exception as e:
+            return False, f"시간 재정렬 실패: {str(e)}"
+    
     def save_data(self, 
                  output_path: Optional[str] = None,
-                 original_path: Optional[str] = None) -> Tuple[bool, str]:
+                 original_path: Optional[str] = None,
+                 date_format: str = '%Y-%m-%d %H:%M:%S') -> Tuple[bool, str]:
         """
-        전처리된 데이터를 저장합니다.
+        전처리된 데이터를 저장합니다. 날짜 형식을 보존합니다.
         
         Args:
             output_path: 저장 경로 (None이면 자동 생성)
             original_path: 원본 파일 경로 (파일명 생성용)
+            date_format: 날짜 저장 형식
         
         Returns:
             (성공 여부, 메시지 또는 저장 경로)
@@ -319,6 +378,16 @@ class DataPreprocessor:
         try:
             if self.processed_df is None:
                 return False, "저장할 데이터가 없습니다."
+            
+            # 저장용 복사본 생성
+            save_df = self.processed_df.copy()
+            
+            # 날짜 컬럼 형식 변환 (저장 시 문자열로)
+            if self.date_column and self.date_column in save_df.columns:
+                try:
+                    save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime(date_format)
+                except:
+                    pass  # 변환 실패 시 그대로 저장
             
             if output_path is None:
                 if original_path:
@@ -332,9 +401,9 @@ class DataPreprocessor:
             output_path = Path(output_path)
             
             if output_path.suffix.lower() in ['.xlsx', '.xls']:
-                self.processed_df.to_excel(output_path, index=False)
+                save_df.to_excel(output_path, index=False)
             else:
-                self.processed_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+                save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
             
             return True, str(output_path)
             
@@ -342,7 +411,7 @@ class DataPreprocessor:
             return False, f"저장 실패: {str(e)}"
     
     def get_preview(self, rows: int = 10) -> pd.DataFrame:
-        """미리보기용 데이터 반환"""
+        """미리보기용 데이터 반환 (실제 컬럼만)"""
         if self.processed_df is not None:
             return self.processed_df.head(rows)
         return pd.DataFrame()
@@ -416,8 +485,8 @@ if __name__ == "__main__":
     success, msg = preprocessor.apply_filters(filters)
     print(msg)
     
-    # 3. 이상값 제거
-    success, msg = preprocessor.remove_outliers(method='2.5sigma', action='nan')
+    # 3. 이상값 제거 (기본값: 행 전체 삭제)
+    success, msg = preprocessor.remove_outliers(method='2.5sigma', action='drop')
     print(msg)
     
     # 4. 저장

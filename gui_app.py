@@ -3,6 +3,7 @@
 - tkinter 기반 사용자 인터페이스
 - 파일 로드, 필터링, 이상값 처리, 저장 기능
 - 대용량 데이터 처리를 위한 진행률 표시 및 스레딩
+- 도움말 및 시간 재정렬 기능
 """
 
 import tkinter as tk
@@ -12,7 +13,38 @@ import os
 import threading
 import time
 from typing import List, Dict, Optional
+from datetime import datetime
 from data_preprocessor import DataPreprocessor
+
+
+class HelpTooltip:
+    """도움말 툴팁 클래스"""
+    
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip = None
+        self.widget.bind("<Enter>", self.show)
+        self.widget.bind("<Leave>", self.hide)
+    
+    def show(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert") if hasattr(self.widget, 'bbox') else (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        self.tooltip = tk.Toplevel(self.widget)
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.wm_geometry(f"+{x}+{y}")
+        
+        label = tk.Label(self.tooltip, text=self.text, justify=tk.LEFT,
+                        background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                        font=("맑은 고딕", 9), wraplength=400)
+        label.pack()
+    
+    def hide(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
+            self.tooltip = None
 
 
 class FilterFrame(ttk.Frame):
@@ -111,8 +143,8 @@ class DataPreprocessorApp:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("시계열 데이터 전처리 프로그램")
-        self.root.geometry("900x850")
-        self.root.minsize(800, 750)
+        self.root.geometry("950x950")
+        self.root.minsize(850, 850)
         
         self.preprocessor = DataPreprocessor()
         self.current_file: Optional[str] = None
@@ -134,13 +166,80 @@ class DataPreprocessorApp:
         file_menu.add_separator()
         file_menu.add_command(label="종료", command=self.root.quit)
         
+        # 도움말 메뉴
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="도움말", menu=help_menu)
+        help_menu.add_command(label="용어 설명", command=self._show_help)
+        
         self.root.bind("<Control-o>", lambda e: self._load_file())
         self.root.bind("<Control-s>", lambda e: self._save_file())
     
+    def _show_help(self):
+        """도움말 창 표시"""
+        help_window = tk.Toplevel(self.root)
+        help_window.title("용어 설명")
+        help_window.geometry("500x400")
+        
+        text = ScrolledText(help_window, wrap=tk.WORD, font=('맑은 고딕', 10))
+        text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        help_content = """📊 이상값 처리 방법
+
+■ 2σ (2 표준편차)
+  평균에서 ±2 표준편차 범위.
+  정규분포 기준 약 95.4%의 데이터 포함.
+  엄격한 필터링에 적합.
+
+■ 2.5σ (2.5 표준편차) [권장]
+  평균에서 ±2.5 표준편차 범위.
+  정규분포 기준 약 98.8%의 데이터 포함.
+
+■ 3σ (3 표준편차)
+  평균에서 ±3 표준편차 범위.
+  정규분포 기준 약 99.7%의 데이터 포함.
+  느슨한 필터링에 적합.
+
+■ IQR (사분위 범위)
+  Q1-1.5×IQR ~ Q3+1.5×IQR 범위.
+  비대칭 분포에 적합.
+  극단적 이상값 탐지에 효과적.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 정규화 방법
+
+■ Z-Score 정규화
+  (값 - 평균) / 표준편차
+  평균=0, 표준편차=1로 변환.
+  데이터 비교 시 유용.
+
+■ Min-Max 정규화
+  (값 - 최소) / (최대 - 최소)
+  0~1 범위로 변환.
+  신경망 입력에 적합.
+"""
+        text.insert(tk.END, help_content)
+        text.config(state=tk.DISABLED)
+    
     def _create_widgets(self):
         """위젯 생성"""
-        main_frame = ttk.Frame(self.root, padding=10)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # 스크롤 가능한 메인 프레임
+        canvas = tk.Canvas(self.root)
+        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, padding=10)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        main_frame = scrollable_frame
         
         # === 파일 선택 섹션 ===
         file_frame = ttk.LabelFrame(main_frame, text="📁 파일 선택", padding=10)
@@ -197,20 +296,26 @@ class DataPreprocessorApp:
                    ('3σ (99.7%)', '3sigma'), ('IQR', 'iqr')]
         
         for text, value in methods:
-            ttk.Radiobutton(method_frame, text=text, variable=self.outlier_method, 
-                           value=value).pack(side=tk.LEFT, padx=10)
+            rb = ttk.Radiobutton(method_frame, text=text, variable=self.outlier_method, value=value)
+            rb.pack(side=tk.LEFT, padx=10)
+            # 도움말 툴팁 추가
+            HelpTooltip(rb, DataPreprocessor.get_help_text(value))
         
-        # 처리 방법
+        # 도움말 버튼
+        help_btn = ttk.Button(method_frame, text="?", width=2, command=self._show_help)
+        help_btn.pack(side=tk.RIGHT, padx=5)
+        
+        # 처리 방법 (기본값: 행 전체 삭제)
         action_frame = ttk.Frame(outlier_frame)
         action_frame.pack(fill=tk.X, pady=2)
         
         ttk.Label(action_frame, text="처리:").pack(side=tk.LEFT)
         
-        self.outlier_action = tk.StringVar(value='nan')
-        ttk.Radiobutton(action_frame, text="해당 값만 NaN으로", variable=self.outlier_action, 
-                       value='nan').pack(side=tk.LEFT, padx=10)
+        self.outlier_action = tk.StringVar(value='drop')  # 기본값: 행 전체 삭제
         ttk.Radiobutton(action_frame, text="행 전체 삭제", variable=self.outlier_action, 
                        value='drop').pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(action_frame, text="해당 값만 NaN으로", variable=self.outlier_action, 
+                       value='nan').pack(side=tk.LEFT, padx=10)
         
         # 이상값 처리 체크박스
         self.apply_outlier = tk.BooleanVar(value=True)
@@ -221,15 +326,46 @@ class DataPreprocessorApp:
         norm_frame = ttk.LabelFrame(main_frame, text="📈 정규화 (선택사항)", padding=10)
         norm_frame.pack(fill=tk.X, pady=5)
         
+        norm_inner = ttk.Frame(norm_frame)
+        norm_inner.pack(fill=tk.X)
+        
         self.apply_normalize = tk.BooleanVar(value=False)
-        ttk.Checkbutton(norm_frame, text="정규화 적용", 
+        ttk.Checkbutton(norm_inner, text="정규화 적용", 
                        variable=self.apply_normalize).pack(side=tk.LEFT)
         
         self.normalize_method = tk.StringVar(value='zscore')
-        ttk.Radiobutton(norm_frame, text="Z-Score", variable=self.normalize_method, 
-                       value='zscore').pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(norm_frame, text="Min-Max (0~1)", variable=self.normalize_method, 
-                       value='minmax').pack(side=tk.LEFT, padx=10)
+        
+        rb_zscore = ttk.Radiobutton(norm_inner, text="Z-Score", variable=self.normalize_method, value='zscore')
+        rb_zscore.pack(side=tk.LEFT, padx=10)
+        HelpTooltip(rb_zscore, DataPreprocessor.get_help_text('zscore'))
+        
+        rb_minmax = ttk.Radiobutton(norm_inner, text="Min-Max (0~1)", variable=self.normalize_method, value='minmax')
+        rb_minmax.pack(side=tk.LEFT, padx=10)
+        HelpTooltip(rb_minmax, DataPreprocessor.get_help_text('minmax'))
+        
+        # === 시간 재정렬 섹션 ===
+        time_frame = ttk.LabelFrame(main_frame, text="🕐 시간 재정렬 (선택사항)", padding=10)
+        time_frame.pack(fill=tk.X, pady=5)
+        
+        self.apply_time_realign = tk.BooleanVar(value=False)
+        ttk.Checkbutton(time_frame, text="시간 재정렬 적용", 
+                       variable=self.apply_time_realign).pack(anchor=tk.W)
+        
+        time_inner = ttk.Frame(time_frame)
+        time_inner.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(time_inner, text="시작 시간:").pack(side=tk.LEFT)
+        self.start_time_entry = ttk.Entry(time_inner, width=20)
+        self.start_time_entry.pack(side=tk.LEFT, padx=5)
+        self.start_time_entry.insert(0, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        
+        ttk.Label(time_inner, text="간격(분):").pack(side=tk.LEFT, padx=(20, 0))
+        self.interval_entry = ttk.Entry(time_inner, width=5)
+        self.interval_entry.pack(side=tk.LEFT, padx=5)
+        self.interval_entry.insert(0, "2")
+        
+        ttk.Label(time_frame, text="※ 기본: 필터링된 시간 그대로 유지. 설정 시: 지정된 시작 시간부터 일정 간격으로 재배열",
+                 foreground="gray").pack(anchor=tk.W)
         
         # === 진행률 표시 섹션 ===
         progress_frame = ttk.LabelFrame(main_frame, text="⏳ 진행 상황", padding=10)
@@ -317,7 +453,9 @@ class DataPreprocessorApp:
             self._update_preview()
             self._update_filter_columns()
             self._log(f"✅ {msg}")
-            self._log(f"   감지된 숫자 컬럼: {', '.join(self.preprocessor.numeric_columns)}")
+            self._log(f"   감지된 숫자 컬럼 ({len(self.preprocessor.numeric_columns)}개): {', '.join(self.preprocessor.numeric_columns[:10])}")
+            if len(self.preprocessor.numeric_columns) > 10:
+                self._log(f"   ... 외 {len(self.preprocessor.numeric_columns) - 10}개")
             
             # 대용량 데이터 안내
             if rows >= 100000:
@@ -328,7 +466,7 @@ class DataPreprocessorApp:
             self._log(f"❌ {msg}")
     
     def _update_preview(self):
-        """미리보기 테이블 업데이트"""
+        """미리보기 테이블 업데이트 (실제 컬럼만 표시)"""
         # 기존 데이터 삭제
         self.preview_tree.delete(*self.preview_tree.get_children())
         
@@ -336,17 +474,20 @@ class DataPreprocessorApp:
         if df.empty:
             return
         
-        # 컬럼 설정
-        columns = list(df.columns)
+        # 실제 존재하는 컬럼만 표시 (최대 30개)
+        columns = list(df.columns)[:30]
         self.preview_tree['columns'] = columns
+        
+        # 컬럼 너비 자동 조절
+        col_width = max(80, min(120, 800 // max(1, len(columns))))
         
         for col in columns:
             self.preview_tree.heading(col, text=col)
-            self.preview_tree.column(col, width=100, minwidth=50)
+            self.preview_tree.column(col, width=col_width, minwidth=50)
         
         # 데이터 추가
         for _, row in df.iterrows():
-            values = [str(v)[:20] for v in row.values]  # 값 길이 제한
+            values = [str(v)[:15] if pd.notna(v) else '' for v in row.values[:30]]
             self.preview_tree.insert('', tk.END, values=values)
     
     def _update_filter_columns(self):
@@ -481,9 +622,24 @@ class DataPreprocessorApp:
                 )
                 self.root.after(0, lambda m=msg, s=success: self._log(f"{'✅' if s else '❌'} {m}"))
             
+            self._update_progress(85, "정규화 완료", time.time() - start_time)
+            
+            # 4. 시간 재정렬
+            if self.apply_time_realign.get():
+                self._update_progress(88, "시간 재정렬 중...", time.time() - start_time)
+                
+                try:
+                    start_time_str = self.start_time_entry.get()
+                    interval = int(self.interval_entry.get())
+                    
+                    success, msg = self.preprocessor.realign_timestamps(start_time_str, interval)
+                    self.root.after(0, lambda m=msg, s=success: self._log(f"{'✅' if s else '❌'} {m}"))
+                except Exception as e:
+                    self.root.after(0, lambda: self._log(f"⚠️ 시간 재정렬 실패: {str(e)}"))
+            
             self._update_progress(90, "결과 정리 중...", time.time() - start_time)
             
-            # 4. 결과 표시
+            # 5. 결과 표시
             elapsed = time.time() - start_time
             self._update_progress(100, "✅ 전처리 완료!", elapsed)
             
@@ -514,7 +670,6 @@ class DataPreprocessorApp:
         # 기본 파일명 생성
         if self.current_file:
             from pathlib import Path
-            from datetime import datetime
             orig = Path(self.current_file)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             default_name = f"{orig.stem}_processed_{timestamp}{orig.suffix}"
@@ -560,6 +715,10 @@ class DataPreprocessorApp:
             _do_log()
         else:
             self.root.after(0, _do_log)
+
+
+# pandas import for preview
+import pandas as pd
 
 
 def main():
