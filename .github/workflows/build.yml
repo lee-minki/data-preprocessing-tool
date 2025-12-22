@@ -1,0 +1,56 @@
+name: Build Windows EXE
+
+on:
+  push:
+    tags:
+      - 'v*'  # v1.0, v1.1 등 태그 푸시 시 실행
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build EXE
+      run: |
+        pyinstaller --onefile --windowed --name "DataPreprocessor" --icon=NONE gui_app.py
+    
+    - name: Upload EXE artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DataPreprocessor-Windows
+        path: dist/DataPreprocessor.exe
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/DataPreprocessor.exe
+        body: |
+          ## 시계열 데이터 전처리 프로그램
+          
+          ### 다운로드
+          - `DataPreprocessor.exe` - Windows 실행 파일 (Python 설치 불필요)
+          
+          ### 주요 기능
+          - 📁 Excel/CSV 파일 로드
+          - 🔧 다중 조건 필터링 (AND)
+          - 📊 이상값 처리 (2σ, 2.5σ, 3σ, IQR)
+          - 📈 정규화 (Z-Score, Min-Max)
+          - ⏳ 진행률 표시 (대용량 데이터 지원)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

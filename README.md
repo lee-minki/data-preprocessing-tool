@@ -2,6 +2,18 @@
 
 Windows PC에서 Excel/CSV 파일의 시계열 데이터를 전처리하는 Python GUI 프로그램입니다.
 
+## 🚀 빠른 시작 (Windows)
+
+**Python 설치 없이 바로 사용하기:**
+
+1. [Releases](https://github.com/lee-minki/data-preprocessing-tool/releases) 페이지에서 최신 버전의 `DataPreprocessor.exe` 다운로드
+2. 다운로드한 exe 파일 실행
+3. 바로 사용 가능!
+
+> ⚠️ Windows Defender에서 경고가 뜰 수 있습니다. "추가 정보" → "실행"을 클릭하세요.
+
+---
+
 ## 주요 기능
 
 - 📁 **파일 로드**: Excel (.xlsx, .xls) 및 CSV 파일 지원
@@ -11,29 +23,33 @@ Windows PC에서 Excel/CSV 파일의 시계열 데이터를 전처리하는 Pyth
   - 2σ (95.4%), 2.5σ (98.8%), 3σ (99.7%), IQR 방식
   - 해당 값만 NaN으로 변경 또는 행 전체 삭제 선택
 - 📈 **정규화**: Z-Score 또는 Min-Max 정규화 (선택사항)
+- ⏳ **진행률 표시**: 대용량 데이터(20만행+) 처리 시 진행 상황 표시
 - 💾 **저장**: 원본 양식 유지, 처리된 데이터만 저장
 
-## 설치 방법
+---
+
+## 개발자용 설치 방법
 
 ### 1. Python 설치 (3.8 이상)
 https://www.python.org/downloads/ 에서 Python 다운로드 및 설치
 
-### 2. 의존성 설치
+### 2. 저장소 클론
+```bash
+git clone https://github.com/lee-minki/data-preprocessing-tool.git
+cd data-preprocessing-tool
+```
+
+### 3. 의존성 설치
 ```bash
 pip install -r requirements.txt
 ```
 
-## 실행 방법
-
-### GUI 실행
+### 4. 실행
 ```bash
 python gui_app.py
 ```
 
-### 명령줄 테스트
-```bash
-python data_preprocessor.py
-```
+---
 
 ## 사용 방법
 
@@ -44,9 +60,9 @@ python data_preprocessor.py
 4. **전처리 실행**: "🚀 전처리 실행" 버튼 클릭
 5. **저장**: "💾 결과 저장" 버튼으로 결과 저장
 
-## Windows .exe 파일 만들기
+---
 
-PyInstaller를 사용하여 독립 실행 파일을 만들 수 있습니다:
+## 로컬에서 EXE 빌드하기
 
 ```bash
 pip install pyinstaller
@@ -55,15 +71,22 @@ pyinstaller --onefile --windowed --name "DataPreprocessor" gui_app.py
 
 생성된 파일: `dist/DataPreprocessor.exe`
 
+---
+
 ## 파일 구조
 
 ```
-Preprocessing/
-├── data_preprocessor.py  # 데이터 처리 핵심 로직
-├── gui_app.py            # GUI 애플리케이션
-├── requirements.txt      # 의존성 목록
-└── README.md             # 이 파일
+data-preprocessing-tool/
+├── .github/
+│   └── workflows/
+│       └── build.yml         # GitHub Actions 자동 빌드
+├── data_preprocessor.py      # 데이터 처리 핵심 로직
+├── gui_app.py                # GUI 애플리케이션
+├── requirements.txt          # 의존성 목록
+└── README.md                 # 이 파일
 ```
+
+---
 
 ## 예시 데이터 형식
 
@@ -73,6 +96,8 @@ Date,AMBIENT_TEMP,FAN_CURRENT,GEARBOX_OIL_TEMP
 2025-11-27 01:00:00,19.1,42.8,64.1
 ...
 ```
+
+---
 
 ## 라이선스
 
