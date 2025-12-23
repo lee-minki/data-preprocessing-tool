@@ -8,9 +8,9 @@ APP_DESCRIPTION = "Excel/CSV 파일의 시계열 데이터 필터링, 이상값 
 
 # 개발자 정보 (기본값 - developer_info.json으로 덮어쓰기 가능)
 DEVELOPER_INFO = {
-    "name": "Minki Lee",
+    "name": "이민기",
     "email": "minki.lee@sk.com",
-    "organization": "SK",
+    "organization": "나래O&M",
     "github": "github.com/lee-minki/data-preprocessing-tool"
 }
 
