@@ -469,7 +469,38 @@ class DataPreprocessor:
             output_path = Path(output_path)
             
             if output_path.suffix.lower() in ['.xlsx', '.xls']:
-                save_df.to_excel(output_path, index=False)
+                # Excel 저장 (날짜 형식 지정)
+                from openpyxl.utils.dataframe import dataframe_to_rows
+                from openpyxl import Workbook
+                from openpyxl.styles import NamedStyle
+                
+                wb = Workbook()
+                ws = wb.active
+                
+                # 데이터프레임을 워크시트에 쓰기
+                for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
+                    for c_idx, value in enumerate(row, 1):
+                        ws.cell(row=r_idx, column=c_idx, value=value)
+                
+                # 날짜 컬럼 서식 지정
+                if self.date_column and self.date_column in save_df.columns:
+                    date_col_idx = list(save_df.columns).index(self.date_column) + 1
+                    
+                    # 날짜 스타일 생성
+                    date_style = NamedStyle(name='datetime', number_format='YYYY-MM-DD HH:MM:SS')
+                    
+                    # 헤더 제외하고 데이터 행에 적용
+                    for row in range(2, len(save_df) + 2):
+                        cell = ws.cell(row=row, column=date_col_idx)
+                        # 날짜 값을 datetime으로 변환
+                        try:
+                            if cell.value and not isinstance(cell.value, datetime):
+                                cell.value = pd.to_datetime(cell.value)
+                            cell.number_format = 'YYYY-MM-DD HH:MM:SS'
+                        except:
+                            pass
+                
+                wb.save(output_path)
             else:
                 save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
             
