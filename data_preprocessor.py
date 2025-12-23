@@ -61,6 +61,13 @@ class DataPreprocessor:
                 return False, f"지원하지 않는 파일 형식입니다: {path.suffix}"
             
             self.processed_df = self.original_df.copy()
+            
+            # Unnamed 컬럼 제거
+            unnamed_cols = [col for col in self.original_df.columns if 'Unnamed' in str(col)]
+            if unnamed_cols:
+                self.original_df.drop(columns=unnamed_cols, inplace=True)
+                self.processed_df.drop(columns=unnamed_cols, inplace=True)
+            
             self.columns = list(self.original_df.columns)
             
             # 날짜 컬럼 자동 감지 (형식 보존)
@@ -100,10 +107,11 @@ class DataPreprocessor:
                 break
     
     def _detect_numeric_columns(self):
-        """숫자 컬럼을 감지합니다. 최대 30개까지 지원."""
+        """숫자 컬럼을 감지합니다. 최대 30개까지 지원. Unnamed 컬럼 제외."""
         self.numeric_columns = []
         for col in self.columns:
-            if col != self.date_column:
+            # Unnamed 컬럼과 날짜 컬럼 제외
+            if col != self.date_column and 'Unnamed' not in str(col):
                 if pd.api.types.is_numeric_dtype(self.original_df[col]):
                     self.numeric_columns.append(col)
                     if len(self.numeric_columns) >= 30:  # 최대 30개
@@ -452,10 +460,11 @@ class DataPreprocessor:
                 if original_path:
                     orig_path = Path(original_path)
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    output_path = orig_path.parent / f"{orig_path.stem}_processed_{timestamp}{orig_path.suffix}"
+                    # 기본적으로 Excel 형식으로 저장
+                    output_path = orig_path.parent / f"{orig_path.stem}_processed_{timestamp}.xlsx"
                 else:
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    output_path = f"processed_data_{timestamp}.csv"
+                    output_path = f"processed_data_{timestamp}.xlsx"  # 기본 Excel
             
             output_path = Path(output_path)
             
