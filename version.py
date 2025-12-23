@@ -3,7 +3,8 @@ __version__ = "1.5.3"
 __version_info__ = (1, 5, 3)
 
 # 앱 정보 (폐쇄망 환경용 - 모든 정보 내장)
-APP_NAME = "시계열 데이터 전처리 프로그램"
+APP_NAME = "σ 조기경보 시계열 데이터 전처리프로그램"
+APP_SYMBOL = "σ"  # 시그마 (표준편차/통계 심볼)
 APP_DESCRIPTION = "Excel/CSV 파일의 시계열 데이터 필터링, 이상값 처리, 정규화 도구"
 
 # 개발자 정보 (기본값 - developer_info.json으로 덮어쓰기 가능)
