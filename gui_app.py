@@ -1244,6 +1244,11 @@ https://github.com/lee-minki/data-preprocessing-tool
             matplotlib.use('TkAgg')
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
             from matplotlib.figure import Figure
+            import matplotlib.pyplot as plt
+            
+            # 한글 폰트 설정 (Windows)
+            plt.rcParams['font.family'] = ['Malgun Gothic', 'NanumGothic', 'AppleGothic', 'sans-serif']
+            plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
         except ImportError:
             messagebox.showerror("오류", "matplotlib이 설치되지 않았습니다.\npip install matplotlib")
             return
@@ -1400,7 +1405,7 @@ https://github.com/lee-minki/data-preprocessing-tool
                     x_val = sel.target[0]
                     y_val = sel.target[1]
                     sel.annotation.set(
-                        text=f"{label}\n값: {y_val:.4f}\n인덱스: {int(x_val)}",
+                        text=f"{label}\nValue: {y_val:.4f}\nIndex: {int(x_val)}",
                         fontsize=9,
                         bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=line.get_color())
                     )
