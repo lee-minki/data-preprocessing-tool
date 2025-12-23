@@ -293,7 +293,18 @@ class DataPreprocessorMac(QMainWindow):
     def _setup_ui(self):
         """UI 설정"""
         self.setWindowTitle(f"시계열 데이터 전처리 프로그램 (Mac) v{__version__}")
-        self.setMinimumSize(900, 800)
+        self.setMinimumSize(900, 700)
+        self.resize(950, 850)  # 1920x1080에 적합한 크기
+        
+        # 컴팩트 스타일 설정
+        self.setStyleSheet("""
+            QGroupBox { font-size: 11px; font-weight: bold; padding-top: 8px; margin-top: 4px; }
+            QGroupBox::title { padding: 0 5px; }
+            QLabel { font-size: 11px; }
+            QPushButton { font-size: 11px; padding: 4px 8px; }
+            QRadioButton, QCheckBox { font-size: 11px; }
+            QLineEdit, QComboBox { font-size: 11px; padding: 2px; }
+        """)
         
         # 메인 위젯
         main_widget = QWidget()
@@ -320,11 +331,13 @@ class DataPreprocessorMac(QMainWindow):
         
         file_layout.addLayout(file_btn_layout)
         
-        # 미리보기 테이블
+        # 미리보기 테이블 (컴팩트)
         self.preview_table = QTableWidget()
-        self.preview_table.setMaximumHeight(150)
+        self.preview_table.setMaximumHeight(100)
+        self.preview_table.setStyleSheet("font-size: 10px;")
         file_layout.addWidget(self.preview_table)
         
+        file_group.setMaximumHeight(160)
         main_layout.addWidget(file_group)
         
         # === 필터 조건 ===
@@ -339,6 +352,7 @@ class DataPreprocessorMac(QMainWindow):
         filter_layout.addWidget(add_filter_btn, alignment=Qt.AlignLeft)
         
         main_layout.addWidget(filter_group)
+        filter_group.setMaximumHeight(100)
         
         # === 이상값 처리 ===
         outlier_group = QGroupBox("📊 이상값 처리")
@@ -374,6 +388,7 @@ class DataPreprocessorMac(QMainWindow):
         self.apply_outlier.setChecked(True)
         outlier_layout.addWidget(self.apply_outlier)
         
+        outlier_group.setMaximumHeight(100)
         main_layout.addWidget(outlier_group)
         
         # === 정규화 ===
@@ -390,6 +405,7 @@ class DataPreprocessorMac(QMainWindow):
         norm_layout.addWidget(self.norm_minmax)
         norm_layout.addStretch()
         
+        norm_group.setMaximumHeight(50)
         main_layout.addWidget(norm_group)
         
         # === 시간 처리 ===
@@ -414,6 +430,7 @@ class DataPreprocessorMac(QMainWindow):
         time_input_layout.addStretch()
         time_layout.addLayout(time_input_layout)
         
+        time_group.setMaximumHeight(90)
         main_layout.addWidget(time_group)
         
         # === 진행률 ===
@@ -427,6 +444,7 @@ class DataPreprocessorMac(QMainWindow):
         self.progress_label = QLabel("대기 중...")
         progress_layout.addWidget(self.progress_label)
         
+        progress_group.setMaximumHeight(70)
         main_layout.addWidget(progress_group)
         
         # === 실행 버튼 ===
@@ -455,7 +473,8 @@ class DataPreprocessorMac(QMainWindow):
         
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        self.result_text.setFont(QFont("Menlo", 10))
+        self.result_text.setFont(QFont("Menlo", 9))
+        self.result_text.setMaximumHeight(150)
         result_layout.addWidget(self.result_text)
         
         main_layout.addWidget(result_group)
