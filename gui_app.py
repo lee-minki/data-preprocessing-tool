@@ -187,6 +187,8 @@ class DataPreprocessorApp:
         analysis_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="분석", menu=analysis_menu)
         analysis_menu.add_command(label="📊 트렌드 차트...", command=self._show_trend_chart, accelerator="Ctrl+T")
+        analysis_menu.add_separator()
+        analysis_menu.add_command(label="🔬 시뮬레이션 데이터 생성...", command=self._show_simulation_dialog)
         
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -1232,6 +1234,135 @@ https://github.com/lee-minki/data-preprocessing-tool
         btn_frame.pack(pady=15)
         ttk.Button(btn_frame, text="파일 선택 및 시작", command=proceed).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+    
+    def _show_simulation_dialog(self):
+        """시뮬레이션 데이터 생성 다이얼로그"""
+        if self.preprocessor.processed_df is None:
+            messagebox.showwarning("경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
+            return
+        
+        # 제거된 행 확인
+        summary = self.preprocessor.get_removed_rows_summary()
+        if summary['total'] == 0:
+            messagebox.showwarning("경고", 
+                "제거된 이상값이 없습니다.\n필터링 또는 이상값 처리를 먼저 실행하세요.")
+            return
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("🔬 시뮬레이션 데이터 생성")
+        dialog.geometry("550x450")
+        dialog.transient(self.root)
+        
+        # 설명
+        info_frame = ttk.LabelFrame(dialog, text="ML 모델 테스트용 시뮬레이션 데이터 생성", padding=10)
+        info_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(info_frame, 
+            text=f"전처리 중 제거된 이상값을 활용하여\n정상→비정상 전환 데이터를 생성합니다.").pack()
+        ttk.Label(info_frame, text=f"제거된 데이터: {summary['total']}행", 
+            font=('맑은 고딕', 10, 'bold')).pack(pady=5)
+        
+        # 설정
+        settings_frame = ttk.LabelFrame(dialog, text="설정", padding=10)
+        settings_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        # 대상 컬럼
+        col_frame = ttk.Frame(settings_frame)
+        col_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(col_frame, text="분석 대상 컬럼:").pack(side=tk.LEFT)
+        column_var = tk.StringVar()
+        column_combo = ttk.Combobox(col_frame, textvariable=column_var, 
+            values=self.preprocessor.numeric_columns, width=25)
+        column_combo.pack(side=tk.LEFT, padx=10)
+        if self.preprocessor.numeric_columns:
+            column_combo.current(0)
+        
+        # 시간 설정
+        time_frame = ttk.Frame(settings_frame)
+        time_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(time_frame, text="정상 구간:").pack(side=tk.LEFT)
+        normal_var = tk.IntVar(value=30)
+        normal_spin = ttk.Spinbox(time_frame, from_=10, to=120, width=5, textvariable=normal_var)
+        normal_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(time_frame, text="분").pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Label(time_frame, text="전환:").pack(side=tk.LEFT)
+        transition_var = tk.IntVar(value=10)
+        transition_spin = ttk.Spinbox(time_frame, from_=5, to=30, width=5, textvariable=transition_var)
+        transition_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(time_frame, text="분").pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Label(time_frame, text="비정상:").pack(side=tk.LEFT)
+        abnormal_var = tk.IntVar(value=60)
+        abnormal_spin = ttk.Spinbox(time_frame, from_=30, to=180, width=5, textvariable=abnormal_var)
+        abnormal_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(time_frame, text="분").pack(side=tk.LEFT)
+        
+        # 간격 설정
+        interval_frame = ttk.Frame(settings_frame)
+        interval_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(interval_frame, text="데이터 간격:").pack(side=tk.LEFT)
+        interval_var = tk.IntVar(value=2)
+        interval_spin = ttk.Spinbox(interval_frame, from_=1, to=10, width=5, textvariable=interval_var)
+        interval_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(interval_frame, text="분").pack(side=tk.LEFT)
+        
+        # 예상 결과
+        preview_label = ttk.Label(settings_frame, text="")
+        preview_label.pack(pady=5)
+        
+        def update_preview(*args):
+            try:
+                n = normal_var.get() // interval_var.get()
+                t = transition_var.get() // interval_var.get()
+                a = abnormal_var.get() // interval_var.get()
+                preview_label.config(text=f"예상 결과: 정상 {n}행 + 전환 {t}행 + 비정상 {a}행 = 총 {n+t+a}행")
+            except:
+                pass
+        
+        normal_var.trace('w', update_preview)
+        transition_var.trace('w', update_preview)
+        abnormal_var.trace('w', update_preview)
+        interval_var.trace('w', update_preview)
+        update_preview()
+        
+        # 결과 표시
+        result_text = ScrolledText(dialog, height=6, wrap=tk.WORD)
+        result_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # 버튼
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        def generate():
+            target_col = column_var.get()
+            if not target_col:
+                messagebox.showwarning("경고", "대상 컬럼을 선택하세요.")
+                return
+            
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, "시뮬레이션 데이터 생성 중...")
+            dialog.update()
+            
+            success, msg = self.preprocessor.generate_simulation_data(
+                target_column=target_col,
+                normal_minutes=normal_var.get(),
+                abnormal_minutes=abnormal_var.get(),
+                transition_minutes=transition_var.get(),
+                interval_minutes=interval_var.get()
+            )
+            
+            result_text.delete(1.0, tk.END)
+            if success:
+                result_text.insert(tk.END, f"✅ {msg}")
+                self._log(f"✅ 시뮬레이션 데이터 생성 완료")
+            else:
+                result_text.insert(tk.END, f"❌ {msg}")
+                messagebox.showerror("오류", msg)
+        
+        ttk.Button(btn_frame, text="🔬 생성", command=generate).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="닫기", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
     def _show_trend_chart(self):
         """트렌드 차트 표시 (다중 컬럼 지원)"""

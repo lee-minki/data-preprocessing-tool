@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QRadioButton, QButtonGroup, QProgressBar, QTextEdit, QTableWidget,
     QTableWidgetItem, QFileDialog, QMessageBox, QDialog, QDialogButtonBox,
     QListWidget, QMenuBar, QMenu, QAction, QScrollArea, QFrame,
-    QSplitter, QHeaderView
+    QSplitter, QHeaderView, QSpinBox
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -275,6 +275,13 @@ class DataPreprocessorMac(QMainWindow):
         trend_action.setShortcut("Ctrl+T")
         trend_action.triggered.connect(self._show_trend_chart)
         analysis_menu.addAction(trend_action)
+        
+        analysis_menu.addSeparator()
+        
+        simulation_action = QAction("🔬 시뮬레이션 데이터 생성...", self)
+        simulation_action.setShortcut("Ctrl+Shift+S")
+        simulation_action.triggered.connect(self._show_simulation_dialog)
+        analysis_menu.addAction(simulation_action)
         
         # 도움말 메뉴
         help_menu = menubar.addMenu("도움말")
@@ -814,6 +821,149 @@ class DataPreprocessorMac(QMainWindow):
         close_btn = QPushButton("닫기")
         close_btn.clicked.connect(dialog.close)
         layout.addWidget(close_btn)
+        
+        dialog.exec_()
+    
+    def _show_simulation_dialog(self):
+        """시뮬레이션 데이터 생성 다이얼로그"""
+        if self.preprocessor.processed_df is None:
+            QMessageBox.warning(self, "경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
+            return
+        
+        # 제거된 행 확인
+        summary = self.preprocessor.get_removed_rows_summary()
+        if summary['total'] == 0:
+            QMessageBox.warning(self, "경고", 
+                "제거된 이상값이 없습니다.\n필터링 또는 이상값 처리를 먼저 실행하세요.")
+            return
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("🔬 시뮬레이션 데이터 생성")
+        dialog.resize(500, 450)
+        layout = QVBoxLayout(dialog)
+        
+        # 설명
+        info_label = QLabel(f"""<h3>ML 모델 테스트용 시뮬레이션 데이터 생성</h3>
+<p>전처리 중 제거된 이상값을 활용하여 정상→비정상 전환 데이터를 생성합니다.</p>
+<p><b>제거된 데이터:</b> {summary['total']}행</p>
+<p><b>데이터 구조:</b> 정상 → 점진적 전환 → 비정상</p>
+""")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # 설정
+        settings_group = QGroupBox("설정")
+        settings_layout = QVBoxLayout(settings_group)
+        
+        # 대상 컬럼 선택
+        col_layout = QHBoxLayout()
+        col_layout.addWidget(QLabel("분석 대상 컬럼:"))
+        column_combo = QComboBox()
+        column_combo.addItems(self.preprocessor.numeric_columns)
+        column_combo.setMinimumWidth(200)
+        col_layout.addWidget(column_combo)
+        col_layout.addStretch()
+        settings_layout.addLayout(col_layout)
+        
+        # 시간 설정
+        time_layout = QHBoxLayout()
+        
+        time_layout.addWidget(QLabel("정상 구간:"))
+        normal_spin = QSpinBox()
+        normal_spin.setRange(10, 120)
+        normal_spin.setValue(30)
+        normal_spin.setSuffix(" 분")
+        time_layout.addWidget(normal_spin)
+        
+        time_layout.addWidget(QLabel("전환 구간:"))
+        transition_spin = QSpinBox()
+        transition_spin.setRange(5, 30)
+        transition_spin.setValue(10)
+        transition_spin.setSuffix(" 분")
+        time_layout.addWidget(transition_spin)
+        
+        time_layout.addWidget(QLabel("비정상 구간:"))
+        abnormal_spin = QSpinBox()
+        abnormal_spin.setRange(30, 180)
+        abnormal_spin.setValue(60)
+        abnormal_spin.setSuffix(" 분")
+        time_layout.addWidget(abnormal_spin)
+        
+        time_layout.addStretch()
+        settings_layout.addLayout(time_layout)
+        
+        # 간격 설정
+        interval_layout = QHBoxLayout()
+        interval_layout.addWidget(QLabel("데이터 간격:"))
+        interval_spin = QSpinBox()
+        interval_spin.setRange(1, 10)
+        interval_spin.setValue(2)
+        interval_spin.setSuffix(" 분")
+        interval_layout.addWidget(interval_spin)
+        interval_layout.addStretch()
+        settings_layout.addLayout(interval_layout)
+        
+        layout.addWidget(settings_group)
+        
+        # 예상 결과
+        preview_label = QLabel()
+        def update_preview():
+            n_rows = normal_spin.value() // interval_spin.value()
+            t_rows = transition_spin.value() // interval_spin.value()
+            a_rows = abnormal_spin.value() // interval_spin.value()
+            total = n_rows + t_rows + a_rows
+            preview_label.setText(f"<b>예상 결과:</b> 정상 {n_rows}행 + 전환 {t_rows}행 + 비정상 {a_rows}행 = 총 {total}행")
+        
+        normal_spin.valueChanged.connect(update_preview)
+        transition_spin.valueChanged.connect(update_preview)
+        abnormal_spin.valueChanged.connect(update_preview)
+        interval_spin.valueChanged.connect(update_preview)
+        update_preview()
+        
+        layout.addWidget(preview_label)
+        
+        # 결과 표시
+        result_text = QTextEdit()
+        result_text.setReadOnly(True)
+        result_text.setMaximumHeight(100)
+        layout.addWidget(result_text)
+        
+        # 버튼
+        btn_layout = QHBoxLayout()
+        
+        def generate():
+            target_col = column_combo.currentText()
+            if not target_col:
+                QMessageBox.warning(dialog, "경고", "대상 컬럼을 선택하세요.")
+                return
+            
+            result_text.setText("시뮬레이션 데이터 생성 중...")
+            QApplication.processEvents()
+            
+            success, msg = self.preprocessor.generate_simulation_data(
+                target_column=target_col,
+                normal_minutes=normal_spin.value(),
+                abnormal_minutes=abnormal_spin.value(),
+                transition_minutes=transition_spin.value(),
+                interval_minutes=interval_spin.value()
+            )
+            
+            if success:
+                result_text.setText(f"✅ {msg}")
+                self._log(f"✅ 시뮬레이션 데이터 생성 완료")
+            else:
+                result_text.setText(f"❌ {msg}")
+                QMessageBox.critical(dialog, "오류", msg)
+        
+        generate_btn = QPushButton("🔬 생성")
+        generate_btn.clicked.connect(generate)
+        btn_layout.addWidget(generate_btn)
+        
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(dialog.close)
+        btn_layout.addWidget(close_btn)
+        
+        layout.addLayout(btn_layout)
         
         dialog.exec_()
     

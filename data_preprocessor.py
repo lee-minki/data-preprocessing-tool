@@ -32,6 +32,7 @@ class DataPreprocessor:
         self.date_column: Optional[str] = None
         self.original_date_format: Optional[str] = None  # 원본 날짜 형식 저장
         self.stats: Dict[str, Any] = {}
+        self.removed_rows: List[pd.DataFrame] = []  # 제거된 행들 (시뮬레이션용)
     
     def load_data(self, file_path: str) -> Tuple[bool, str]:
         """
@@ -191,6 +192,12 @@ class DataPreprocessor:
                     max_val = f.get('max', float('inf'))
                     mask &= (col_data >= min_val) & (col_data <= max_val)
             
+            # 제거될 행 저장 (시뮬레이션용)
+            removed = self.processed_df[~mask].copy()
+            if len(removed) > 0:
+                removed['_removal_reason'] = 'filter'
+                self.removed_rows.append(removed)
+            
             self.processed_df = self.processed_df[mask].reset_index(drop=True)
             
             after_count = len(self.processed_df)
@@ -260,6 +267,13 @@ class DataPreprocessor:
                 outlier_mask = (data < lower) | (data > upper)
                 col_outliers = outlier_mask.sum()
                 outlier_count += col_outliers
+                
+                # 제거될 행 저장 (시뮬레이션용)
+                if col_outliers > 0 and action == 'drop':
+                    removed = self.processed_df[outlier_mask].copy()
+                    removed['_removal_reason'] = f'outlier_{col}'
+                    removed['_outlier_column'] = col
+                    self.removed_rows.append(removed)
                 
                 if action == 'nan':
                     self.processed_df.loc[outlier_mask, col] = np.nan
@@ -508,6 +522,185 @@ class DataPreprocessor:
             
         except Exception as e:
             return False, f"저장 실패: {str(e)}"
+    
+    def generate_simulation_data(self,
+                                  target_column: str,
+                                  normal_minutes: int = 30,
+                                  abnormal_minutes: int = 60,
+                                  transition_minutes: int = 10,
+                                  interval_minutes: int = 2,
+                                  output_path: Optional[str] = None) -> Tuple[bool, str]:
+        """
+        시뮬레이션용 데이터를 생성합니다.
+        전처리 중 제거된 이상값들을 활용하여 ML 모델 테스트용 데이터 생성.
+        
+        구조: [정상 데이터] → [점진적 전환] → [비정상 데이터]
+        
+        Args:
+            target_column: 기준 컬럼 (이 컬럼의 이상값 기준으로 생성)
+            normal_minutes: 정상 데이터 시간 (분)
+            abnormal_minutes: 비정상 데이터 시간 (분)
+            transition_minutes: 전환 구간 시간 (분)
+            interval_minutes: 데이터 간격 (분)
+            output_path: 저장 경로 (None이면 자동 생성)
+        
+        Returns:
+            (성공 여부, 메시지 또는 경로)
+        """
+        try:
+            if self.processed_df is None:
+                return False, "먼저 데이터를 전처리해주세요."
+            
+            if not self.removed_rows:
+                return False, "제거된 이상값이 없습니다. 필터링/이상값 처리를 먼저 실행하세요."
+            
+            if target_column not in self.numeric_columns:
+                return False, f"'{target_column}'은(는) 숫자 컬럼이 아닙니다."
+            
+            # 제거된 행 통합
+            all_removed = pd.concat(self.removed_rows, ignore_index=True)
+            
+            # 내부 메타 컬럼 제거
+            meta_cols = [c for c in all_removed.columns if c.startswith('_')]
+            
+            # target_column 기준 이상값만 필터링 (있으면)
+            if '_outlier_column' in all_removed.columns:
+                target_outliers = all_removed[all_removed['_outlier_column'] == target_column]
+                if len(target_outliers) == 0:
+                    # 해당 컬럼 이상값 없으면 전체 사용
+                    target_outliers = all_removed
+            else:
+                target_outliers = all_removed
+            
+            # 메타 컬럼 제거
+            target_outliers = target_outliers.drop(columns=meta_cols, errors='ignore')
+            
+            if len(target_outliers) == 0:
+                return False, "시뮬레이션에 사용할 이상값 데이터가 없습니다."
+            
+            # 행 수 계산
+            normal_rows = normal_minutes // interval_minutes
+            transition_rows = transition_minutes // interval_minutes
+            abnormal_rows = abnormal_minutes // interval_minutes
+            
+            # 1. 정상 데이터 추출 (processed_df 마지막 N행)
+            if len(self.processed_df) < normal_rows:
+                normal_data = self.processed_df.copy()
+            else:
+                normal_data = self.processed_df.tail(normal_rows).copy()
+            
+            # 2. 비정상 데이터 선택 및 정렬 (target_column 값 기준 점진적 증가/감소)
+            normal_mean = normal_data[target_column].mean()
+            abnormal_mean = target_outliers[target_column].mean()
+            
+            # 정상보다 높은 값으로 가는지 낮은 값으로 가는지 판단
+            if abnormal_mean > normal_mean:
+                # 오름차순 정렬 (점진적 증가)
+                abnormal_data = target_outliers.sort_values(by=target_column, ascending=True)
+            else:
+                # 내림차순 정렬 (점진적 감소)
+                abnormal_data = target_outliers.sort_values(by=target_column, ascending=False)
+            
+            # 필요한 행 수만큼 선택 (부족하면 반복)
+            if len(abnormal_data) < abnormal_rows:
+                repeat_times = (abnormal_rows // len(abnormal_data)) + 1
+                abnormal_data = pd.concat([abnormal_data] * repeat_times, ignore_index=True)
+            abnormal_data = abnormal_data.head(abnormal_rows).reset_index(drop=True)
+            
+            # 3. 전환 구간 생성 (선형 보간)
+            transition_data = []
+            
+            # 정상 마지막 행과 비정상 첫 행
+            last_normal = normal_data.iloc[-1].copy() if len(normal_data) > 0 else None
+            first_abnormal = abnormal_data.iloc[0].copy() if len(abnormal_data) > 0 else None
+            
+            if last_normal is not None and first_abnormal is not None:
+                for i in range(transition_rows):
+                    ratio = (i + 1) / (transition_rows + 1)
+                    row = {}
+                    for col in normal_data.columns:
+                        if col in self.numeric_columns:
+                            # 선형 보간
+                            start_val = last_normal[col] if pd.notna(last_normal[col]) else 0
+                            end_val = first_abnormal[col] if pd.notna(first_abnormal[col]) else 0
+                            row[col] = start_val + (end_val - start_val) * ratio
+                        else:
+                            row[col] = last_normal[col]
+                    transition_data.append(row)
+            
+            transition_df = pd.DataFrame(transition_data)
+            
+            # 4. 데이터 결합
+            # 컬럼 순서 통일
+            cols = list(normal_data.columns)
+            
+            if len(transition_df) > 0:
+                transition_df = transition_df[cols]
+            abnormal_data = abnormal_data[cols]
+            
+            simulation_df = pd.concat([normal_data, transition_df, abnormal_data], ignore_index=True)
+            
+            # 5. 시간 컬럼 재생성
+            if self.date_column and self.date_column in simulation_df.columns:
+                start_time = datetime.now().replace(second=0, microsecond=0)
+                times = [start_time + timedelta(minutes=i * interval_minutes) for i in range(len(simulation_df))]
+                simulation_df[self.date_column] = times
+            
+            # 6. 구간 표시 컬럼 추가
+            simulation_df['_data_type'] = ''
+            simulation_df.loc[:normal_rows-1, '_data_type'] = 'NORMAL'
+            simulation_df.loc[normal_rows:normal_rows+transition_rows-1, '_data_type'] = 'TRANSITION'
+            simulation_df.loc[normal_rows+transition_rows:, '_data_type'] = 'ABNORMAL'
+            
+            # 7. 저장
+            if output_path is None:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                output_path = f"Simulation_Data_{timestamp}.xlsx"
+            
+            output_path = Path(output_path)
+            
+            # Excel로 저장
+            from openpyxl.utils.dataframe import dataframe_to_rows
+            from openpyxl import Workbook
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Simulation"
+            
+            for r_idx, row in enumerate(dataframe_to_rows(simulation_df, index=False, header=True), 1):
+                for c_idx, value in enumerate(row, 1):
+                    cell = ws.cell(row=r_idx, column=c_idx, value=value)
+                    # 날짜 형식 지정
+                    if self.date_column and simulation_df.columns[c_idx-1] == self.date_column and r_idx > 1:
+                        cell.number_format = 'YYYY-MM-DD HH:MM:SS'
+            
+            wb.save(output_path)
+            
+            return True, f"시뮬레이션 데이터 생성 완료: {str(output_path)}\n" \
+                         f"- 정상: {normal_rows}행 ({normal_minutes}분)\n" \
+                         f"- 전환: {transition_rows}행 ({transition_minutes}분)\n" \
+                         f"- 비정상: {len(abnormal_data)}행 ({abnormal_minutes}분)"
+            
+        except Exception as e:
+            import traceback
+            return False, f"시뮬레이션 데이터 생성 실패: {str(e)}\n{traceback.format_exc()}"
+    
+    def get_removed_rows_summary(self) -> Dict[str, Any]:
+        """제거된 행 요약 정보 반환"""
+        if not self.removed_rows:
+            return {'total': 0, 'by_reason': {}}
+        
+        all_removed = pd.concat(self.removed_rows, ignore_index=True)
+        
+        summary = {
+            'total': len(all_removed),
+            'by_reason': {}
+        }
+        
+        if '_removal_reason' in all_removed.columns:
+            summary['by_reason'] = all_removed['_removal_reason'].value_counts().to_dict()
+        
+        return summary
     
     def get_preview(self, rows: int = 10) -> pd.DataFrame:
         """미리보기용 데이터 반환 (실제 컬럼만)"""
