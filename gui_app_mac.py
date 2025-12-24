@@ -839,16 +839,13 @@ class DataPreprocessorMac(QMainWindow):
         
         dialog = QDialog(self)
         dialog.setWindowTitle("🔬 시뮬레이션 데이터 생성")
-        dialog.resize(500, 450)
+        dialog.resize(550, 380)
         layout = QVBoxLayout(dialog)
+        layout.setSpacing(5)
         
-        # 설명
-        info_label = QLabel(f"""<h3>ML 모델 테스트용 시뮬레이션 데이터 생성</h3>
-<p>전처리 중 제거된 이상값을 활용하여 정상→비정상 전환 데이터를 생성합니다.</p>
-<p><b>제거된 데이터:</b> {summary['total']}행</p>
-<p><b>데이터 구조:</b> 정상 → 점진적 전환 → 비정상</p>
-""")
-        info_label.setWordWrap(True)
+        # 설명 (간결하게)
+        info_label = QLabel(f"<b>ML 테스트용 시뮬레이션 데이터</b> | 제거된 이상값: {summary['total']}행 | 구조: 정상→전환→비정상")
+        info_label.setStyleSheet("padding: 5px; background: #e8f4fd; font-size: 11px;")
         layout.addWidget(info_label)
         
         # 설정
@@ -865,7 +862,7 @@ class DataPreprocessorMac(QMainWindow):
         
         target_list = QListWidget()
         target_list.setSelectionMode(QListWidget.MultiSelection)
-        target_list.setMaximumHeight(100)
+        target_list.setMaximumHeight(70)
         for col in self.preprocessor.numeric_columns:
             target_list.addItem(col)
         # 첫번째 컬럼 기본 선택
@@ -954,7 +951,7 @@ class DataPreprocessorMac(QMainWindow):
         # 결과 표시
         result_text = QTextEdit()
         result_text.setReadOnly(True)
-        result_text.setMaximumHeight(100)
+        result_text.setMaximumHeight(70)
         layout.addWidget(result_text)
         
         # 버튼
