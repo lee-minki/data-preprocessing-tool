@@ -632,19 +632,16 @@ class DataPreprocessor:
             
             # 4. 시간 컬럼 재생성 (원본 컬럼 순서 유지)
             
-            # 5. 시간 컬럼 재생성
+            # 5. 시간 컬럼 재생성 (2분 배수로 맞춤)
             if self.date_column and self.date_column in simulation_df.columns:
-                start_time = datetime.now().replace(second=0, microsecond=0)
+                # 현재 시간을 2분 단위로 반올림
+                now = datetime.now()
+                minutes = (now.minute // 2) * 2  # 2분 배수로 맞춤
+                start_time = now.replace(minute=minutes, second=0, microsecond=0)
                 times = [start_time + timedelta(minutes=i * interval_minutes) for i in range(len(simulation_df))]
                 simulation_df[self.date_column] = times
             
-            # 6. 구간 표시 컬럼 추가
-            simulation_df['_data_type'] = ''
-            simulation_df.loc[:normal_rows-1, '_data_type'] = 'NORMAL'
-            simulation_df.loc[normal_rows:normal_rows+transition_rows-1, '_data_type'] = 'TRANSITION'
-            simulation_df.loc[normal_rows+transition_rows:, '_data_type'] = 'ABNORMAL'
-            
-            # 7. 저장 (모든 컬럼 포함, 원본 형식 유지)
+            # 6. 저장 (원본 형식 유지, 추가 컬럼 없음)
             if output_path is None:
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 output_path = f"Simulation_Data_{timestamp}.xlsx"
