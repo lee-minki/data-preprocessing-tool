@@ -839,7 +839,7 @@ class DataPreprocessorMac(QMainWindow):
         
         dialog = QDialog(self)
         dialog.setWindowTitle("🔬 시뮬레이션 데이터 생성")
-        dialog.resize(550, 380)
+        dialog.resize(550, 480)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(5)
         
