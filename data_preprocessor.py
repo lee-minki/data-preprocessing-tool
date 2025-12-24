@@ -536,8 +536,11 @@ class DataPreprocessor:
         
         구조: [정상 데이터] → [점진적 전환] → [비정상 데이터]
         
+        ※ target_column만 이상값으로 변화하고, 다른 모든 컬럼은 정상값 유지
+        ※ 원본 컬럼 순서와 형식이 보존됨
+        
         Args:
-            target_column: 기준 컬럼 (이 컬럼의 이상값 기준으로 생성)
+            target_column: 이상값 발생 컬럼 (이 컬럼만 정상→이상으로 변화)
             normal_minutes: 정상 데이터 시간 (분)
             abnormal_minutes: 비정상 데이터 시간 (분)
             transition_minutes: 전환 구간 시간 (분)
@@ -584,61 +587,58 @@ class DataPreprocessor:
             abnormal_rows = abnormal_minutes // interval_minutes
             
             # 1. 정상 데이터 추출 (processed_df 마지막 N행)
-            if len(self.processed_df) < normal_rows:
-                normal_data = self.processed_df.copy()
-            else:
-                normal_data = self.processed_df.tail(normal_rows).copy()
+            total_rows = normal_rows + transition_rows + abnormal_rows
             
-            # 2. 비정상 데이터 선택 및 정렬 (target_column 값 기준 점진적 증가/감소)
-            normal_mean = normal_data[target_column].mean()
+            if len(self.processed_df) < total_rows:
+                base_data = self.processed_df.copy()
+            else:
+                base_data = self.processed_df.tail(total_rows).copy()
+            
+            # 정상 데이터 기준으로 전체 행 생성 (다른 컬럼 값 유지)
+            # 정상 데이터를 반복하여 필요한 행 수 확보
+            if len(base_data) < total_rows:
+                repeat_times = (total_rows // len(base_data)) + 1
+                base_data = pd.concat([base_data] * repeat_times, ignore_index=True)
+            simulation_df = base_data.head(total_rows).reset_index(drop=True)
+            
+            # 2. target_column의 이상값 추출 및 정렬
+            normal_mean = simulation_df[target_column].iloc[:normal_rows].mean()
             abnormal_mean = target_outliers[target_column].mean()
             
-            # 정상보다 높은 값으로 가는지 낮은 값으로 가는지 판단
+            # 이상값 정렬 (정상보다 높으면 오름차순, 낮으면 내림차순)
             if abnormal_mean > normal_mean:
-                # 오름차순 정렬 (점진적 증가)
-                abnormal_data = target_outliers.sort_values(by=target_column, ascending=True)
+                sorted_outliers = target_outliers.sort_values(by=target_column, ascending=True)
             else:
-                # 내림차순 정렬 (점진적 감소)
-                abnormal_data = target_outliers.sort_values(by=target_column, ascending=False)
+                sorted_outliers = target_outliers.sort_values(by=target_column, ascending=False)
             
-            # 필요한 행 수만큼 선택 (부족하면 반복)
-            if len(abnormal_data) < abnormal_rows:
-                repeat_times = (abnormal_rows // len(abnormal_data)) + 1
-                abnormal_data = pd.concat([abnormal_data] * repeat_times, ignore_index=True)
-            abnormal_data = abnormal_data.head(abnormal_rows).reset_index(drop=True)
+            # 필요한 만큼 이상값 확보
+            outlier_values = sorted_outliers[target_column].values
+            if len(outlier_values) < abnormal_rows:
+                repeat_times = (abnormal_rows // len(outlier_values)) + 1
+                outlier_values = np.tile(outlier_values, repeat_times)
+            outlier_values = outlier_values[:abnormal_rows]
             
-            # 3. 전환 구간 생성 (선형 보간)
-            transition_data = []
+            # 3. target_column만 변경 (다른 컬럼은 정상값 유지)
             
-            # 정상 마지막 행과 비정상 첫 행
-            last_normal = normal_data.iloc[-1].copy() if len(normal_data) > 0 else None
-            first_abnormal = abnormal_data.iloc[0].copy() if len(abnormal_data) > 0 else None
+            # 정상 구간: 그대로 유지 (0 ~ normal_rows-1)
+            # 이미 정상 데이터가 들어가 있음
             
-            if last_normal is not None and first_abnormal is not None:
-                for i in range(transition_rows):
-                    ratio = (i + 1) / (transition_rows + 1)
-                    row = {}
-                    for col in normal_data.columns:
-                        if col in self.numeric_columns:
-                            # 선형 보간
-                            start_val = last_normal[col] if pd.notna(last_normal[col]) else 0
-                            end_val = first_abnormal[col] if pd.notna(first_abnormal[col]) else 0
-                            row[col] = start_val + (end_val - start_val) * ratio
-                        else:
-                            row[col] = last_normal[col]
-                    transition_data.append(row)
+            # 전환 구간: target_column만 선형 보간 (normal_rows ~ normal_rows+transition_rows-1)
+            last_normal_val = simulation_df[target_column].iloc[normal_rows - 1]
+            first_abnormal_val = outlier_values[0] if len(outlier_values) > 0 else last_normal_val
             
-            transition_df = pd.DataFrame(transition_data)
+            for i in range(transition_rows):
+                ratio = (i + 1) / (transition_rows + 1)
+                interpolated_val = last_normal_val + (first_abnormal_val - last_normal_val) * ratio
+                simulation_df.loc[normal_rows + i, target_column] = interpolated_val
             
-            # 4. 데이터 결합
-            # 컬럼 순서 통일
-            cols = list(normal_data.columns)
+            # 비정상 구간: target_column만 이상값으로 교체 (normal_rows+transition_rows ~ 끝)
+            for i in range(abnormal_rows):
+                row_idx = normal_rows + transition_rows + i
+                if row_idx < len(simulation_df):
+                    simulation_df.loc[row_idx, target_column] = outlier_values[i]
             
-            if len(transition_df) > 0:
-                transition_df = transition_df[cols]
-            abnormal_data = abnormal_data[cols]
-            
-            simulation_df = pd.concat([normal_data, transition_df, abnormal_data], ignore_index=True)
+            # 4. 시간 컬럼 재생성 (원본 컬럼 순서 유지)
             
             # 5. 시간 컬럼 재생성
             if self.date_column and self.date_column in simulation_df.columns:
@@ -652,7 +652,7 @@ class DataPreprocessor:
             simulation_df.loc[normal_rows:normal_rows+transition_rows-1, '_data_type'] = 'TRANSITION'
             simulation_df.loc[normal_rows+transition_rows:, '_data_type'] = 'ABNORMAL'
             
-            # 7. 저장
+            # 7. 저장 (모든 컬럼 포함, 원본 형식 유지)
             if output_path is None:
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 output_path = f"Simulation_Data_{timestamp}.xlsx"

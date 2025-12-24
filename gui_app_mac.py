@@ -855,15 +855,23 @@ class DataPreprocessorMac(QMainWindow):
         settings_group = QGroupBox("설정")
         settings_layout = QVBoxLayout(settings_group)
         
-        # 대상 컬럼 선택
-        col_layout = QHBoxLayout()
-        col_layout.addWidget(QLabel("분석 대상 컬럼:"))
-        column_combo = QComboBox()
-        column_combo.addItems(self.preprocessor.numeric_columns)
-        column_combo.setMinimumWidth(200)
-        col_layout.addWidget(column_combo)
-        col_layout.addStretch()
-        settings_layout.addLayout(col_layout)
+        # 대상 컬럼 선택 (이 컬럼만 이상값으로 변화)
+        target_layout = QHBoxLayout()
+        target_layout.addWidget(QLabel("이상값 발생 컬럼:"))
+        target_column_combo = QComboBox()
+        target_column_combo.addItems(self.preprocessor.numeric_columns)
+        target_column_combo.setMinimumWidth(200)
+        target_layout.addWidget(target_column_combo)
+        target_layout.addStretch()
+        settings_layout.addLayout(target_layout)
+        
+        # 설명
+        explain_label = QLabel(
+            "💡 선택한 컬럼만 정상→이상값으로 변화합니다.\n"
+            "   다른 모든 컬럼은 정상값을 유지하며, 원본 형식이 보존됩니다."
+        )
+        explain_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px; background: #f5f5f5;")
+        settings_layout.addWidget(explain_label)
         
         # 시간 설정
         time_layout = QHBoxLayout()
@@ -932,12 +940,12 @@ class DataPreprocessorMac(QMainWindow):
         btn_layout = QHBoxLayout()
         
         def generate():
-            target_col = column_combo.currentText()
+            target_col = target_column_combo.currentText()
             if not target_col:
-                QMessageBox.warning(dialog, "경고", "대상 컬럼을 선택하세요.")
+                QMessageBox.warning(dialog, "경고", "이상값 발생 컬럼을 선택하세요.")
                 return
             
-            result_text.setText("시뮬레이션 데이터 생성 중...")
+            result_text.setText(f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {target_col}")
             QApplication.processEvents()
             
             success, msg = self.preprocessor.generate_simulation_data(
@@ -950,7 +958,7 @@ class DataPreprocessorMac(QMainWindow):
             
             if success:
                 result_text.setText(f"✅ {msg}")
-                self._log(f"✅ 시뮬레이션 데이터 생성 완료")
+                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({target_col})")
             else:
                 result_text.setText(f"❌ {msg}")
                 QMessageBox.critical(dialog, "오류", msg)
