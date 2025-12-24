@@ -524,7 +524,7 @@ class DataPreprocessor:
             return False, f"저장 실패: {str(e)}"
     
     def generate_simulation_data(self,
-                                  target_column: str,
+                                  target_columns: List[str],
                                   normal_minutes: int = 30,
                                   abnormal_minutes: int = 60,
                                   transition_minutes: int = 10,
@@ -536,11 +536,11 @@ class DataPreprocessor:
         
         구조: [정상 데이터] → [점진적 전환] → [비정상 데이터]
         
-        ※ target_column만 이상값으로 변화하고, 다른 모든 컬럼은 정상값 유지
+        ※ target_columns만 이상값으로 변화하고, 다른 모든 컬럼은 정상값 유지
         ※ 원본 컬럼 순서와 형식이 보존됨
         
         Args:
-            target_column: 이상값 발생 컬럼 (이 컬럼만 정상→이상으로 변화)
+            target_columns: 이상값 발생 컬럼 목록 (이 컬럼들만 정상→이상으로 변화)
             normal_minutes: 정상 데이터 시간 (분)
             abnormal_minutes: 비정상 데이터 시간 (분)
             transition_minutes: 전환 구간 시간 (분)
@@ -557,26 +557,20 @@ class DataPreprocessor:
             if not self.removed_rows:
                 return False, "제거된 이상값이 없습니다. 필터링/이상값 처리를 먼저 실행하세요."
             
-            if target_column not in self.numeric_columns:
-                return False, f"'{target_column}'은(는) 숫자 컬럼이 아닙니다."
+            # target_columns 유효성 검사
+            if not target_columns:
+                return False, "대상 컬럼을 1개 이상 선택하세요."
+            
+            invalid_cols = [c for c in target_columns if c not in self.numeric_columns]
+            if invalid_cols:
+                return False, f"유효하지 않은 컬럼: {', '.join(invalid_cols)}"
             
             # 제거된 행 통합
             all_removed = pd.concat(self.removed_rows, ignore_index=True)
             
             # 내부 메타 컬럼 제거
             meta_cols = [c for c in all_removed.columns if c.startswith('_')]
-            
-            # target_column 기준 이상값만 필터링 (있으면)
-            if '_outlier_column' in all_removed.columns:
-                target_outliers = all_removed[all_removed['_outlier_column'] == target_column]
-                if len(target_outliers) == 0:
-                    # 해당 컬럼 이상값 없으면 전체 사용
-                    target_outliers = all_removed
-            else:
-                target_outliers = all_removed
-            
-            # 메타 컬럼 제거
-            target_outliers = target_outliers.drop(columns=meta_cols, errors='ignore')
+            target_outliers = all_removed.drop(columns=meta_cols, errors='ignore')
             
             if len(target_outliers) == 0:
                 return False, "시뮬레이션에 사용할 이상값 데이터가 없습니다."
@@ -595,48 +589,46 @@ class DataPreprocessor:
                 base_data = self.processed_df.tail(total_rows).copy()
             
             # 정상 데이터 기준으로 전체 행 생성 (다른 컬럼 값 유지)
-            # 정상 데이터를 반복하여 필요한 행 수 확보
             if len(base_data) < total_rows:
                 repeat_times = (total_rows // len(base_data)) + 1
                 base_data = pd.concat([base_data] * repeat_times, ignore_index=True)
             simulation_df = base_data.head(total_rows).reset_index(drop=True)
             
-            # 2. target_column의 이상값 추출 및 정렬
-            normal_mean = simulation_df[target_column].iloc[:normal_rows].mean()
-            abnormal_mean = target_outliers[target_column].mean()
-            
-            # 이상값 정렬 (정상보다 높으면 오름차순, 낮으면 내림차순)
-            if abnormal_mean > normal_mean:
-                sorted_outliers = target_outliers.sort_values(by=target_column, ascending=True)
-            else:
-                sorted_outliers = target_outliers.sort_values(by=target_column, ascending=False)
-            
-            # 필요한 만큼 이상값 확보
-            outlier_values = sorted_outliers[target_column].values
-            if len(outlier_values) < abnormal_rows:
-                repeat_times = (abnormal_rows // len(outlier_values)) + 1
-                outlier_values = np.tile(outlier_values, repeat_times)
-            outlier_values = outlier_values[:abnormal_rows]
-            
-            # 3. target_column만 변경 (다른 컬럼은 정상값 유지)
-            
-            # 정상 구간: 그대로 유지 (0 ~ normal_rows-1)
-            # 이미 정상 데이터가 들어가 있음
-            
-            # 전환 구간: target_column만 선형 보간 (normal_rows ~ normal_rows+transition_rows-1)
-            last_normal_val = simulation_df[target_column].iloc[normal_rows - 1]
-            first_abnormal_val = outlier_values[0] if len(outlier_values) > 0 else last_normal_val
-            
-            for i in range(transition_rows):
-                ratio = (i + 1) / (transition_rows + 1)
-                interpolated_val = last_normal_val + (first_abnormal_val - last_normal_val) * ratio
-                simulation_df.loc[normal_rows + i, target_column] = interpolated_val
-            
-            # 비정상 구간: target_column만 이상값으로 교체 (normal_rows+transition_rows ~ 끝)
-            for i in range(abnormal_rows):
-                row_idx = normal_rows + transition_rows + i
-                if row_idx < len(simulation_df):
-                    simulation_df.loc[row_idx, target_column] = outlier_values[i]
+            # 2. 각 target_column에 대해 이상값 적용
+            for target_column in target_columns:
+                if target_column not in target_outliers.columns:
+                    continue
+                
+                # 해당 컬럼의 이상값 추출
+                normal_mean = simulation_df[target_column].iloc[:normal_rows].mean()
+                abnormal_mean = target_outliers[target_column].mean()
+                
+                # 이상값 정렬 (정상보다 높으면 오름차순, 낮으면 내림차순)
+                if abnormal_mean > normal_mean:
+                    sorted_values = target_outliers[target_column].sort_values(ascending=True).values
+                else:
+                    sorted_values = target_outliers[target_column].sort_values(ascending=False).values
+                
+                # 필요한 만큼 이상값 확보
+                if len(sorted_values) < abnormal_rows:
+                    repeat_times = (abnormal_rows // len(sorted_values)) + 1
+                    sorted_values = np.tile(sorted_values, repeat_times)
+                outlier_values = sorted_values[:abnormal_rows]
+                
+                # 전환 구간: 선형 보간
+                last_normal_val = simulation_df[target_column].iloc[normal_rows - 1]
+                first_abnormal_val = outlier_values[0] if len(outlier_values) > 0 else last_normal_val
+                
+                for i in range(transition_rows):
+                    ratio = (i + 1) / (transition_rows + 1)
+                    interpolated_val = last_normal_val + (first_abnormal_val - last_normal_val) * ratio
+                    simulation_df.loc[normal_rows + i, target_column] = interpolated_val
+                
+                # 비정상 구간: 이상값으로 교체
+                for i in range(abnormal_rows):
+                    row_idx = normal_rows + transition_rows + i
+                    if row_idx < len(simulation_df):
+                        simulation_df.loc[row_idx, target_column] = outlier_values[i]
             
             # 4. 시간 컬럼 재생성 (원본 컬럼 순서 유지)
             
@@ -677,9 +669,10 @@ class DataPreprocessor:
             wb.save(output_path)
             
             return True, f"시뮬레이션 데이터 생성 완료: {str(output_path)}\n" \
+                         f"- 대상 컬럼: {', '.join(target_columns)}\n" \
                          f"- 정상: {normal_rows}행 ({normal_minutes}분)\n" \
                          f"- 전환: {transition_rows}행 ({transition_minutes}분)\n" \
-                         f"- 비정상: {len(abnormal_data)}행 ({abnormal_minutes}분)"
+                         f"- 비정상: {abnormal_rows}행 ({abnormal_minutes}분)"
             
         except Exception as e:
             import traceback

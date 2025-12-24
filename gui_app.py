@@ -1266,23 +1266,31 @@ https://github.com/lee-minki/data-preprocessing-tool
         settings_frame = ttk.LabelFrame(dialog, text="설정", padding=10)
         settings_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        # 기준 컬럼
-        col_frame = ttk.Frame(settings_frame)
-        col_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(col_frame, text="이상값 기준 컬럼:").pack(side=tk.LEFT)
-        column_var = tk.StringVar()
-        column_combo = ttk.Combobox(col_frame, textvariable=column_var, 
-            values=self.preprocessor.numeric_columns, width=25)
-        column_combo.pack(side=tk.LEFT, padx=10)
-        if self.preprocessor.numeric_columns:
-            column_combo.current(0)
+        # 대상 컬럼 선택 (다중 선택 가능)
+        target_frame = ttk.LabelFrame(settings_frame, text="🎯 이상값 발생 컬럼 (다중 선택 가능)", padding=5)
+        target_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(target_frame, text="Ctrl+클릭으로 다중 선택", foreground="gray").pack()
+        
+        target_listbox = tk.Listbox(target_frame, selectmode=tk.EXTENDED, height=5)
+        target_listbox.pack(fill=tk.X, expand=True)
+        for col in self.preprocessor.numeric_columns:
+            target_listbox.insert(tk.END, col)
+        if target_listbox.size() > 0:
+            target_listbox.selection_set(0)
+        
+        # 전체 선택/해제 버튼
+        btn_frame2 = ttk.Frame(target_frame)
+        btn_frame2.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_frame2, text="전체 선택", 
+            command=lambda: target_listbox.selection_set(0, tk.END)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame2, text="전체 해제", 
+            command=lambda: target_listbox.selection_clear(0, tk.END)).pack(side=tk.LEFT, padx=2)
         
         # 설명
-        explain_frame = ttk.Frame(settings_frame)
-        explain_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(explain_frame, 
-            text="💡 선택한 컬럼만 정상→이상값으로 변화합니다.\n   다른 모든 컬럼은 정상값을 유지하며, 원본 형식이 보존됩니다.",
-            foreground="gray").pack(anchor=tk.W)
+        ttk.Label(settings_frame, 
+            text="💡 선택한 컬럼들만 정상→이상값으로 변화합니다.\n   다른 모든 컬럼은 정상값을 유지합니다.",
+            foreground="gray").pack(anchor=tk.W, pady=5)
         
         # 시간 설정
         time_frame = ttk.Frame(settings_frame)
@@ -1343,17 +1351,20 @@ https://github.com/lee-minki/data-preprocessing-tool
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
         
         def generate():
-            target_col = column_var.get()
-            if not target_col:
-                messagebox.showwarning("경고", "이상값 발생 컬럼을 선택하세요.")
+            # 선택된 컬럼 수집
+            selected_indices = target_listbox.curselection()
+            selected_columns = [target_listbox.get(i) for i in selected_indices]
+            
+            if not selected_columns:
+                messagebox.showwarning("경고", "이상값 발생 컬럼을 최소 1개 선택하세요.")
                 return
             
             result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {target_col}")
+            result_text.insert(tk.END, f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
             dialog.update()
             
             success, msg = self.preprocessor.generate_simulation_data(
-                target_column=target_col,
+                target_columns=selected_columns,
                 normal_minutes=normal_var.get(),
                 abnormal_minutes=abnormal_var.get(),
                 transition_minutes=transition_var.get(),
@@ -1363,7 +1374,7 @@ https://github.com/lee-minki/data-preprocessing-tool
             result_text.delete(1.0, tk.END)
             if success:
                 result_text.insert(tk.END, f"✅ {msg}")
-                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({target_col})")
+                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
             else:
                 result_text.insert(tk.END, f"❌ {msg}")
                 messagebox.showerror("오류", msg)

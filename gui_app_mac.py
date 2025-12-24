@@ -855,19 +855,40 @@ class DataPreprocessorMac(QMainWindow):
         settings_group = QGroupBox("설정")
         settings_layout = QVBoxLayout(settings_group)
         
-        # 대상 컬럼 선택 (이 컬럼만 이상값으로 변화)
-        target_layout = QHBoxLayout()
-        target_layout.addWidget(QLabel("이상값 발생 컬럼:"))
-        target_column_combo = QComboBox()
-        target_column_combo.addItems(self.preprocessor.numeric_columns)
-        target_column_combo.setMinimumWidth(200)
-        target_layout.addWidget(target_column_combo)
-        target_layout.addStretch()
-        settings_layout.addLayout(target_layout)
+        # 대상 컬럼 선택 (다중 선택 가능)
+        target_group = QGroupBox("🎯 이상값 발생 컬럼 (다중 선택 가능)")
+        target_layout = QVBoxLayout(target_group)
+        
+        target_hint = QLabel("Ctrl+클릭으로 다중 선택. 선택한 컬럼들만 이상값으로 변화합니다.")
+        target_hint.setStyleSheet("color: gray; font-size: 10px;")
+        target_layout.addWidget(target_hint)
+        
+        target_list = QListWidget()
+        target_list.setSelectionMode(QListWidget.MultiSelection)
+        target_list.setMaximumHeight(100)
+        for col in self.preprocessor.numeric_columns:
+            target_list.addItem(col)
+        # 첫번째 컬럼 기본 선택
+        if target_list.count() > 0:
+            target_list.item(0).setSelected(True)
+        target_layout.addWidget(target_list)
+        
+        # 전체 선택/해제 버튼
+        btn_layout2 = QHBoxLayout()
+        select_all = QPushButton("전체 선택")
+        select_all.clicked.connect(lambda: [target_list.item(i).setSelected(True) for i in range(target_list.count())])
+        btn_layout2.addWidget(select_all)
+        clear_all = QPushButton("전체 해제")
+        clear_all.clicked.connect(lambda: [target_list.item(i).setSelected(False) for i in range(target_list.count())])
+        btn_layout2.addWidget(clear_all)
+        btn_layout2.addStretch()
+        target_layout.addLayout(btn_layout2)
+        
+        settings_layout.addWidget(target_group)
         
         # 설명
         explain_label = QLabel(
-            "💡 선택한 컬럼만 정상→이상값으로 변화합니다.\n"
+            "💡 선택한 컬럼들만 정상→이상값으로 변화합니다.\n"
             "   다른 모든 컬럼은 정상값을 유지하며, 원본 형식이 보존됩니다."
         )
         explain_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px; background: #f5f5f5;")
@@ -940,16 +961,21 @@ class DataPreprocessorMac(QMainWindow):
         btn_layout = QHBoxLayout()
         
         def generate():
-            target_col = target_column_combo.currentText()
-            if not target_col:
-                QMessageBox.warning(dialog, "경고", "이상값 발생 컬럼을 선택하세요.")
+            # 선택된 컬럼 수집
+            selected_columns = []
+            for i in range(target_list.count()):
+                if target_list.item(i).isSelected():
+                    selected_columns.append(target_list.item(i).text())
+            
+            if not selected_columns:
+                QMessageBox.warning(dialog, "경고", "이상값 발생 컬럼을 최소 1개 선택하세요.")
                 return
             
-            result_text.setText(f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {target_col}")
+            result_text.setText(f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
             QApplication.processEvents()
             
             success, msg = self.preprocessor.generate_simulation_data(
-                target_column=target_col,
+                target_columns=selected_columns,
                 normal_minutes=normal_spin.value(),
                 abnormal_minutes=abnormal_spin.value(),
                 transition_minutes=transition_spin.value(),
@@ -958,7 +984,7 @@ class DataPreprocessorMac(QMainWindow):
             
             if success:
                 result_text.setText(f"✅ {msg}")
-                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({target_col})")
+                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
             else:
                 result_text.setText(f"❌ {msg}")
                 QMessageBox.critical(dialog, "오류", msg)
