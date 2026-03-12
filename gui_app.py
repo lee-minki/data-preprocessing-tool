@@ -49,6 +49,23 @@ class HelpTooltip:
             self.tooltip = None
 
 
+def create_info_badge(parent, text: str):
+    """마우스 오버용 정보 배지"""
+    badge = tk.Label(
+        parent,
+        text="i",
+        fg="#0b57d0",
+        bg="white",
+        relief=tk.GROOVE,
+        borderwidth=1,
+        width=2,
+        cursor="question_arrow",
+        font=("맑은 고딕", 8, "bold"),
+    )
+    HelpTooltip(badge, text)
+    return badge
+
+
 class FilterFrame(ttk.Frame):
     """필터 조건 한 줄을 표현하는 프레임"""
     
@@ -154,6 +171,12 @@ class DataPreprocessorApp:
         self.filter_frames: List[FilterFrame] = []
         self.is_processing = False
         self.current_preset_name: Optional[str] = None
+        self.validation_settings = {
+            "ratio": 20,
+            "segment_ratios": [25, 25, 25, 25],
+            "sigma_start": 2.5,
+            "sigma_end": 4.0,
+        }
         
         self._create_widgets()
         self._create_menu()
@@ -188,7 +211,7 @@ class DataPreprocessorApp:
         menubar.add_cascade(label="분석", menu=analysis_menu)
         analysis_menu.add_command(label="📊 트렌드 차트...", command=self._show_trend_chart, accelerator="Ctrl+T")
         analysis_menu.add_separator()
-        analysis_menu.add_command(label="🔬 시뮬레이션 데이터 생성...", command=self._show_simulation_dialog)
+        analysis_menu.add_command(label="🧪 Validation 데이터 생성...", command=self._show_simulation_dialog)
         
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -242,48 +265,50 @@ class DataPreprocessorApp:
     
     def _get_embedded_manual(self) -> str:
         """내장 매뉴얼 반환"""
-        return """# 시계열 데이터 전처리 프로그램 - 사용자 매뉴얼
+        return """# σ 조기경보 시계열 데이터 전처리프로그램 사용자 매뉴얼
 
-Version 1.3.1
+Version 1.6.0
 
-## 기본 사용법
+## 빠른 시작
 
 1. 파일 → 열기로 Excel/CSV 파일 불러오기
-2. + 필터 추가로 필터 조건 설정
-3. 이상값 처리 방법 선택 (2.5σ 권장)
-4. 🚀 전처리 실행 버튼 클릭
-5. 💾 결과 저장 버튼으로 저장
+2. + 필터 추가로 숫자 컬럼 조건 설정
+3. 필요 시 이상값 처리 / 정규화 / 시간 처리 옵션 선택
+4. 🚀 전처리 실행
+5. 💾 결과 저장
 
-## 필터 연산자
+## 처리 순서
 
-- >=, <=, >, <, =, !=
-- range: 범위 지정 (예: 30~50)
+1. 필터링
+2. 이상값 처리
+3. 정규화
+4. 시간 정규화
+5. 시간 재정렬
 
-## 이상값 처리
+## 주요 기능
 
-- 2σ (95.4%): 엄격한 필터링
-- 2.5σ (98.8%): 권장
-- 3σ (99.7%): 느슨한 필터링
-- IQR: 비대칭 분포용
-
-## 시간 처리
-
-- 시간 정규화: 틀어진 시간을 2분 간격으로 보정
-- 시간 재정렬: 새 시작 시간부터 재배열
-
-## 프리셋
-
-- Ctrl+P: 프리셋 저장
-- 프리셋 → 파일+프리셋 한번에 열기: 원클릭 전처리
+- 다중 필터 (AND)
+- 이상값 처리: 2σ / 2.5σ / 3σ / IQR
+- 정규화: Z-Score / Min-Max
+- 시간 정규화 및 시간 재정렬
+- 프리셋 저장 / 불러오기 / 내보내기 / 가져오기
+- 파일+프리셋 한번에 열기
+- 분석 > 트렌드 차트
+- 분석 > Validation 데이터 생성 (3개 파일 자동 저장)
 
 ## 단축키
 
 - Ctrl+O: 파일 열기
 - Ctrl+S: 결과 저장
 - Ctrl+P: 프리셋 저장
+- Ctrl+T: 트렌드 차트
 - F1: 매뉴얼
 
-자세한 내용은 GitHub의 MANUAL.md를 참조하세요.
+## 참고
+
+- 필터 대상은 숫자 컬럼만 표시됩니다.
+- 날짜 컬럼은 Date / Time / 날짜 / 시간 / timestamp 등을 기준으로 자동 감지합니다.
+- 자세한 설명은 배포된 MANUAL.md 또는 GitHub 문서를 확인하세요.
 https://github.com/lee-minki/data-preprocessing-tool
 """
     
@@ -464,31 +489,29 @@ https://github.com/lee-minki/data-preprocessing-tool
                    ('3σ (99.7%)', '3sigma'), ('IQR', 'iqr')]
         
         for text, value in methods:
-            rb = ttk.Radiobutton(method_frame, text=text, variable=self.outlier_method, value=value)
-            rb.pack(side=tk.LEFT, padx=10)
-            # 도움말 툴팁 추가
-            HelpTooltip(rb, DataPreprocessor.get_help_text(value))
+            option_frame = ttk.Frame(method_frame)
+            option_frame.pack(side=tk.LEFT, padx=8)
+            rb = ttk.Radiobutton(option_frame, text=text, variable=self.outlier_method, value=value)
+            rb.pack(side=tk.LEFT)
+            create_info_badge(option_frame, DataPreprocessor.get_help_text(value)).pack(side=tk.LEFT, padx=(2, 0))
         
-        # 도움말 버튼
-        help_btn = ttk.Button(method_frame, text="?", width=2, command=self._show_help)
-        help_btn.pack(side=tk.RIGHT, padx=5)
-        
-        # 처리 방법 (기본값: 행 전체 삭제)
+        # 처리 방법 (항상 행 전체 삭제)
         action_frame = ttk.Frame(outlier_frame)
         action_frame.pack(fill=tk.X, pady=2)
         
         ttk.Label(action_frame, text="처리:").pack(side=tk.LEFT)
         
-        self.outlier_action = tk.StringVar(value='drop')  # 기본값: 행 전체 삭제
-        ttk.Radiobutton(action_frame, text="행 전체 삭제", variable=self.outlier_action, 
-                       value='drop').pack(side=tk.LEFT, padx=10)
-        ttk.Radiobutton(action_frame, text="해당 값만 NaN으로", variable=self.outlier_action, 
-                       value='nan').pack(side=tk.LEFT, padx=10)
+        self.outlier_action = tk.StringVar(value='drop')
+        ttk.Label(action_frame, text="행 전체 삭제", foreground="black").pack(side=tk.LEFT, padx=(10, 2))
+        create_info_badge(action_frame, DataPreprocessor.get_help_text('outlier_drop')).pack(side=tk.LEFT)
         
         # 이상값 처리 체크박스
         self.apply_outlier = tk.BooleanVar(value=True)
-        ttk.Checkbutton(outlier_frame, text="이상값 처리 적용", 
-                       variable=self.apply_outlier).pack(anchor=tk.W, pady=2)
+        outlier_apply_frame = ttk.Frame(outlier_frame)
+        outlier_apply_frame.pack(anchor=tk.W, pady=2)
+        ttk.Checkbutton(outlier_apply_frame, text="이상값 처리 적용", 
+                       variable=self.apply_outlier).pack(side=tk.LEFT)
+        create_info_badge(outlier_apply_frame, DataPreprocessor.get_help_text('outlier_apply')).pack(side=tk.LEFT, padx=(2, 0))
         
         # === 정규화 섹션 ===
         norm_frame = ttk.LabelFrame(main_frame, text="📈 정규화 (선택사항)", padding=10)
@@ -498,18 +521,25 @@ https://github.com/lee-minki/data-preprocessing-tool
         norm_inner.pack(fill=tk.X)
         
         self.apply_normalize = tk.BooleanVar(value=False)
-        ttk.Checkbutton(norm_inner, text="정규화 적용", 
+        norm_apply_frame = ttk.Frame(norm_inner)
+        norm_apply_frame.pack(side=tk.LEFT)
+        ttk.Checkbutton(norm_apply_frame, text="정규화 적용", 
                        variable=self.apply_normalize).pack(side=tk.LEFT)
+        create_info_badge(norm_apply_frame, DataPreprocessor.get_help_text('normalize_apply')).pack(side=tk.LEFT, padx=(2, 0))
         
-        self.normalize_method = tk.StringVar(value='zscore')
+        self.normalize_method = tk.StringVar(value='minmax')
         
-        rb_zscore = ttk.Radiobutton(norm_inner, text="Z-Score", variable=self.normalize_method, value='zscore')
-        rb_zscore.pack(side=tk.LEFT, padx=10)
-        HelpTooltip(rb_zscore, DataPreprocessor.get_help_text('zscore'))
+        zscore_frame = ttk.Frame(norm_inner)
+        zscore_frame.pack(side=tk.LEFT, padx=10)
+        rb_zscore = ttk.Radiobutton(zscore_frame, text="Z-Score", variable=self.normalize_method, value='zscore')
+        rb_zscore.pack(side=tk.LEFT)
+        create_info_badge(zscore_frame, DataPreprocessor.get_help_text('zscore')).pack(side=tk.LEFT, padx=(2, 0))
         
-        rb_minmax = ttk.Radiobutton(norm_inner, text="Min-Max (0~1)", variable=self.normalize_method, value='minmax')
-        rb_minmax.pack(side=tk.LEFT, padx=10)
-        HelpTooltip(rb_minmax, DataPreprocessor.get_help_text('minmax'))
+        minmax_frame = ttk.Frame(norm_inner)
+        minmax_frame.pack(side=tk.LEFT, padx=10)
+        rb_minmax = ttk.Radiobutton(minmax_frame, text="Min-Max (0~1)", variable=self.normalize_method, value='minmax')
+        rb_minmax.pack(side=tk.LEFT)
+        create_info_badge(minmax_frame, DataPreprocessor.get_help_text('minmax')).pack(side=tk.LEFT, padx=(2, 0))
         
         # === 시간 처리 섹션 ===
         time_frame = ttk.LabelFrame(main_frame, text="🕐 시간 처리 (선택사항)", padding=10)
@@ -517,10 +547,12 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 시간 정규화 (2분 간격으로 스냅)
         self.apply_time_normalize = tk.BooleanVar(value=False)
-        time_norm_check = ttk.Checkbutton(time_frame, text="시간 정규화 (2분 간격으로 스냅)", 
+        time_norm_row = ttk.Frame(time_frame)
+        time_norm_row.pack(anchor=tk.W)
+        time_norm_check = ttk.Checkbutton(time_norm_row, text="시간 정규화 (2분 간격으로 스냅)", 
                        variable=self.apply_time_normalize)
-        time_norm_check.pack(anchor=tk.W)
-        HelpTooltip(time_norm_check, "엑셀 자동채우기로 인한 시간 밀림 보정\n예: 00:01:00 → 00:00:00, 00:05:59 → 00:06:00")
+        time_norm_check.pack(side=tk.LEFT)
+        create_info_badge(time_norm_row, DataPreprocessor.get_help_text('time_normalize')).pack(side=tk.LEFT, padx=(2, 0))
         
         ttk.Label(time_frame, text="   ※ 00:01:00, 00:02:01 같은 틀어진 시간을 정확한 2분 간격으로 보정",
                  foreground="gray").pack(anchor=tk.W)
@@ -529,8 +561,11 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 시간 재정렬
         self.apply_time_realign = tk.BooleanVar(value=False)
-        ttk.Checkbutton(time_frame, text="시간 재정렬 (새 시작 시간부터 재배열)", 
-                       variable=self.apply_time_realign).pack(anchor=tk.W)
+        time_realign_row = ttk.Frame(time_frame)
+        time_realign_row.pack(anchor=tk.W)
+        ttk.Checkbutton(time_realign_row, text="시간 재정렬 (새 시작 시간부터 재배열)", 
+                       variable=self.apply_time_realign).pack(side=tk.LEFT)
+        create_info_badge(time_realign_row, DataPreprocessor.get_help_text('time_realign')).pack(side=tk.LEFT, padx=(2, 0))
         
         time_inner = ttk.Frame(time_frame)
         time_inner.pack(fill=tk.X, pady=5)
@@ -745,6 +780,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         try:
             total_rows = len(self.preprocessor.original_df)
+            self.preprocessor.reset_processing_state()
             
             self._log("\n" + "="*50)
             self._log(f"🔄 전처리 시작... (총 {total_rows:,}행)")
@@ -770,8 +806,6 @@ https://github.com/lee-minki/data-preprocessing-tool
                     self._set_processing_state(False)
                     return
             else:
-                # 필터 없으면 원본 복사
-                self.preprocessor.processed_df = self.preprocessor.original_df.copy()
                 self.root.after(0, lambda: self._log("ℹ️ 필터 조건 없음 - 전체 데이터 사용"))
             
             self._update_progress(40, "필터링 완료", time.time() - start_time)
@@ -785,7 +819,7 @@ https://github.com/lee-minki/data-preprocessing-tool
                 
                 success, msg = self.preprocessor.remove_outliers(
                     method=self.outlier_method.get(),
-                    action=self.outlier_action.get()
+                    action='drop'
                 )
                 self.root.after(0, lambda m=msg, s=success: self._log(f"{'✅' if s else '❌'} {m}"))
             
@@ -907,6 +941,24 @@ https://github.com/lee-minki/data-preprocessing-tool
             _do_log()
         else:
             self.root.after(0, _do_log)
+
+    def _get_validation_output_paths(self) -> Dict[str, str]:
+        """Validation 자동 저장 파일 경로 계산"""
+        from pathlib import Path
+
+        if self.current_file:
+            original = Path(self.current_file)
+            base_dir = original.parent
+            base_name = original.stem
+        else:
+            base_dir = Path.cwd()
+            base_name = "processed_data"
+
+        return {
+            "prepro": str(base_dir / f"{base_name}_prepro.xlsx"),
+            "prepro_with_valid": str(base_dir / f"{base_name}_prepro_with_valid.xlsx"),
+            "valid": str(base_dir / f"{base_name}_valid.xlsx"),
+        }
     
     # ===== 프리셋 관련 메서드 =====
     
@@ -1236,9 +1288,13 @@ https://github.com/lee-minki/data-preprocessing-tool
         ttk.Button(btn_frame, text="취소", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
     def _show_simulation_dialog(self):
-        """시뮬레이션 데이터 생성 다이얼로그"""
+        """Validation 데이터 생성 다이얼로그"""
         if self.preprocessor.processed_df is None:
             messagebox.showwarning("경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
+            return
+
+        if not self.current_file:
+            messagebox.showwarning("경고", "원본 파일 경로를 확인할 수 없습니다. 파일을 다시 불러온 뒤 시도하세요.")
             return
         
         # 제거된 행 확인
@@ -1249,18 +1305,20 @@ https://github.com/lee-minki/data-preprocessing-tool
             return
         
         dialog = tk.Toplevel(self.root)
-        dialog.title("🔬 시뮬레이션 데이터 생성")
-        dialog.geometry("550x450")
+        dialog.title("🧪 Validation 데이터 생성")
+        dialog.geometry("760x680")
         dialog.transient(self.root)
+        dialog.grab_set()
         
         # 설명
-        info_frame = ttk.LabelFrame(dialog, text="ML 모델 테스트용 시뮬레이션 데이터 생성", padding=10)
+        info_frame = ttk.LabelFrame(dialog, text="Validation 데이터 자동 생성", padding=10)
         info_frame.pack(fill=tk.X, padx=10, pady=5)
         
         ttk.Label(info_frame, 
-            text=f"전처리 중 제거된 이상값을 활용하여\n정상→비정상 전환 데이터를 생성합니다.").pack()
+            text="전처리 결과를 기준으로 validation 블록을 새로 만들고\n원본 폴더에 3개 파일을 자동 저장합니다.").pack(anchor=tk.W)
         ttk.Label(info_frame, text=f"제거된 데이터: {summary['total']}행", 
-            font=('맑은 고딕', 10, 'bold')).pack(pady=5)
+            font=('맑은 고딕', 10, 'bold')).pack(anchor=tk.W, pady=(5, 2))
+        create_info_badge(info_frame, DataPreprocessor.get_help_text('validation_save')).pack(anchor=tk.W)
         
         # 설정
         settings_frame = ttk.LabelFrame(dialog, text="설정", padding=10)
@@ -1289,57 +1347,88 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 설명
         ttk.Label(settings_frame, 
-            text="💡 선택한 컬럼들만 정상→이상값으로 변화합니다.\n   다른 모든 컬럼은 정상값을 유지합니다.",
+            text="💡 선택한 태그만 validation 구간에서 점진적으로 이상값으로 이동합니다.\n   다른 컬럼은 최근 추세를 최대한 유지합니다.",
             foreground="gray").pack(anchor=tk.W, pady=5)
         
-        # 시간 설정
-        time_frame = ttk.Frame(settings_frame)
-        time_frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Label(time_frame, text="정상 구간:").pack(side=tk.LEFT)
-        normal_var = tk.IntVar(value=30)
-        normal_spin = ttk.Spinbox(time_frame, from_=10, to=120, width=5, textvariable=normal_var)
-        normal_spin.pack(side=tk.LEFT, padx=2)
-        ttk.Label(time_frame, text="분").pack(side=tk.LEFT, padx=(0, 10))
-        
-        ttk.Label(time_frame, text="전환:").pack(side=tk.LEFT)
-        transition_var = tk.IntVar(value=10)
-        transition_spin = ttk.Spinbox(time_frame, from_=5, to=30, width=5, textvariable=transition_var)
-        transition_spin.pack(side=tk.LEFT, padx=2)
-        ttk.Label(time_frame, text="분").pack(side=tk.LEFT, padx=(0, 10))
-        
-        ttk.Label(time_frame, text="비정상:").pack(side=tk.LEFT)
-        abnormal_var = tk.IntVar(value=60)
-        abnormal_spin = ttk.Spinbox(time_frame, from_=30, to=180, width=5, textvariable=abnormal_var)
-        abnormal_spin.pack(side=tk.LEFT, padx=2)
-        ttk.Label(time_frame, text="분").pack(side=tk.LEFT)
-        
-        # 간격 설정
-        interval_frame = ttk.Frame(settings_frame)
-        interval_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(interval_frame, text="데이터 간격:").pack(side=tk.LEFT)
-        interval_var = tk.IntVar(value=2)
-        interval_spin = ttk.Spinbox(interval_frame, from_=1, to=10, width=5, textvariable=interval_var)
-        interval_spin.pack(side=tk.LEFT, padx=2)
-        ttk.Label(interval_frame, text="분").pack(side=tk.LEFT)
+        ratio_frame = ttk.Frame(settings_frame)
+        ratio_frame.pack(fill=tk.X, pady=5)
+
+        ttk.Label(ratio_frame, text="Validation 비율:").pack(side=tk.LEFT)
+        validation_ratio_var = tk.IntVar(value=int(self.validation_settings.get("ratio", 20)))
+        validation_ratio_spin = ttk.Spinbox(ratio_frame, from_=5, to=50, width=5, textvariable=validation_ratio_var)
+        validation_ratio_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(ratio_frame, text="%").pack(side=tk.LEFT, padx=(0, 12))
+        create_info_badge(ratio_frame, DataPreprocessor.get_help_text('validation_ratio')).pack(side=tk.LEFT, padx=(0, 10))
+
+        ttk.Label(ratio_frame, text="Sigma 시작/끝:").pack(side=tk.LEFT)
+        sigma_start_var = tk.DoubleVar(value=float(self.validation_settings.get("sigma_start", 2.5)))
+        sigma_start_spin = ttk.Spinbox(ratio_frame, from_=1.0, to=6.0, increment=0.5, width=5, textvariable=sigma_start_var)
+        sigma_start_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(ratio_frame, text="~").pack(side=tk.LEFT)
+        sigma_end_var = tk.DoubleVar(value=float(self.validation_settings.get("sigma_end", 4.0)))
+        sigma_end_spin = ttk.Spinbox(ratio_frame, from_=1.5, to=8.0, increment=0.5, width=5, textvariable=sigma_end_var)
+        sigma_end_spin.pack(side=tk.LEFT, padx=2)
+        ttk.Label(ratio_frame, text="σ").pack(side=tk.LEFT)
+        create_info_badge(ratio_frame, DataPreprocessor.get_help_text('validation_sigma')).pack(side=tk.LEFT, padx=(4, 0))
+
+        segment_frame = ttk.LabelFrame(settings_frame, text="Validation 내부 비율 (합계 100%)", padding=5)
+        segment_frame.pack(fill=tk.X, pady=5)
+        create_info_badge(segment_frame, "정상1 → 제거행 기반 → 정상2 → sigma 기반 순서로 validation을 만듭니다.\n장점: 정상과 이상 추이를 한 파일에서 같이 볼 수 있습니다.\n단점: 비율을 과하게 바꾸면 비교가 어려워질 수 있습니다.").pack(anchor=tk.W, pady=(0, 5))
+
+        default_segments = self.validation_settings.get("segment_ratios", [25, 25, 25, 25])
+        segment_labels = ["정상1", "제거행", "정상2", "Sigma"]
+        segment_vars = []
+        for idx, label in enumerate(segment_labels):
+            row = ttk.Frame(segment_frame)
+            row.pack(fill=tk.X, pady=2)
+            ttk.Label(row, text=f"{label}:", width=10).pack(side=tk.LEFT)
+            var = tk.IntVar(value=int(default_segments[idx]))
+            segment_vars.append(var)
+            spin = ttk.Spinbox(row, from_=0, to=100, width=5, textvariable=var)
+            spin.pack(side=tk.LEFT, padx=2)
+            ttk.Label(row, text="%").pack(side=tk.LEFT)
+            if label == "제거행":
+                create_info_badge(row, DataPreprocessor.get_help_text('validation_removed')).pack(side=tk.LEFT, padx=(6, 0))
+            elif label == "Sigma":
+                create_info_badge(row, DataPreprocessor.get_help_text('validation_sigma')).pack(side=tk.LEFT, padx=(6, 0))
         
         # 예상 결과
-        preview_label = ttk.Label(settings_frame, text="")
-        preview_label.pack(pady=5)
+        preview_label = ttk.Label(settings_frame, text="", justify=tk.LEFT)
+        preview_label.pack(anchor=tk.W, pady=5)
+        file_preview_label = ttk.Label(settings_frame, text="", justify=tk.LEFT, foreground="gray")
+        file_preview_label.pack(anchor=tk.W, pady=(0, 5))
         
         def update_preview(*args):
             try:
-                n = normal_var.get() // interval_var.get()
-                t = transition_var.get() // interval_var.get()
-                a = abnormal_var.get() // interval_var.get()
-                preview_label.config(text=f"예상 결과: 정상 {n}행 + 전환 {t}행 + 비정상 {a}행 = 총 {n+t+a}행")
-            except:
+                original_rows = len(self.preprocessor.processed_df)
+                validation_rows = max(4, int(round(original_rows * (validation_ratio_var.get() / 100))))
+                segment_ratios = [var.get() for var in segment_vars]
+                ratio_sum = sum(segment_ratios)
+                segment_lengths = self.preprocessor._allocate_segment_lengths(validation_rows, segment_ratios) if ratio_sum > 0 else [0, 0, 0, 0]
+                paths = self._get_validation_output_paths()
+                preview_label.config(
+                    text=(
+                        f"예상 결과: 원본 {original_rows:,}행 + validation {validation_rows:,}행 = 총 {original_rows + validation_rows:,}행\n"
+                        f"- 정상1 {segment_lengths[0]:,}행 / 제거행 {segment_lengths[1]:,}행 / 정상2 {segment_lengths[2]:,}행 / Sigma {segment_lengths[3]:,}행\n"
+                        f"- 비율 합계: {ratio_sum}%"
+                    )
+                )
+                file_preview_label.config(
+                    text=(
+                        f"자동 저장 파일:\n"
+                        f"1) {paths['prepro']}\n"
+                        f"2) {paths['prepro_with_valid']}\n"
+                        f"3) {paths['valid']}"
+                    )
+                )
+            except Exception:
                 pass
         
-        normal_var.trace('w', update_preview)
-        transition_var.trace('w', update_preview)
-        abnormal_var.trace('w', update_preview)
-        interval_var.trace('w', update_preview)
+        validation_ratio_var.trace('w', update_preview)
+        sigma_start_var.trace('w', update_preview)
+        sigma_end_var.trace('w', update_preview)
+        for var in segment_vars:
+            var.trace('w', update_preview)
         update_preview()
         
         # 결과 표시
@@ -1358,28 +1447,57 @@ https://github.com/lee-minki/data-preprocessing-tool
             if not selected_columns:
                 messagebox.showwarning("경고", "이상값 발생 컬럼을 최소 1개 선택하세요.")
                 return
+
+            segment_ratios = [var.get() for var in segment_vars]
+            if sum(segment_ratios) != 100:
+                messagebox.showwarning("경고", "Validation 내부 비율의 합계는 100이어야 합니다.")
+                return
+
+            sigma_start = float(sigma_start_var.get())
+            sigma_end = float(sigma_end_var.get())
+            if sigma_start <= 0 or sigma_end <= 0 or sigma_end < sigma_start:
+                messagebox.showwarning("경고", "Sigma 시작/끝 값을 다시 확인하세요.")
+                return
+
+            self.validation_settings = {
+                "ratio": validation_ratio_var.get(),
+                "segment_ratios": segment_ratios,
+                "sigma_start": sigma_start,
+                "sigma_end": sigma_end,
+            }
             
             result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
+            result_text.insert(tk.END, f"Validation 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
             dialog.update()
             
-            success, msg = self.preprocessor.generate_simulation_data(
+            try:
+                interval_minutes = int(self.interval_entry.get())
+            except ValueError:
+                interval_minutes = self.preprocessor._infer_interval_minutes()
+
+            success, msg, paths = self.preprocessor.generate_validation_outputs(
                 target_columns=selected_columns,
-                normal_minutes=normal_var.get(),
-                abnormal_minutes=abnormal_var.get(),
-                transition_minutes=transition_var.get(),
-                interval_minutes=interval_var.get()
+                validation_ratio=validation_ratio_var.get() / 100,
+                segment_ratios=segment_ratios,
+                sigma_start=sigma_start,
+                sigma_end=sigma_end,
+                interval_minutes=interval_minutes,
+                original_path=self.current_file,
             )
             
             result_text.delete(1.0, tk.END)
             if success:
                 result_text.insert(tk.END, f"✅ {msg}")
-                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
+                self._log(f"✅ Validation 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
+                self._log(f"   - 전처리본: {paths.get('prepro', '-')}")
+                self._log(f"   - 전처리+Validation: {paths.get('prepro_with_valid', '-')}")
+                self._log(f"   - Validation 전용: {paths.get('valid', '-')}")
+                messagebox.showinfo("생성 완료", msg)
             else:
                 result_text.insert(tk.END, f"❌ {msg}")
                 messagebox.showerror("오류", msg)
         
-        ttk.Button(btn_frame, text="🔬 생성", command=generate).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="💾 3개 파일 자동 생성", command=generate).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="닫기", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
     
     def _show_trend_chart(self):

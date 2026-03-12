@@ -1,6 +1,6 @@
 # 버전 정보
-__version__ = "1.6.0"
-__version_info__ = (1, 6, 0)
+__version__ = "1.7.0"
+__version_info__ = (1, 7, 0)
 
 # 앱 정보 (폐쇄망 환경용 - 모든 정보 내장)
 APP_NAME = "σ 조기경보 시계열 데이터 전처리프로그램"
@@ -17,6 +17,12 @@ DEVELOPER_INFO = {
 
 # 최근 패치노트 (앱 내 표시용)
 CHANGELOG = """
+## v1.7.0 (2026-03-12)
+- Validation 데이터 자동 생성
+- `*_prepro.xlsx`, `*_prepro_with_valid.xlsx`, `*_valid.xlsx` 자동 저장
+- 선택 태그별 제거행 기반 / sigma 기반 synthetic validation 생성
+- Validation 설정 프리셋 저장/복원
+
 ## v1.6.0 (2024-12-24)
 - 시뮬레이션 데이터 생성 기능 추가
 - ML 모델 테스트용 정상→비정상 전환 데이터
@@ -60,6 +66,7 @@ FEATURES = [
     "📊 이상값 처리 (2σ, 2.5σ, 3σ, IQR)",
     "📈 트렌드 차트 (다중 컬럼, 인터랙티브)",
     "🕐 시간 정규화/재정렬",
+    "🧪 Validation 데이터 자동 생성",
     "💾 프리셋 저장/불러오기",
     "⏳ 진행률 표시 (대용량 지원)"
 ]
@@ -79,4 +86,3 @@ def get_developer_info() -> dict:
                 pass
     
     return DEVELOPER_INFO
-

@@ -221,7 +221,7 @@ def create_settings_from_gui(app) -> Dict[str, Any]:
         "outlier": {
             "apply": app.apply_outlier.get(),
             "method": app.outlier_method.get(),
-            "action": app.outlier_action.get()
+            "action": "drop"
         },
         "normalize": {
             "apply": app.apply_normalize.get(),
@@ -232,6 +232,12 @@ def create_settings_from_gui(app) -> Dict[str, Any]:
             "realign": app.apply_time_realign.get(),
             "start_time": app.start_time_entry.get(),
             "interval": app.interval_entry.get()
+        },
+        "validation": {
+            "ratio": app.validation_settings.get("ratio", 20),
+            "segment_ratios": app.validation_settings.get("segment_ratios", [25, 25, 25, 25]),
+            "sigma_start": app.validation_settings.get("sigma_start", 2.5),
+            "sigma_end": app.validation_settings.get("sigma_end", 4.0),
         }
     }
 
@@ -270,12 +276,13 @@ def apply_settings_to_gui(app, settings: Dict[str, Any]):
     outlier = settings.get("outlier", {})
     app.apply_outlier.set(outlier.get("apply", True))
     app.outlier_method.set(outlier.get("method", "2.5sigma"))
-    app.outlier_action.set(outlier.get("action", "drop"))
+    if hasattr(app, "outlier_action"):
+        app.outlier_action.set("drop")
     
     # 정규화 설정
     normalize = settings.get("normalize", {})
     app.apply_normalize.set(normalize.get("apply", False))
-    app.normalize_method.set(normalize.get("method", "zscore"))
+    app.normalize_method.set(normalize.get("method", "minmax"))
     
     # 시간 처리 설정
     time_settings = settings.get("time", {})
@@ -287,6 +294,15 @@ def apply_settings_to_gui(app, settings: Dict[str, Any]):
     
     app.interval_entry.delete(0, "end")
     app.interval_entry.insert(0, time_settings.get("interval", "2"))
+
+    validation = settings.get("validation", {})
+    if hasattr(app, "validation_settings"):
+        app.validation_settings = {
+            "ratio": validation.get("ratio", 20),
+            "segment_ratios": validation.get("segment_ratios", [25, 25, 25, 25]),
+            "sigma_start": validation.get("sigma_start", 2.5),
+            "sigma_end": validation.get("sigma_end", 4.0),
+        }
 
 
 if __name__ == "__main__":
@@ -306,13 +322,19 @@ if __name__ == "__main__":
         },
         "normalize": {
             "apply": False,
-            "method": "zscore"
+            "method": "minmax"
         },
         "time": {
             "normalize": True,
             "realign": False,
             "start_time": "",
             "interval": "2"
+        },
+        "validation": {
+            "ratio": 20,
+            "segment_ratios": [25, 25, 25, 25],
+            "sigma_start": 2.5,
+            "sigma_end": 4.0,
         }
     }
     

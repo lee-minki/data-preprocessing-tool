@@ -21,8 +21,12 @@ Windows PC에서 Excel/CSV 파일의 시계열 데이터를 전처리하는 Pyth
   - 연산자: `>=`, `<=`, `>`, `<`, `=`, `!=`, `범위(range)`
 - 📊 **이상값 처리**: 
   - 2σ (95.4%), 2.5σ (98.8%), 3σ (99.7%), IQR 방식
-  - 해당 값만 NaN으로 변경 또는 행 전체 삭제 선택
+  - 이상값 포함 행 전체 삭제
 - 📈 **정규화**: Z-Score 또는 Min-Max 정규화 (선택사항)
+- 🧪 **Validation 데이터 생성**:
+  - `*_prepro.xlsx`
+  - `*_prepro_with_valid.xlsx`
+  - `*_valid.xlsx`
 - ⏳ **진행률 표시**: 대용량 데이터(20만행+) 처리 시 진행 상황 표시
 - 💾 **저장**: 원본 양식 유지, 처리된 데이터만 저장
 
@@ -56,7 +60,7 @@ python gui_app.py
 1. **파일 불러오기**: "파일 불러오기" 버튼으로 Excel/CSV 파일 선택
 2. **필터 추가**: "+ 필터 추가" 버튼으로 조건 설정
    - 예: `AMBIENT_TEMP >= 15` AND `FAN_CURRENT 범위 30~50`
-3. **이상값 처리**: 방법(2.5σ 권장) 및 처리 방식 선택
+3. **이상값 처리**: 방법(2.5σ 권장) 선택
 4. **전처리 실행**: "🚀 전처리 실행" 버튼 클릭
 5. **저장**: "💾 결과 저장" 버튼으로 결과 저장
 
@@ -65,11 +69,18 @@ python gui_app.py
 ## 로컬에서 EXE 빌드하기
 
 ```bash
-pip install pyinstaller
-pyinstaller --onefile --windowed --name "DataPreprocessor" gui_app.py
+python -m pip install -r requirements.txt
+python -m pip install -r build_requirements.txt
+pyinstaller --noconfirm --clean DataPreprocessor_windows.spec
 ```
 
-생성된 파일: `dist/DataPreprocessor.exe`
+생성된 파일: `dist/DataPreprocessor_v1.7.0.exe`
+
+Windows에서는 아래 배치 파일로도 빌드할 수 있습니다.
+
+```bat
+build_windows_exe.bat
+```
 
 ---
 

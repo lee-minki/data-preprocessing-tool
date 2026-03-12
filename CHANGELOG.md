@@ -1,5 +1,16 @@
 # 시계열 데이터 전처리 프로그램 - 변경 이력
 
+## v1.7.0 (2026-03-12)
+### 추가
+- Validation 데이터 자동 생성 기능
+- 전처리본 / Validation 포함본 / Validation 전용본 3종 자동 저장
+- 선택 태그 기준 제거행 기반 / sigma 기반 synthetic validation 생성
+- Validation 설정 프리셋 저장/복원
+
+### 변경
+- 이상값 처리 재실행 시 제거행 상태 초기화
+- 분석 메뉴를 `Validation 데이터 생성` 기준으로 정리
+
 ## v1.5.2 (2024-12-23)
 ### 변경
 - 파일명에 버전 표시 (DataPreprocessor_v1.5.2.exe)

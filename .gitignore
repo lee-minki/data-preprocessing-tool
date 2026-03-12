@@ -50,6 +50,7 @@ Thumbs.db
 # PyInstaller
 *.manifest
 *.spec
+!DataPreprocessor_windows.spec
 
 # Logs
 *.log

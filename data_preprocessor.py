@@ -9,19 +9,32 @@ import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Any
+from zipfile import BadZipFile
 
 
 class DataPreprocessor:
     """시계열 데이터 전처리 클래스"""
+
+    ZIP_SIGNATURE = b'PK\x03\x04'
+    OLE_SIGNATURE = b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'
     
     # 용어 도움말
     HELP_TEXTS = {
-        '2sigma': '2σ (2 표준편차): 평균에서 ±2 표준편차 범위. 정규분포 기준 약 95.4%의 데이터 포함. 엄격한 필터링에 적합.',
-        '2.5sigma': '2.5σ (2.5 표준편차): 평균에서 ±2.5 표준편차 범위. 정규분포 기준 약 98.8%의 데이터 포함. [권장]',
-        '3sigma': '3σ (3 표준편차): 평균에서 ±3 표준편차 범위. 정규분포 기준 약 99.7%의 데이터 포함. 느슨한 필터링에 적합.',
-        'iqr': 'IQR (사분위 범위): Q1-1.5×IQR ~ Q3+1.5×IQR 범위. 비대칭 분포에 적합. 극단적 이상값 탐지에 효과적.',
-        'zscore': 'Z-Score 정규화: (값 - 평균) / 표준편차. 평균=0, 표준편차=1로 변환. 데이터 비교 시 유용.',
-        'minmax': 'Min-Max 정규화: (값 - 최소) / (최대 - 최소). 0~1 범위로 변환. 신경망 입력에 적합.'
+        '2sigma': '2σ: 평균에서 2표준편차 밖의 값을 이상값으로 봅니다.\n장점: 기준이 단순하고 빠릅니다.\n단점: 실제 정상값도 같이 지울 수 있어 다소 보수적입니다.',
+        '2.5sigma': '2.5σ: 평균에서 2.5표준편차 밖의 값을 이상값으로 봅니다.\n장점: 과하게 지우지 않으면서 튀는 값을 잘 잡습니다.\n단점: 분포가 많이 치우치면 기준이 덜 안정적일 수 있습니다.',
+        '3sigma': '3σ: 평균에서 3표준편차 밖의 값만 이상값으로 봅니다.\n장점: 극단값 위주로 제거해 원본 보존이 쉽습니다.\n단점: 약한 이상은 남을 수 있습니다.',
+        'iqr': 'IQR: 가운데 50% 구간을 기준으로 너무 벗어난 값을 찾습니다.\n장점: 비대칭 데이터에도 비교적 강합니다.\n단점: 표본 수가 적으면 기준이 흔들릴 수 있습니다.',
+        'outlier_apply': '이상값 처리를 켜면 숫자 컬럼에서 튀는 행을 제거합니다.\n장점: 모델 입력이 안정됩니다.\n단점: 실제 중요한 이벤트도 빠질 수 있습니다.',
+        'outlier_drop': '이상값이 들어있는 행은 항상 전체 삭제합니다.\n장점: 한 행에 섞인 이상 패턴을 깔끔하게 제거합니다.\n단점: 같은 행의 다른 정상 값도 함께 사라집니다.',
+        'normalize_apply': '정규화는 컬럼마다 다른 값 범위를 비슷하게 맞춰줍니다.\n장점: 여러 태그를 함께 비교하기 쉽습니다.\n단점: 원래 단위 해석이 어려워집니다.',
+        'zscore': 'Z-Score: 평균을 0, 표준편차를 1로 맞춥니다.\n장점: 평균에서 얼마나 벗어났는지 보기 쉽습니다.\n단점: 극단값의 영향을 크게 받을 수 있습니다.',
+        'minmax': 'Min-Max: 값을 0~1 사이로 바꿉니다.\n장점: 컬럼끼리 크기 비교가 쉽고 직관적입니다.\n단점: 최소/최대값이 바뀌면 스케일도 같이 흔들립니다.',
+        'time_normalize': '시간 정규화는 밀린 시간을 가장 가까운 간격으로 보정합니다.\n장점: 엑셀 자동채우기 오류를 빠르게 고칠 수 있습니다.\n단점: 원래 시간 오차 정보는 사라집니다.',
+        'time_realign': '시간 재정렬은 남은 행에 새 시간축을 다시 붙입니다.\n장점: 학습/검증 구간을 일정 간격으로 맞추기 쉽습니다.\n단점: 원래 수집 시간과는 달라질 수 있습니다.',
+        'validation_ratio': 'Validation 비율은 전처리 데이터 길이 대비 검증 구간 길이입니다.\n장점: 솔루션에서 뒤 구간 드래그 기준을 맞추기 쉽습니다.\n단점: 너무 크게 잡으면 synthetic 데이터 비중이 커집니다.',
+        'validation_removed': '제거행 기반 구간은 전처리에서 걸러진 실제 이상값을 재료로 씁니다.\n장점: 현장에서 나온 이상 패턴을 다시 검증에 넣을 수 있습니다.\n단점: 제거행이 적거나 편향되면 패턴이 단순해질 수 있습니다.',
+        'validation_sigma': '표준편차 기반 구간은 평균과 표준편차를 기준으로 선형적으로 더 벗어난 값을 만듭니다.\n장점: 점진적으로 커지는 이상 추세를 보기 좋습니다.\n단점: 실제 현장 패턴과 완전히 같지는 않을 수 있습니다.',
+        'validation_save': '생성 버튼을 누르면 원본 폴더에 전처리본, validation 포함본, validation 전용본을 함께 저장합니다.\n장점: 업로드용과 시뮬레이션용 파일을 한 번에 얻습니다.\n단점: 같은 이름 파일이 있으면 덮어쓰게 됩니다.',
     }
     
     def __init__(self):
@@ -33,6 +46,19 @@ class DataPreprocessor:
         self.original_date_format: Optional[str] = None  # 원본 날짜 형식 저장
         self.stats: Dict[str, Any] = {}
         self.removed_rows: List[pd.DataFrame] = []  # 제거된 행들 (시뮬레이션용)
+
+    def reset_processing_state(self):
+        """새 전처리 실행 전 상태를 초기화합니다."""
+        self.removed_rows = []
+        if self.original_df is not None:
+            self.processed_df = self.original_df.copy()
+            self.stats['original_rows'] = len(self.original_df)
+            self.stats['columns'] = len(self.columns)
+            self.stats['numeric_columns'] = len(self.numeric_columns)
+            self.stats['filtered_rows'] = len(self.original_df)
+            self.stats['filter_removed'] = 0
+            self.stats['outliers_removed'] = 0
+            self.stats['rows_after_outlier'] = len(self.original_df)
     
     def load_data(self, file_path: str) -> Tuple[bool, str]:
         """
@@ -47,8 +73,10 @@ class DataPreprocessor:
         try:
             path = Path(file_path)
             
-            if path.suffix.lower() in ['.xlsx', '.xls']:
-                self.original_df = pd.read_excel(file_path)
+            if path.suffix.lower() == '.xlsx':
+                self.original_df = pd.read_excel(file_path, engine='openpyxl')
+            elif path.suffix.lower() == '.xls':
+                self.original_df = pd.read_excel(file_path, engine='xlrd')
             elif path.suffix.lower() == '.csv':
                 # 인코딩 자동 감지 시도
                 try:
@@ -62,6 +90,7 @@ class DataPreprocessor:
                 return False, f"지원하지 않는 파일 형식입니다: {path.suffix}"
             
             self.processed_df = self.original_df.copy()
+            self.removed_rows = []
             
             # Unnamed 컬럼 제거
             unnamed_cols = [col for col in self.original_df.columns if 'Unnamed' in str(col)]
@@ -84,7 +113,74 @@ class DataPreprocessor:
             return True, f"파일 로드 완료: {len(self.original_df)}행, {len(self.columns)}열"
             
         except Exception as e:
-            return False, f"파일 로드 실패: {str(e)}"
+            self.original_df = None
+            self.processed_df = None
+            self.columns = []
+            self.numeric_columns = []
+            self.date_column = None
+            self.original_date_format = None
+            return False, self._format_load_error(Path(file_path), e)
+
+    def _read_file_signature(self, path: Path, size: int = 8) -> bytes:
+        """파일 시그니처를 읽습니다."""
+        try:
+            with open(path, 'rb') as f:
+                return f.read(size)
+        except OSError:
+            return b''
+
+    def _is_likely_protected_excel(self, path: Path, error_message: str) -> bool:
+        """AIP/DRM 보호 또는 형식 불일치로 보이는 Excel 파일인지 추정합니다."""
+        if path.suffix.lower() != '.xlsx':
+            return False
+
+        signature = self._read_file_signature(path)
+        message = error_message.lower()
+
+        # 보호되었거나 실제 xls/기타 형식인 경우 xlsx(zip) 시그니처가 아닐 수 있습니다.
+        if signature.startswith(self.OLE_SIGNATURE):
+            return True
+
+        protection_hints = [
+            'not a zip file',
+            'excel file format cannot be determined',
+            'xlrd',
+            'encrypted',
+        ]
+        return (
+            not signature.startswith(self.ZIP_SIGNATURE)
+            and any(hint in message for hint in protection_hints)
+        )
+
+    def _format_load_error(self, path: Path, error: Exception) -> str:
+        """사용자에게 보여줄 파일 로드 오류 메시지를 생성합니다."""
+        raw_message = str(error)
+        suffix = path.suffix.lower()
+
+        if self._is_likely_protected_excel(path, raw_message):
+            return (
+                "파일 로드 실패: 문서보안(AIP/DRM)이 적용되었거나 보안 해제가 끝나지 않은 Excel 파일로 보입니다.\n"
+                "파일 탐색기에서 대상 파일을 우클릭한 뒤 '문서보안 해제'를 완료한 후 다시 시도해주세요.\n"
+                "보안 해제 후에도 동일하면 파일 확장자(.xlsx)와 실제 파일 형식을 확인해주세요.\n"
+                f"원본 오류: {raw_message}"
+            )
+
+        if suffix == '.xls' and isinstance(error, ImportError):
+            return (
+                "파일 로드 실패: 구형 Excel(.xls) 파일을 열려면 xlrd 패키지가 필요합니다.\n"
+                "현재 실행 환경에서는 .xls 지원이 포함되지 않았을 수 있습니다. .xlsx로 변환 후 다시 시도해주세요.\n"
+                f"원본 오류: {raw_message}"
+            )
+
+        if suffix == '.xlsx' and isinstance(error, BadZipFile):
+            return (
+                "파일 로드 실패: Excel 파일 형식이 올바르지 않습니다.\n"
+                "문서보안 해제가 필요한 파일이거나 확장자와 실제 파일 형식이 다를 수 있습니다.\n"
+                "파일 탐색기에서 '문서보안 해제' 후 다시 시도해주세요.\n"
+                f"원본 오류: {raw_message}"
+            )
+
+        return f"파일 로드 실패: {raw_message}"
     
     def _detect_date_column(self):
         """날짜 컬럼을 자동 감지합니다. 원본 형식을 보존합니다."""
@@ -233,6 +329,9 @@ class DataPreprocessor:
         try:
             if self.processed_df is None:
                 return False, "먼저 데이터를 로드해주세요."
+
+            # 정책상 이상값은 항상 해당 행 전체 삭제
+            action = 'drop'
             
             target_columns = columns if columns else self.numeric_columns
             outlier_count = 0
@@ -299,7 +398,7 @@ class DataPreprocessor:
             return False, f"이상값 처리 실패: {str(e)}"
     
     def normalize_data(self, 
-                      method: str = 'zscore',
+                      method: str = 'minmax',
                       columns: Optional[List[str]] = None) -> Tuple[bool, str]:
         """
         데이터를 정규화합니다.
@@ -349,6 +448,415 @@ class DataPreprocessor:
             
         except Exception as e:
             return False, f"정규화 실패: {str(e)}"
+
+    def _get_removed_source_df(self) -> pd.DataFrame:
+        """시뮬레이션에 사용할 제거된 원본 행을 반환합니다."""
+        if not self.removed_rows:
+            return pd.DataFrame()
+
+        all_removed = pd.concat(self.removed_rows, ignore_index=True)
+        meta_cols = [c for c in all_removed.columns if c.startswith('_')]
+        return all_removed.drop(columns=meta_cols, errors='ignore')
+
+    def _infer_interval_minutes(self, fallback_minutes: int = 2) -> int:
+        """날짜 컬럼에서 간격을 추정합니다."""
+        if self.processed_df is None or self.date_column is None or self.date_column not in self.processed_df.columns:
+            return fallback_minutes
+
+        try:
+            dates = pd.to_datetime(self.processed_df[self.date_column]).dropna().sort_values()
+            if len(dates) < 2:
+                return fallback_minutes
+
+            diffs = dates.diff().dropna().dt.total_seconds() / 60
+            positive_diffs = diffs[diffs > 0]
+            if positive_diffs.empty:
+                return fallback_minutes
+
+            return max(1, int(round(positive_diffs.median())))
+        except Exception:
+            return fallback_minutes
+
+    def _repeat_tail(self, df: pd.DataFrame, rows: int) -> pd.DataFrame:
+        """마지막 구간을 반복해 지정 길이만큼 확장합니다."""
+        if df.empty or rows <= 0:
+            return pd.DataFrame(columns=df.columns)
+
+        tail_df = df.tail(min(rows, len(df))).copy().reset_index(drop=True)
+        if len(tail_df) < rows:
+            repeat_times = (rows // max(1, len(tail_df))) + 1
+            tail_df = pd.concat([tail_df] * repeat_times, ignore_index=True).head(rows)
+        return tail_df.reset_index(drop=True)
+
+    def _allocate_segment_lengths(self, total_rows: int, ratios: List[float]) -> List[int]:
+        """비율 합계에 맞춰 행 수를 분배합니다."""
+        if total_rows <= 0:
+            return [0 for _ in ratios]
+
+        raw = [total_rows * (ratio / 100.0) for ratio in ratios]
+        lengths = [int(value) for value in raw]
+        remainder = total_rows - sum(lengths)
+
+        order = sorted(
+            range(len(ratios)),
+            key=lambda idx: (raw[idx] - lengths[idx], ratios[idx]),
+            reverse=True,
+        )
+
+        for idx in order[:remainder]:
+            lengths[idx] += 1
+
+        return lengths
+
+    def _save_dataframe(
+        self,
+        df: pd.DataFrame,
+        output_path: Path,
+        date_format: str = '%Y-%m-%d %H:%M:%S'
+    ) -> None:
+        """데이터프레임을 Excel 또는 CSV로 저장합니다."""
+        save_df = df.copy()
+
+        if self.date_column and self.date_column in save_df.columns:
+            try:
+                save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime(date_format)
+            except Exception:
+                pass
+
+        if output_path.suffix.lower() in ['.xlsx', '.xls']:
+            from openpyxl.utils.dataframe import dataframe_to_rows
+            from openpyxl import Workbook
+
+            wb = Workbook()
+            ws = wb.active
+
+            for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
+                for c_idx, value in enumerate(row, 1):
+                    cell = ws.cell(row=r_idx, column=c_idx, value=value)
+                    if self.date_column and save_df.columns[c_idx - 1] == self.date_column and r_idx > 1:
+                        try:
+                            if cell.value and not isinstance(cell.value, datetime):
+                                cell.value = pd.to_datetime(cell.value)
+                        except Exception:
+                            pass
+                        cell.number_format = 'YYYY-MM-DD HH:MM:SS'
+
+            wb.save(output_path)
+        else:
+            save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+
+    def _build_validation_block(
+        self,
+        target_columns: List[str],
+        validation_ratio: float,
+        segment_ratios: List[float],
+        sigma_start: float,
+        sigma_end: float,
+        interval_minutes: Optional[int] = None
+    ) -> Tuple[bool, str, Optional[pd.DataFrame], Dict[str, Any]]:
+        """Validation 전용 synthetic 블록을 생성합니다."""
+        if self.processed_df is None or self.processed_df.empty:
+            return False, "먼저 데이터를 전처리해주세요.", None, {}
+
+        if not target_columns:
+            return False, "대상 컬럼을 1개 이상 선택하세요.", None, {}
+
+        invalid_cols = [c for c in target_columns if c not in self.numeric_columns]
+        if invalid_cols:
+            return False, f"유효하지 않은 컬럼: {', '.join(invalid_cols)}", None, {}
+
+        if len(segment_ratios) != 4:
+            return False, "구간 비율은 4개여야 합니다.", None, {}
+
+        ratio_sum = sum(segment_ratios)
+        if abs(ratio_sum - 100.0) > 1e-6:
+            return False, "구간 비율의 합계는 100이어야 합니다.", None, {}
+
+        if sigma_start <= 0 or sigma_end <= 0 or sigma_end < sigma_start:
+            return False, "표준편차 배수는 0보다 커야 하며 종료 배수는 시작 배수 이상이어야 합니다.", None, {}
+
+        validation_ratio = max(0.01, min(validation_ratio, 0.8))
+        source_df = self.processed_df.reset_index(drop=True).copy()
+        validation_rows = max(4, int(round(len(source_df) * validation_ratio)))
+        segment_lengths = self._allocate_segment_lengths(validation_rows, segment_ratios)
+        removed_source = self._get_removed_source_df().reset_index(drop=True)
+
+        if segment_lengths[1] > 0 and removed_source.empty:
+            return False, "제거행 기반 이상 구간을 만들 제거 데이터가 없습니다. 필터링 또는 이상값 처리를 먼저 실행하세요.", None, {}
+
+        base_validation = self._repeat_tail(source_df, validation_rows)
+        if base_validation.empty:
+            return False, "Validation 블록을 만들 원본 데이터가 부족합니다.", None, {}
+
+        boundaries = []
+        cursor = 0
+        for length in segment_lengths:
+            boundaries.append((cursor, cursor + length))
+            cursor += length
+
+        validation_df = base_validation.copy()
+        segment2_start, segment2_end = boundaries[1]
+        segment4_start, segment4_end = boundaries[3]
+
+        for col in target_columns:
+            normal_series = source_df[col].dropna()
+            if normal_series.empty:
+                return False, f"선택한 컬럼 '{col}'에 사용할 정상 데이터가 없습니다.", None, {}
+
+            removed_values = pd.Series(dtype=float)
+            if col in removed_source.columns:
+                removed_values = pd.to_numeric(removed_source[col], errors='coerce').dropna()
+
+            if segment_lengths[1] > 0 and removed_values.empty:
+                return False, f"선택한 컬럼 '{col}'에 사용할 제거행 기반 이상 데이터가 없습니다.", None, {}
+
+            mean = float(normal_series.mean())
+            std = float(normal_series.std())
+            if pd.isna(std) or std == 0:
+                return False, f"선택한 컬럼 '{col}'의 표준편차가 0이라 sigma 기반 validation을 만들 수 없습니다.", None, {}
+
+            removed_mean = float(removed_values.mean()) if not removed_values.empty else mean
+            direction = 1 if removed_mean >= mean else -1
+
+            if segment_lengths[1] > 0:
+                baseline_idx = max(0, segment2_start - 1)
+                baseline = float(validation_df.loc[baseline_idx, col])
+                sorted_values = removed_values.sort_values(ascending=(direction > 0)).to_numpy()
+                repeat_times = (segment_lengths[1] // len(sorted_values)) + 1
+                target_values = np.tile(sorted_values, repeat_times)[:segment_lengths[1]]
+                weights = np.linspace(1.0 / segment_lengths[1], 1.0, segment_lengths[1])
+                generated = baseline + weights * (target_values - baseline)
+                validation_df.loc[segment2_start:segment2_end - 1, col] = generated
+
+            if segment_lengths[3] > 0:
+                baseline_idx = max(0, segment4_start - 1)
+                baseline = float(validation_df.loc[baseline_idx, col])
+                sigma_targets = mean + direction * np.linspace(sigma_start, sigma_end, segment_lengths[3]) * std
+                weights = np.linspace(1.0 / segment_lengths[3], 1.0, segment_lengths[3])
+                generated = baseline + weights * (sigma_targets - baseline)
+                validation_df.loc[segment4_start:segment4_end - 1, col] = generated
+
+        if self.date_column and self.date_column in validation_df.columns:
+            step_minutes = interval_minutes or self._infer_interval_minutes()
+            last_time = pd.to_datetime(source_df[self.date_column].iloc[-1])
+            validation_df[self.date_column] = [
+                last_time + timedelta(minutes=step_minutes * (idx + 1))
+                for idx in range(len(validation_df))
+            ]
+
+        info = {
+            'validation_rows': validation_rows,
+            'segment_lengths': segment_lengths,
+            'target_columns': target_columns,
+            'sigma_start': sigma_start,
+            'sigma_end': sigma_end,
+        }
+        return True, "Validation 블록 생성 완료", validation_df, info
+
+    def generate_validation_outputs(
+        self,
+        target_columns: List[str],
+        validation_ratio: float = 0.20,
+        segment_ratios: Optional[List[float]] = None,
+        sigma_start: float = 2.5,
+        sigma_end: float = 4.0,
+        interval_minutes: Optional[int] = None,
+        original_path: Optional[str] = None
+    ) -> Tuple[bool, str, Dict[str, str]]:
+        """
+        Validation synthetic 데이터를 생성하고 3개 산출물을 자동 저장합니다.
+
+        Returns:
+            (성공 여부, 메시지, 생성 파일 경로 dict)
+        """
+        paths: Dict[str, str] = {}
+
+        try:
+            segment_ratios = segment_ratios or [25, 25, 25, 25]
+            success, msg, validation_df, info = self._build_validation_block(
+                target_columns=target_columns,
+                validation_ratio=validation_ratio,
+                segment_ratios=segment_ratios,
+                sigma_start=sigma_start,
+                sigma_end=sigma_end,
+                interval_minutes=interval_minutes,
+            )
+            if not success or validation_df is None:
+                return False, msg, paths
+
+            source_df = self.processed_df.reset_index(drop=True).copy()
+            combined_df = pd.concat([source_df, validation_df], ignore_index=True)
+
+            if original_path:
+                original = Path(original_path)
+                base_dir = original.parent
+                base_name = original.stem
+            else:
+                base_dir = Path.cwd()
+                base_name = "processed_data"
+
+            prepro_path = base_dir / f"{base_name}_prepro.xlsx"
+            combined_path = base_dir / f"{base_name}_prepro_with_valid.xlsx"
+            valid_path = base_dir / f"{base_name}_valid.xlsx"
+
+            self._save_dataframe(source_df, prepro_path)
+            self._save_dataframe(combined_df, combined_path)
+            self._save_dataframe(validation_df, valid_path)
+
+            paths = {
+                'prepro': str(prepro_path),
+                'prepro_with_valid': str(combined_path),
+                'valid': str(valid_path),
+            }
+
+            segment_lengths = info['segment_lengths']
+            message = (
+                "Validation 데이터 생성 완료\n"
+                f"- 대상 컬럼: {', '.join(target_columns)}\n"
+                f"- Validation 길이: {info['validation_rows']:,}행 ({validation_ratio * 100:.1f}%)\n"
+                f"- 구간 길이: 정상1 {segment_lengths[0]:,}행 / 제거행기반 {segment_lengths[1]:,}행 / "
+                f"정상2 {segment_lengths[2]:,}행 / sigma기반 {segment_lengths[3]:,}행\n"
+                f"- Sigma 구간: {sigma_start:.2f}σ → {sigma_end:.2f}σ\n"
+                f"- 저장 파일:\n"
+                f"  1) {prepro_path}\n"
+                f"  2) {combined_path}\n"
+                f"  3) {valid_path}"
+            )
+            return True, message, paths
+        except Exception as e:
+            import traceback
+            return False, f"Validation 데이터 생성 실패: {str(e)}\n{traceback.format_exc()}", paths
+
+    def generate_appended_tail_dataset(
+        self,
+        target_columns: List[str],
+        append_ratio: float = 0.15,
+        transition_ratio: float = 0.35,
+        interval_minutes: Optional[int] = None,
+        output_path: Optional[str] = None
+    ) -> Tuple[bool, str]:
+        """
+        전처리 완료 데이터 뒤에 synthetic anomaly tail을 붙인 별도 파일을 생성합니다.
+
+        Args:
+            target_columns: 이상을 지시할 태그 목록
+            append_ratio: 원본 대비 뒤에 붙일 길이 비율 (기본 15%)
+            transition_ratio: 추가 tail 중 전이 구간 비율
+            interval_minutes: 시간 간격 (None이면 데이터에서 추정)
+            output_path: 저장 경로
+
+        Returns:
+            (성공 여부, 메시지)
+        """
+        try:
+            if self.processed_df is None or self.processed_df.empty:
+                return False, "먼저 데이터를 전처리해주세요."
+
+            removed_source = self._get_removed_source_df()
+            if removed_source.empty:
+                return False, "붙일 이상 tail을 만들 제거 데이터가 없습니다. 필터링 또는 이상값 처리를 먼저 실행하세요."
+
+            if not target_columns:
+                return False, "대상 컬럼을 1개 이상 선택하세요."
+
+            invalid_cols = [c for c in target_columns if c not in self.numeric_columns]
+            if invalid_cols:
+                return False, f"유효하지 않은 컬럼: {', '.join(invalid_cols)}"
+
+            append_ratio = max(0.01, min(append_ratio, 0.5))
+            transition_ratio = max(0.0, min(transition_ratio, 0.9))
+
+            source_df = self.processed_df.reset_index(drop=True).copy()
+            append_rows = max(3, int(round(len(source_df) * append_ratio)))
+            transition_rows = min(append_rows - 1, max(1, int(round(append_rows * transition_ratio))))
+            abnormal_rows = max(1, append_rows - transition_rows)
+
+            base_tail = source_df.tail(append_rows).copy().reset_index(drop=True)
+            if len(base_tail) < append_rows:
+                repeat_times = (append_rows // len(base_tail)) + 1
+                base_tail = pd.concat([base_tail] * repeat_times, ignore_index=True).head(append_rows).reset_index(drop=True)
+
+            source_candidates = removed_source.copy()
+            for col in target_columns:
+                if col in source_candidates.columns:
+                    source_candidates = source_candidates[source_candidates[col].notna()]
+
+            if source_candidates.empty:
+                return False, "선택한 태그들에 사용할 이상 데이터가 부족합니다."
+
+            source_candidates = source_candidates.reset_index(drop=True)
+            repeat_times = (abnormal_rows // len(source_candidates)) + 1
+            anomaly_rows = pd.concat([source_candidates] * repeat_times, ignore_index=True).head(abnormal_rows).reset_index(drop=True)
+
+            synthetic_tail = base_tail.copy()
+            last_normal_row = source_df.iloc[-1]
+
+            for col in target_columns:
+                baseline = float(last_normal_row[col])
+                first_abnormal = float(anomaly_rows.iloc[0][col])
+
+                for i in range(transition_rows):
+                    ratio = (i + 1) / (transition_rows + 1)
+                    synthetic_tail.loc[i, col] = baseline + (first_abnormal - baseline) * ratio
+
+                for i in range(abnormal_rows):
+                    row_idx = transition_rows + i
+                    if row_idx >= len(synthetic_tail):
+                        break
+                    synthetic_tail.loc[row_idx, col] = anomaly_rows.iloc[i][col]
+
+            if self.date_column and self.date_column in source_df.columns:
+                step_minutes = interval_minutes or self._infer_interval_minutes()
+                last_time = pd.to_datetime(source_df[self.date_column].iloc[-1])
+                new_times = [
+                    last_time + timedelta(minutes=step_minutes * (i + 1))
+                    for i in range(len(synthetic_tail))
+                ]
+                synthetic_tail[self.date_column] = new_times
+
+            combined_df = pd.concat([source_df, synthetic_tail], ignore_index=True)
+
+            if output_path is None:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                output_path = f"Residual_Challenge_{timestamp}.xlsx"
+
+            save_df = combined_df.copy()
+            if self.date_column and self.date_column in save_df.columns:
+                try:
+                    save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    pass
+
+            output_path = Path(output_path)
+            if output_path.suffix.lower() in ['.xlsx', '.xls']:
+                from openpyxl.utils.dataframe import dataframe_to_rows
+                from openpyxl import Workbook
+
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "ResidualChallenge"
+
+                for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
+                    for c_idx, value in enumerate(row, 1):
+                        cell = ws.cell(row=r_idx, column=c_idx, value=value)
+                        if self.date_column and save_df.columns[c_idx - 1] == self.date_column and r_idx > 1:
+                            cell.number_format = 'YYYY-MM-DD HH:MM:SS'
+
+                wb.save(output_path)
+            else:
+                save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+
+            return True, (
+                f"후행 이상 tail 파일 생성 완료: {output_path}\n"
+                f"- 대상 컬럼: {', '.join(target_columns)}\n"
+                f"- 원본 행 수: {len(source_df):,}행\n"
+                f"- 추가 tail: {append_rows:,}행 ({append_ratio * 100:.1f}%)\n"
+                f"- 전이 구간: {transition_rows:,}행\n"
+                f"- 이상 구간: {abnormal_rows:,}행"
+            )
+        except Exception as e:
+            import traceback
+            return False, f"후행 이상 tail 생성 실패: {str(e)}\n{traceback.format_exc()}"
     
     def normalize_timestamps(self, interval_minutes: int = 2) -> Tuple[bool, str]:
         """
@@ -481,42 +989,7 @@ class DataPreprocessor:
                     output_path = f"processed_data_{timestamp}.xlsx"  # 기본 Excel
             
             output_path = Path(output_path)
-            
-            if output_path.suffix.lower() in ['.xlsx', '.xls']:
-                # Excel 저장 (날짜 형식 지정)
-                from openpyxl.utils.dataframe import dataframe_to_rows
-                from openpyxl import Workbook
-                from openpyxl.styles import NamedStyle
-                
-                wb = Workbook()
-                ws = wb.active
-                
-                # 데이터프레임을 워크시트에 쓰기
-                for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
-                    for c_idx, value in enumerate(row, 1):
-                        ws.cell(row=r_idx, column=c_idx, value=value)
-                
-                # 날짜 컬럼 서식 지정
-                if self.date_column and self.date_column in save_df.columns:
-                    date_col_idx = list(save_df.columns).index(self.date_column) + 1
-                    
-                    # 날짜 스타일 생성
-                    date_style = NamedStyle(name='datetime', number_format='YYYY-MM-DD HH:MM:SS')
-                    
-                    # 헤더 제외하고 데이터 행에 적용
-                    for row in range(2, len(save_df) + 2):
-                        cell = ws.cell(row=row, column=date_col_idx)
-                        # 날짜 값을 datetime으로 변환
-                        try:
-                            if cell.value and not isinstance(cell.value, datetime):
-                                cell.value = pd.to_datetime(cell.value)
-                            cell.number_format = 'YYYY-MM-DD HH:MM:SS'
-                        except:
-                            pass
-                
-                wb.save(output_path)
-            else:
-                save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+            self._save_dataframe(save_df, output_path, date_format=date_format)
             
             return True, str(output_path)
             
