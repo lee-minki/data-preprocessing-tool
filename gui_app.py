@@ -210,8 +210,6 @@ class DataPreprocessorApp:
         analysis_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="분석", menu=analysis_menu)
         analysis_menu.add_command(label="📊 트렌드 차트...", command=self._show_trend_chart, accelerator="Ctrl+T")
-        analysis_menu.add_separator()
-        analysis_menu.add_command(label="🧪 Validation 데이터 생성...", command=self._show_simulation_dialog)
         
         # 도움말 메뉴
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -294,7 +292,7 @@ Version 1.6.0
 - 프리셋 저장 / 불러오기 / 내보내기 / 가져오기
 - 파일+프리셋 한번에 열기
 - 분석 > 트렌드 차트
-- 분석 > Validation 데이터 생성 (3개 파일 자동 저장)
+- 메인 화면 > Validation 데이터 생성 (3개 파일 자동 저장)
 
 ## 단축키
 
@@ -600,7 +598,22 @@ https://github.com/lee-minki/data-preprocessing-tool
         # 예상 시간 라벨
         self.time_label = ttk.Label(progress_frame, text="", foreground="gray")
         self.time_label.pack(anchor=tk.W)
-        
+
+        # === 권장 작업 순서 ===
+        workflow_frame = ttk.LabelFrame(main_frame, text="🧭 권장 작업 순서", padding=10)
+        workflow_frame.pack(fill=tk.X, pady=5)
+
+        ttk.Label(
+            workflow_frame,
+            text="1. 전처리 실행  →  2. Validation 데이터 생성  →  3. 결과 저장",
+            font=('맑은 고딕', 10, 'bold')
+        ).pack(anchor=tk.W)
+        ttk.Label(
+            workflow_frame,
+            text="전처리 후 Validation 파일을 먼저 만든 뒤, 마지막에 전처리본을 저장하는 흐름을 권장합니다. 분석 메뉴는 트렌드 차트 확인용입니다.",
+            foreground="gray"
+        ).pack(anchor=tk.W, pady=(4, 0))
+
         # === 실행 버튼 ===
         action_frame = ttk.Frame(main_frame)
         action_frame.pack(fill=tk.X, pady=10)
@@ -608,6 +621,10 @@ https://github.com/lee-minki/data-preprocessing-tool
         self.process_btn = ttk.Button(action_frame, text="🚀 전처리 실행", 
                                       command=self._run_preprocessing_threaded, style='Accent.TButton')
         self.process_btn.pack(side=tk.LEFT, padx=5)
+
+        self.validation_btn = ttk.Button(action_frame, text="🧪 Validation 데이터 생성",
+                                         command=self._show_simulation_dialog)
+        self.validation_btn.pack(side=tk.LEFT, padx=5)
         
         self.save_btn = ttk.Button(action_frame, text="💾 결과 저장", command=self._save_file)
         self.save_btn.pack(side=tk.LEFT, padx=5)
@@ -758,6 +775,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         self.process_btn.config(state=state)
         self.load_btn.config(state=state)
+        self.validation_btn.config(state=state)
         self.save_btn.config(state=state)
         self.add_filter_btn.config(state=state)
         
@@ -877,7 +895,7 @@ https://github.com/lee-minki/data-preprocessing-tool
             self.root.after(0, self._update_preview)
             
             self.root.after(0, lambda e=elapsed: self._log(f"\n⏱ 총 소요 시간: {e:.2f}초"))
-            self.root.after(0, lambda: self._log("✅ 전처리 완료! '결과 저장' 버튼을 눌러 파일을 저장하세요."))
+            self.root.after(0, lambda: self._log("✅ 전처리 완료! 다음으로 'Validation 데이터 생성'을 실행하고, 마지막에 '결과 저장'을 눌러 전처리본을 저장하세요."))
             
         except Exception as e:
             self._update_progress(0, f"오류 발생: {str(e)}")

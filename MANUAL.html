@@ -3,137 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>전처리 프로그램 사용자 매뉴얼</title>
+  <title>Prevision 전처리 프로그램 절차형 매뉴얼</title>
   <style>
     :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #5b6474;
-      --line: #d7deea;
+      --bg: #eef3fb;
+      --paper: #ffffff;
+      --ink: #1f2937;
+      --muted: #5f6b7a;
+      --line: #d6deea;
       --brand: #0b57d0;
-      --brand-soft: #eaf2ff;
-      --accent: #107c41;
-      --warn: #9a3412;
+      --brand-soft: #ebf2ff;
+      --accent: #117c42;
+      --warn: #a04d14;
+      --shadow: 0 18px 40px rgba(16, 36, 70, 0.08);
     }
 
     * { box-sizing: border-box; }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
       font-family: "Segoe UI", "Malgun Gothic", sans-serif;
-      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 180px);
-      color: var(--text);
-      line-height: 1.6;
+      color: var(--ink);
+      background: linear-gradient(180deg, #e8f0ff 0%, var(--bg) 260px);
+      line-height: 1.7;
     }
 
     .wrap {
-      max-width: 1100px;
+      max-width: 1240px;
       margin: 0 auto;
-      padding: 32px 20px 80px;
+      padding: 28px 20px 80px;
+    }
+
+    .hero,
+    .toc,
+    .page {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
     }
 
     .hero {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 20px 50px rgba(21, 39, 78, 0.08);
-      margin-bottom: 24px;
+      padding: 30px;
+      margin-bottom: 18px;
     }
 
     .hero h1 {
-      margin: 0 0 10px;
-      font-size: 32px;
+      margin: 0 0 12px;
+      font-size: 34px;
       line-height: 1.2;
     }
 
     .hero p {
       margin: 0;
+      max-width: 920px;
       color: var(--muted);
-      max-width: 760px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 18px;
-      margin-top: 18px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 10px 24px rgba(21, 39, 78, 0.05);
-      margin-bottom: 18px;
-    }
-
-    .card h2, .card h3 {
-      margin-top: 0;
     }
 
     .pill {
       display: inline-block;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 999px;
       background: var(--brand-soft);
       color: var(--brand);
       font-size: 13px;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .layout {
+    .toc {
+      padding: 22px 24px;
+      margin-bottom: 18px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .toc-grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
     }
 
-    .block {
-      border: 1px dashed #b6c4db;
-      border-radius: 14px;
-      padding: 14px 16px;
-      background: #fbfcff;
-    }
-
-    .block strong {
+    .toc a {
       display: block;
-      margin-bottom: 6px;
-    }
-
-    ul, ol {
-      margin: 8px 0 0 20px;
-    }
-
-    li + li {
-      margin-top: 6px;
-    }
-
-    .steps {
-      counter-reset: step;
-      display: grid;
-      gap: 12px;
-    }
-
-    .step {
+      text-decoration: none;
+      color: var(--ink);
+      background: #f8fbff;
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px 18px;
-      background: #fff;
-      position: relative;
-      padding-left: 62px;
+      border-radius: 14px;
+      padding: 12px 14px;
     }
 
-    .step::before {
-      counter-increment: step;
-      content: counter(step);
-      position: absolute;
-      left: 16px;
-      top: 16px;
-      width: 32px;
-      height: 32px;
+    .toc a strong {
+      display: block;
+      color: var(--brand);
+      margin-bottom: 2px;
+    }
+
+    .page {
+      padding: 26px;
+      margin-bottom: 18px;
+      page-break-after: always;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e8edf5;
+    }
+
+    .page-header h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    .page-no {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: var(--brand);
       color: #fff;
@@ -142,716 +141,953 @@
       font-weight: 700;
     }
 
-    .note, .warn {
-      border-radius: 14px;
+    .intro-grid,
+    .card-grid,
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fbfdff;
+      padding: 16px 18px;
+    }
+
+    .mini-card h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .mini-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 18px;
       padding: 14px 16px;
-      margin-top: 12px;
+      background: #fff;
+    }
+
+    .flow-step .n {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .flow-step strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(340px, 520px) minmax(320px, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 16px;
+    }
+
+    .screen {
+      background: #edf2f8;
+      border: 1px solid #b9c5d8;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 16px 30px rgba(16, 36, 70, 0.08);
+    }
+
+    .titlebar {
+      background: linear-gradient(180deg, #fcfdff 0%, #e8edf5 100%);
+      border-bottom: 1px solid #cad5e5;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    .menubar {
+      display: flex;
+      gap: 18px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #d7dfea;
+      background: #f9fbff;
+      font-size: 14px;
+    }
+
+    .screen-body {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      background: #f5f8fc;
+    }
+
+    .panel {
+      border: 1px solid #d6deea;
+      border-radius: 16px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .row:last-child {
+      margin-bottom: 0;
+    }
+
+    .chip,
+    .field,
+    .btn,
+    .tagbox {
+      border: 1px solid #ced8e7;
+      border-radius: 12px;
+      background: #fbfcff;
+      padding: 8px 11px;
+      font-size: 13px;
+    }
+
+    .btn {
+      background: #eef4ff;
+      color: var(--brand);
+      font-weight: 700;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    .btn.dim {
+      background: #f1f3f6;
+      color: #596372;
+    }
+
+    .preview {
+      border: 1px solid #d7dfea;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .preview-head,
+    .preview-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    }
+
+    .preview-head div,
+    .preview-row div {
+      padding: 9px 10px;
+      border-right: 1px solid #e5ebf3;
+      font-size: 12px;
+    }
+
+    .preview-head div:last-child,
+    .preview-row div:last-child {
+      border-right: none;
+    }
+
+    .preview-head {
+      background: #f2f7fe;
+      font-weight: 700;
+    }
+
+    .preview-row {
+      border-top: 1px solid #edf1f6;
+      background: #fff;
+    }
+
+    .explain {
+      display: grid;
+      gap: 12px;
+    }
+
+    .explain-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+
+    .explain-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .explain-card p,
+    .explain-card li {
+      color: var(--muted);
+    }
+
+    .explain-card ul,
+    .explain-card ol {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    .note,
+    .warn {
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-top: 14px;
     }
 
     .note {
       background: #eef8f1;
-      border: 1px solid #c4e5cc;
-      color: #1f5132;
+      border: 1px solid #c9e7d1;
+      color: #1f5332;
     }
 
     .warn {
       background: #fff2eb;
-      border: 1px solid #f0c5b1;
+      border: 1px solid #f1c9b7;
       color: var(--warn);
     }
 
     .table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 12px;
     }
 
-    .table th, .table td {
+    .table th,
+    .table td {
       border: 1px solid var(--line);
-      padding: 10px 12px;
+      padding: 11px 12px;
       text-align: left;
       vertical-align: top;
     }
 
     .table th {
-      background: #f7faff;
+      background: #f5f8fe;
     }
 
     code {
-      background: #eff3f8;
-      padding: 2px 6px;
-      border-radius: 6px;
-      font-family: Consolas, monospace;
-    }
-
-    .subtle {
-      color: var(--muted);
-      margin-top: 8px;
-    }
-
-    .app-window {
-      border: 1px solid #b9c5d8;
-      border-radius: 18px;
-      overflow: hidden;
       background: #edf2f8;
-      box-shadow: 0 18px 40px rgba(16, 36, 70, 0.10);
-      margin-top: 14px;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: Consolas, monospace;
+      font-size: 0.95em;
     }
 
-    .app-titlebar {
-      background: linear-gradient(180deg, #fcfdff 0%, #e8edf5 100%);
-      border-bottom: 1px solid #cad5e5;
-      padding: 10px 14px;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .app-menubar {
-      background: #f8fbff;
-      border-bottom: 1px solid #d9e1ec;
-      padding: 8px 14px;
-      display: flex;
-      gap: 20px;
-      font-size: 14px;
-    }
-
-    .app-body {
-      padding: 16px;
-      display: grid;
-      gap: 12px;
-      background: #f4f7fc;
-    }
-
-    .mock-group {
-      background: #ffffff;
-      border: 1px solid #d8e0ec;
-      border-radius: 14px;
-      padding: 12px;
-    }
-
-    .mock-title {
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .mock-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .mock-chip, .mock-input, .mock-button, .mock-badge {
-      border-radius: 10px;
-      padding: 8px 12px;
-      font-size: 13px;
-      border: 1px solid #ccd6e4;
-      background: #fff;
-    }
-
-    .mock-button {
-      background: #eef4ff;
-      color: var(--brand);
-      font-weight: 700;
-    }
-
-    .mock-button.primary {
-      background: #0b57d0;
-      color: #fff;
-      border-color: #0b57d0;
-    }
-
-    .mock-button.warn {
-      background: #f3f4f6;
-      color: #495463;
-    }
-
-    .mock-input {
-      min-width: 120px;
-      background: #fbfcff;
-    }
-
-    .mock-badge {
-      width: 26px;
-      text-align: center;
-      padding: 6px 0;
-      color: var(--brand);
-      font-weight: 700;
-    }
-
-    .mock-table {
-      border: 1px solid #d6deea;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #fff;
-    }
-
-    .mock-table-head,
-    .mock-table-row {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
-    }
-
-    .mock-table-head div,
-    .mock-table-row div {
-      padding: 10px 12px;
-      border-right: 1px solid #e3e9f2;
-    }
-
-    .mock-table-head div:last-child,
-    .mock-table-row div:last-child {
-      border-right: none;
-    }
-
-    .mock-table-head {
-      background: #f3f7fd;
-      font-weight: 700;
-    }
-
-    .mock-table-row {
-      border-top: 1px solid #eef2f7;
-    }
-
-    .annot-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .annot-card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px 16px;
-    }
-
-    .annot-card strong {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .num {
-      display: inline-grid;
-      place-items: center;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: var(--brand);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .mini {
-      font-size: 13px;
+    .muted {
       color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .page-header {
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="hero">
-      <span class="pill">v1.7.0</span>
-      <h1>σ 조기경보 시계열 데이터 전처리프로그램</h1>
+      <span class="pill">Procedure Manual v1.7.0</span>
+      <h1>Prevision 조기경보용 데이터 전처리 프로그램 절차형 매뉴얼</h1>
       <p>
-        이 문서는 Windows용 전처리 앱의 화면 구성, 동작 순서, Validation 데이터 생성 방식,
-        저장 파일 규칙을 한 번에 이해하기 위한 HTML 사용자 매뉴얼입니다.
+        이 프로그램은 조기경보 시스템(Prevision)용 시계열 데이터를 한 번에 준비하기 위한 올인원 도구입니다.
+        원본 파일 로드, 필터링, 이상값 제거, 정규화, 시간 재정렬, Validation 데이터 생성, 시뮬레이션용 파일 저장까지
+        한 흐름으로 처리할 수 있습니다. 이 문서는 “왜 쓰는지 → 어떤 순서로 쓰는지 → 버튼을 무엇으로 설정해야 하는지 → 어떤 파일이 저장되는지”
+        순서대로 설명합니다.
       </p>
     </section>
 
-    <section class="card">
-      <span class="pill">빠른 이해</span>
-      <h2>프로그램이 하는 일</h2>
-      <div class="grid">
-        <div class="block">
-          <strong>1. 원본 데이터 불러오기</strong>
-          Excel(<code>.xlsx</code>, <code>.xls</code>) 또는 CSV 파일을 열고 날짜/숫자 컬럼을 자동 감지합니다.
+    <section class="toc">
+      <h2>목차</h2>
+      <div class="toc-grid">
+        <a href="#page1"><strong>1. 프로그램 목적</strong><span>왜 이 프로그램을 쓰는지</span></a>
+        <a href="#page2"><strong>2. 전체 절차</strong><span>처음부터 끝까지 작업 순서</span></a>
+        <a href="#page3"><strong>3. 파일 열기</strong><span>원본 데이터 로드와 미리보기</span></a>
+        <a href="#page4"><strong>4. 필터 설정</strong><span>학습 대상 구간 정리</span></a>
+        <a href="#page5"><strong>5. 이상값 처리</strong><span>정상 학습 데이터 품질 맞추기</span></a>
+        <a href="#page6"><strong>6. 정규화/시간 처리</strong><span>모델 입력 형태 정리</span></a>
+        <a href="#page7"><strong>7. 전처리 실행/Validation/저장</strong><span>메인 페이지 작업 순서</span></a>
+        <a href="#page8"><strong>8. Validation 생성</strong><span>검증/시뮬레이션용 파일 만들기</span></a>
+        <a href="#page9"><strong>9. 파일명 규칙</strong><span>저장 결과와 접미어 의미</span></a>
+        <a href="#page10"><strong>10. 체크리스트</strong><span>실행 전/후 점검과 트러블슈팅</span></a>
+      </div>
+    </section>
+
+    <section class="page" id="page1">
+      <div class="page-header">
+        <h2>프로그램 목적과 사용 이유</h2>
+        <div class="page-no">1</div>
+      </div>
+      <div class="intro-grid">
+        <div class="mini-card">
+          <h3>무엇을 위한 프로그램인가</h3>
+          <p>
+            Prevision 조기경보 모델이 읽을 수 있는 형태로 시계열 데이터를 정리하는 프로그램입니다.
+            센서 원본 데이터에서 학습에 불필요한 구간을 제거하고, 모델 테스트용 validation/시뮬레이션 데이터를 따로 만들 수 있습니다.
+          </p>
         </div>
-        <div class="block">
-          <strong>2. 전처리</strong>
-          필터링, 이상값 제거, 정규화, 시간 보정, 시간 재정렬을 순서대로 적용합니다.
+        <div class="mini-card">
+          <h3>왜 필요한가</h3>
+          <p>
+            조기경보 모델은 시간축이 맞고, 이상값이 정리되고, 필요한 태그만 남은 데이터를 써야 합니다.
+            원본 파일을 그대로 넣으면 학습 성능이 흔들리거나, validation 구간 구성이 어려워집니다.
+          </p>
         </div>
-        <div class="block">
-          <strong>3. Validation 데이터 생성</strong>
-          제거된 이상 행과 표준편차 기반 synthetic 데이터를 섞어 검증용 파일을 자동 생성합니다.
+        <div class="mini-card">
+          <h3>무엇을 얻는가</h3>
+          <p>
+            전처리본, validation이 붙은 파일, validation만 분리한 파일을 얻습니다.
+            즉 학습용 데이터와 검증/시뮬레이션용 데이터를 같은 규칙으로 정리할 수 있습니다.
+          </p>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="mini-card">
+          <h3>핵심 기능</h3>
+          <p>Excel/CSV 로드, 다중 필터, 이상값 제거, Min-Max/Z-Score, 시간 정규화, 시간 재정렬, Validation 생성, 프리셋 저장.</p>
+        </div>
+        <div class="mini-card">
+          <h3>운영 관점 장점</h3>
+          <p>한 화면에서 작업 순서를 유지할 수 있고, 대용량 데이터도 진행률과 로그를 보면서 처리할 수 있습니다.</p>
+        </div>
+        <div class="mini-card">
+          <h3>결과 활용</h3>
+          <p>전처리본은 학습용 기준 데이터, validation 파일은 후단 솔루션에서 검증 구간 드래그 또는 시뮬레이션 데이터로 활용합니다.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        이 앱은 “실제 train/test를 내부에서 잘라 학습시키는 모델 툴”이 아니라, 학습과 validation 준비를 위한 데이터 정리 툴입니다.
+        즉 학습에 넣을 데이터 품질을 맞추고, validation용 synthetic 구간을 생성해 후단 솔루션에서 쉽게 구분하도록 돕는 역할입니다.
+      </div>
+    </section>
+
+    <section class="page" id="page2">
+      <div class="page-header">
+        <h2>전체 작업 절차</h2>
+        <div class="page-no">2</div>
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="n">1</div>
+          <div>
+            <strong>파일을 불러옵니다.</strong>
+            <span>원본 파일 구조를 확인하고 날짜 컬럼/숫자 컬럼이 제대로 잡히는지 먼저 봅니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">2</div>
+          <div>
+            <strong>필터 조건을 설정합니다.</strong>
+            <span>학습에 포함할 정상 운전 구간만 남기고, 의미 없는 구간이나 범위 밖 구간을 먼저 줄입니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">3</div>
+          <div>
+            <strong>이상값 처리 기준을 고릅니다.</strong>
+            <span>현재 정책상 이상값이 포함된 행은 전체 삭제됩니다. 제거된 행은 validation 생성 재료로 활용됩니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">4</div>
+          <div>
+            <strong>정규화와 시간 처리를 정합니다.</strong>
+            <span>후단 모델 입력 규칙에 맞춰 값 범위를 통일하고, 시간축을 2분 간격 등으로 정렬합니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">5</div>
+          <div>
+            <strong>전처리를 실행합니다.</strong>
+            <span>필터링 → 이상값 제거 → 정규화 → 시간 보정/재정렬 순서로 처리됩니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">6</div>
+          <div>
+            <strong>Validation 데이터를 생성합니다.</strong>
+            <span>선택한 태그에만 이상 패턴을 만들고, 전처리본/전처리+validation/validation 전용 파일 3개를 자동 저장합니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">7</div>
+          <div>
+            <strong>전처리본을 저장합니다.</strong>
+            <span>기본 저장명은 입력 파일명 뒤에 <code>_processed_시각</code>이 붙는 방식입니다.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="n">8</div>
+          <div>
+            <strong>Prevision에서 학습/검증에 활용합니다.</strong>
+            <span>전처리본은 학습 기준 데이터로, validation 파일은 검증 구간 또는 시뮬레이션 데이터로 사용합니다.</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <span class="pill">화면형 가이드</span>
-      <h2>실제 앱과 같은 순서로 본 메인 화면</h2>
-      <p class="subtle">
-        현재 문서는 코드에 정의된 실제 위젯 이름과 배치 순서를 기준으로 만든 화면형 매뉴얼입니다.
-        이 실행환경에서는 OS 스크린샷 캡처가 막혀 있어, 실제 화면과 동일한 구조의 안내 화면으로 정리했습니다.
-      </p>
-
-      <div class="app-window">
-        <div class="app-titlebar">
-          <span>σ 조기경보 시계열 데이터 전처리프로그램 v1.7.0</span>
-          <span>_ □ ×</span>
-        </div>
-        <div class="app-menubar">
-          <span>파일</span>
-          <span>프리셋</span>
-          <span>분석</span>
-          <span>도움말</span>
-        </div>
-        <div class="app-body">
-          <div class="mock-group">
-            <div class="mock-title">1. 파일 선택</div>
-            <div class="mock-row">
-              <span class="mock-button">파일 불러오기</span>
-              <span class="mock-input">sample_data.csv</span>
-              <span class="mock-input">📊 1000행 × 6열</span>
-            </div>
-            <div class="mock-table">
-              <div class="mock-table-head">
-                <div>TIMESTAMP</div>
-                <div>AMBIENT_TEMP</div>
-                <div>FAN_CURRENT</div>
-                <div>GEARBOX_OIL_TEMP</div>
-                <div>...</div>
+    <section class="page" id="page3">
+      <div class="page-header">
+        <h2>1단계. 파일 열기와 미리보기</h2>
+        <div class="page-no">3</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>σ 조기경보 시계열 데이터 전처리프로그램</span><span>_ □ ×</span></div>
+          <div class="menubar"><span>파일</span><span>프리셋</span><span>분석</span><span>도움말</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">📁 파일 선택</div>
+              <div class="row">
+                <span class="btn">파일 불러오기</span>
+                <span class="field">CT-06 Raw Data.xlsx</span>
+                <span class="field">📊 1000행 × 6열</span>
               </div>
-              <div class="mock-table-row">
-                <div>2025-01-01 00:00:00</div>
-                <div>16.2</div>
-                <div>38.5</div>
-                <div>44.0</div>
-                <div></div>
+              <div class="preview">
+                <div class="preview-head">
+                  <div>TIMESTAMP</div>
+                  <div>AMBIENT_TEMP</div>
+                  <div>FAN_CURRENT</div>
+                  <div>GEARBOX_OIL_TEMP</div>
+                </div>
+                <div class="preview-row">
+                  <div>2025-01-01 00:00:00</div>
+                  <div>16.2</div>
+                  <div>38.5</div>
+                  <div>44.0</div>
+                </div>
               </div>
             </div>
           </div>
-
-          <div class="mock-group">
-            <div class="mock-title">2. 필터 조건</div>
-            <div class="mock-row">
-              <span class="mock-input">AMBIENT_TEMP</span>
-              <span class="mock-input">&gt;=</span>
-              <span class="mock-input">15</span>
-              <span class="mock-button">+ 필터 추가</span>
-            </div>
+        </div>
+        <div class="explain">
+          <div class="explain-card">
+            <h3>무엇을 확인해야 하나</h3>
+            <ul>
+              <li>파일명이 올바른지</li>
+              <li>행/열 수가 예상과 맞는지</li>
+              <li>날짜 컬럼이 자동 감지됐는지</li>
+              <li>숫자 컬럼이 실제 센서 태그 기준으로 잡혔는지</li>
+            </ul>
           </div>
-
-          <div class="mock-group">
-            <div class="mock-title">3. 이상값 처리</div>
-            <div class="mock-row">
-              <span class="mock-chip">2σ</span>
-              <span class="mock-chip">2.5σ</span>
-              <span class="mock-chip">3σ</span>
-              <span class="mock-chip">IQR</span>
-              <span class="mock-badge">i</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-chip">행 전체 삭제</span>
-              <span class="mock-chip">이상값 처리 적용</span>
-            </div>
+          <div class="explain-card">
+            <h3>왜 이 단계가 중요한가</h3>
+            <p>
+              이후 필터, 이상값 처리, validation 태그 선택은 모두 숫자 컬럼 인식 결과를 기준으로 돌아갑니다.
+              여기서 컬럼 인식이 틀리면 뒤 단계가 전부 꼬입니다.
+            </p>
           </div>
-
-          <div class="mock-group">
-            <div class="mock-title">4. 정규화 / 시간 처리</div>
-            <div class="mock-row">
-              <span class="mock-chip">정규화 적용</span>
-              <span class="mock-chip">Z-Score</span>
-              <span class="mock-chip">Min-Max (0~1)</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-chip">시간 정규화</span>
-              <span class="mock-chip">시간 재정렬</span>
-              <span class="mock-input">시작 시간</span>
-              <span class="mock-input">간격 2분</span>
-            </div>
-          </div>
-
-          <div class="mock-group">
-            <div class="mock-title">5. 실행 / 진행 상황 / 결과 로그</div>
-            <div class="mock-row">
-              <span class="mock-button primary">🚀 전처리 실행</span>
-              <span class="mock-button">💾 결과 저장</span>
-              <span class="mock-button warn">⏹ 취소</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-input" style="min-width: 100%;">진행률 바 / 현재 단계 / 예상 시간</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-input" style="min-width: 100%;">처리 결과 로그: 필터링, 이상값 제거, 정규화, 시간 처리 결과가 여기에 쌓입니다.</span>
-            </div>
+          <div class="explain-card">
+            <h3>실무 팁</h3>
+            <ul>
+              <li>파일을 열자마자 미리보기 10행 정도를 눈으로 먼저 확인합니다.</li>
+              <li>AIP/DRM 문서보안 파일은 해제 후 열어야 합니다.</li>
+              <li>CSV라면 구분자/인코딩 문제로 컬럼이 한 줄로 뭉치지 않았는지 확인합니다.</li>
+            </ul>
           </div>
         </div>
       </div>
+      <div class="warn">
+        파일 로드 실패 시 먼저 문서보안(AIP/DRM) 해제가 필요한 파일인지 확인하세요.
+        이 앱은 보안 해제를 대신 수행하지 않고, 해제된 데이터 파일을 입력으로 받는 방식입니다.
+      </div>
+    </section>
 
-      <div class="annot-grid">
-        <div class="annot-card">
-          <strong><span class="num">1</span> 파일 선택</strong>
-          파일을 읽고 미리보기 표를 채웁니다. 로드가 성공하면 파일명과 행/열 수가 같이 보입니다.
+    <section class="page" id="page4">
+      <div class="page-header">
+        <h2>2단계. 필터 조건으로 학습 대상 구간 정리</h2>
+        <div class="page-no">4</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>필터 조건</span><span>_ □ ×</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">🔧 필터 조건 (AND 결합)</div>
+              <div class="row">
+                <span class="field">AMBIENT_TEMP</span>
+                <span class="field">&gt;=</span>
+                <span class="field">15</span>
+              </div>
+              <div class="row">
+                <span class="field">FAN_CURRENT</span>
+                <span class="field">range</span>
+                <span class="field">30 ~ 60</span>
+              </div>
+              <div class="row">
+                <span class="btn">+ 필터 추가</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="annot-card">
-          <strong><span class="num">2</span> 필터 조건</strong>
-          숫자 컬럼만 선택할 수 있습니다. 여러 줄을 추가하면 모두 <code>AND</code> 조건으로 적용됩니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">3</span> 이상값 처리</strong>
-          통계 기준을 선택한 뒤 적용 여부를 켭니다. 현재 정책은 이상값이 있는 행 전체를 제거합니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">4</span> 정규화 / 시간 처리</strong>
-          모델 입력 형식에 따라 선택적으로 켭니다. 시간 재정렬은 새 시작시각부터 연속 시계열을 다시 만듭니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">5</span> 실행 / 저장</strong>
-          전처리를 먼저 실행한 뒤 결과를 저장합니다. Validation 생성은 저장과 별개로 분석 메뉴에서 실행합니다.
+        <div class="explain">
+          <div class="explain-card">
+            <h3>필터의 목적</h3>
+            <p>
+              모델이 학습할 구간을 먼저 좁히는 단계입니다.
+              점검 중 구간, 정지 구간, 센서가 물리적으로 말이 안 되는 구간을 미리 빼면 학습 기준이 더 안정됩니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>어떻게 읽으면 되나</h3>
+            <ul>
+              <li><code>AMBIENT_TEMP &gt;= 15</code>: 주변 온도가 15 이상인 구간만 사용</li>
+              <li><code>FAN_CURRENT range 30~60</code>: 팬 전류가 정상 운전 범위 안인 구간만 사용</li>
+              <li>여러 줄은 모두 <code>AND</code> 조건으로 적용</li>
+            </ul>
+          </div>
+          <div class="explain-card">
+            <h3>왜 먼저 필터를 거나</h3>
+            <p>
+              이상값 처리 전에 불필요 구간을 줄여야 통계 기준이 더 깔끔해집니다.
+              즉 필터는 “학습 후보군을 정리하는 단계”, 이상값 처리는 “남은 후보군을 깨끗하게 만드는 단계”로 이해하면 됩니다.
+            </p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <span class="pill">화면 구성</span>
-      <h2>메인 화면 레이아웃</h2>
-      <div class="layout">
-        <div class="block">
-          <strong>상단 메뉴</strong>
-          <code>파일</code>, <code>프리셋</code>, <code>분석</code>, <code>도움말</code> 메뉴가 있습니다.
-          분석 메뉴에서 <code>Validation 데이터 생성</code>을 실행합니다.
+    <section class="page" id="page5">
+      <div class="page-header">
+        <h2>3단계. 이상값 처리로 정상 학습 데이터 품질 맞추기</h2>
+        <div class="page-no">5</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>이상값 처리</span><span>_ □ ×</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">📊 이상값 처리</div>
+              <div class="row">
+                <span class="chip">2σ</span>
+                <span class="chip">2.5σ</span>
+                <span class="chip">3σ</span>
+                <span class="chip">IQR</span>
+                <span class="chip">i</span>
+              </div>
+              <div class="row">
+                <span class="field">처리: 행 전체 삭제</span>
+              </div>
+              <div class="row">
+                <span class="chip">이상값 처리 적용</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="block">
-          <strong>파일 선택 영역</strong>
-          현재 연 파일 이름, 행/열 개수, 데이터 미리보기를 보여줍니다.
+        <div class="explain">
+          <div class="explain-card">
+            <h3>현재 정책</h3>
+            <p>
+              이상값이 하나라도 포함된 행은 해당 행 전체를 제거합니다.
+              셀 하나만 비우는 방식이 아니라, 학습에 들어갈 한 시점 전체를 통째로 정리하는 방식입니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>방법 선택 기준</h3>
+            <ul>
+              <li><code>2σ</code>: 엄격한 기준. 정상 범위를 좁게 봅니다.</li>
+              <li><code>2.5σ</code>: 기본 추천값. 너무 빡빡하지 않고 실무에서 쓰기 무난합니다.</li>
+              <li><code>3σ</code>: 느슨한 기준. 극단값만 제거하고 싶을 때.</li>
+              <li><code>IQR</code>: 분포가 찌그러졌거나 비대칭일 때 유리합니다.</li>
+            </ul>
+          </div>
+          <div class="explain-card">
+            <h3>왜 중요한가</h3>
+            <p>
+              학습용 데이터에 비정상 스파이크가 많이 섞이면 정상 패턴 학습이 흐려집니다.
+              반대로 너무 강하게 지우면 정상 변화까지 빠질 수 있으니, 보통은 <code>2.5σ</code>부터 시작해 결과를 비교합니다.
+            </p>
+          </div>
         </div>
-        <div class="block">
-          <strong>필터 조건 영역</strong>
-          숫자 컬럼에 대해 여러 조건을 <code>AND</code>로 조합합니다.
+      </div>
+      <div class="note">
+        제거된 행은 단순히 버려지지 않습니다. 이후 Validation 생성 시 “제거행 기반 이상 구간”을 만들 때 재료로 다시 사용됩니다.
+      </div>
+    </section>
+
+    <section class="page" id="page6">
+      <div class="page-header">
+        <h2>4단계. 정규화와 시간 처리로 모델 입력 형태 정리</h2>
+        <div class="page-no">6</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>정규화 / 시간 처리</span><span>_ □ ×</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">📈 정규화</div>
+              <div class="row">
+                <span class="chip">정규화 적용</span>
+                <span class="chip">Z-Score</span>
+                <span class="chip">Min-Max (0~1)</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">🕐 시간 처리</div>
+              <div class="row">
+                <span class="chip">시간 정규화</span>
+                <span class="chip">시간 재정렬</span>
+              </div>
+              <div class="row">
+                <span class="field">시작 시간: 2025-01-01 00:00:00</span>
+                <span class="field">간격(분): 2</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="block">
-          <strong>이상값 처리 영역</strong>
-          <code>2σ</code>, <code>2.5σ</code>, <code>3σ</code>, <code>IQR</code> 중 하나를 선택합니다.
-          현재 정책상 이상값이 포함된 행은 항상 전체 삭제됩니다.
-        </div>
-        <div class="block">
-          <strong>정규화 / 시간 처리 영역</strong>
-          필요할 때만 정규화를 켜고, 시간이 밀렸다면 시간 정규화 또는 시간 재정렬을 사용합니다.
-        </div>
-        <div class="block">
-          <strong>진행 상황 / 실행 버튼 / 결과 로그</strong>
-          처리 진행률, 예상 남은 시간, 실행 결과 메시지를 확인합니다.
+        <div class="explain">
+          <div class="explain-card">
+            <h3>정규화는 왜 쓰나</h3>
+            <p>
+              태그마다 값의 단위와 크기가 다르면 후단 모델이나 시각화가 한쪽 값에 끌릴 수 있습니다.
+              이런 경우 값 범위를 맞춰주는 것이 정규화입니다.
+            </p>
+            <ul>
+              <li><code>Min-Max</code>: 0~1 범위로 맞춤. 현재 기본 선택값입니다.</li>
+              <li><code>Z-Score</code>: 평균 0, 표준편차 1 기준으로 맞춤.</li>
+            </ul>
+          </div>
+          <div class="explain-card">
+            <h3>시간 정규화는 언제 쓰나</h3>
+            <p>
+              데이터 시각이 2분 간격이어야 하는데 <code>00:01:59</code>, <code>00:04:02</code>처럼 조금씩 밀려 있을 때 씁니다.
+              가장 가까운 간격으로 스냅해서 시간축을 바로잡습니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>시간 재정렬은 언제 쓰나</h3>
+            <p>
+              필터 후 남은 데이터에 새 시작 시간을 주고, 일정 간격의 연속 시계열처럼 다시 배열하고 싶을 때 사용합니다.
+              후단 솔루션에서 시계열 구간을 드래그할 때 더 다루기 쉬워집니다.
+            </p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <span class="pill">상세 설명</span>
-      <h2>메인 화면 버튼과 선택지 설명</h2>
+    <section class="page" id="page7">
+      <div class="page-header">
+        <h2>5단계. 메인 화면에서 전처리 → Validation → 저장 순서로 실행</h2>
+        <div class="page-no">7</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>실행 / Validation / 저장</span><span>_ □ ×</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">🧭 권장 작업 순서</div>
+              <div class="row"><span class="field" style="min-width:100%;">1. 전처리 실행 → 2. Validation 데이터 생성 → 3. 결과 저장</span></div>
+              <div class="row"><span class="field" style="min-width:100%;">분석 메뉴는 트렌드 차트 확인용</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">⏳ 진행 상황</div>
+              <div class="row"><span class="field" style="min-width:100%;">진행률 바 / 현재 단계 / 예상 시간</span></div>
+            </div>
+            <div class="panel">
+              <div class="row">
+                <span class="btn primary">🚀 전처리 실행</span>
+                <span class="btn">🧪 Validation 데이터 생성</span>
+                <span class="btn">💾 결과 저장</span>
+                <span class="btn dim">⏹ 취소</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">📋 처리 결과</div>
+              <div class="row">
+                <span class="field" style="min-width:100%;">필터링 완료 / 이상값 처리 완료 / 정규화 완료 / 시간 재정렬 완료 ...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="explain">
+          <div class="explain-card">
+            <h3>실행 버튼을 누르면</h3>
+            <p>
+              화면에서 설정한 값이 순서대로 적용됩니다.
+              일반적인 실행 흐름은 <code>필터링 → 이상값 제거 → 정규화 → 시간 정규화 → 시간 재정렬</code>입니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>왜 Validation 버튼이 메인 화면에 있나</h3>
+            <p>
+              이 프로그램의 주 작업 흐름은 전처리 직후 validation/시뮬레이션 파일을 이어서 만드는 것입니다.
+              그래서 Validation 생성은 분석 기능이 아니라 메인 작업 버튼으로 두는 편이 실제 사용 순서와 맞습니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>결과 저장은 무엇이 저장되나</h3>
+            <p>
+              현재 메모리에 있는 전처리 결과 전체가 저장됩니다.
+              이 파일은 “정상 학습용 기준 데이터”로 보는 것이 가장 자연스럽습니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>수동 저장 파일명 규칙</h3>
+            <p>
+              입력 파일이 <code>abc.xlsx</code>이면 기본 제안 파일명은
+              <code>abc_processed_YYYYMMDD_HHMMSS.xlsx</code> 형태입니다.
+              즉 입력 파일 뒤에 <code>_processed_시각</code>이 붙어 구분됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        전처리본 저장은 사용자가 경로를 직접 정하는 수동 저장입니다.
+        반면 Validation 생성은 메인 화면 버튼으로 실행하며, 원본 파일 폴더에 3개 파일을 자동 저장하는 별도 흐름입니다.
+      </div>
+    </section>
+
+    <section class="page" id="page8">
+      <div class="page-header">
+        <h2>6단계. Training / Validation 준비와 시뮬레이션용 Validation 생성</h2>
+        <div class="page-no">8</div>
+      </div>
+      <div class="split">
+        <div class="screen">
+          <div class="titlebar"><span>🧪 Validation 데이터 생성</span><span>_ □ ×</span></div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-title">Validation 데이터 자동 생성</div>
+              <div class="row"><span class="field">전처리 결과를 기준으로 validation 블록 생성</span></div>
+              <div class="row"><span class="field">제거된 데이터: 39행</span></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">설정</div>
+              <div class="row"><span class="tagbox">대상 태그 다중 선택</span></div>
+              <div class="row">
+                <span class="field">Validation 비율 20%</span>
+                <span class="field">Sigma 2.5 ~ 4.0σ</span>
+              </div>
+              <div class="row">
+                <span class="field">정상1 25%</span>
+                <span class="field">제거행 25%</span>
+                <span class="field">정상2 25%</span>
+                <span class="field">Sigma 25%</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">미리보기</div>
+              <div class="row"><span class="field" style="min-width:100%;">원본 N행 + validation M행 / 자동 저장 파일 3종 경로</span></div>
+            </div>
+            <div class="panel">
+              <div class="row">
+                <span class="btn primary">💾 3개 파일 자동 생성</span>
+                <span class="btn dim">닫기</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="explain">
+          <div class="explain-card">
+            <h3>이 기능의 목적</h3>
+            <p>
+              조기경보 모델을 학습한 뒤, 선택한 태그에서 이상이 점진적으로 발생하는 상황을 검증하거나 시뮬레이션하기 위한 파일을 만드는 기능입니다.
+              즉 “정상 학습용 데이터”와 “검증/시뮬레이션용 데이터”를 같은 기준 위에서 관리하게 해줍니다.
+            </p>
+          </div>
+          <div class="explain-card">
+            <h3>이 화면에서 결정하는 것</h3>
+            <ul>
+              <li>어떤 태그에 이상을 만들지</li>
+              <li>validation 전체 길이를 몇 %로 만들지</li>
+              <li>정상/제거행 기반 이상/sigma 기반 이상 비율을 어떻게 나눌지</li>
+              <li>sigma 구간에서 얼마나 강한 이상까지 밀어낼지</li>
+            </ul>
+          </div>
+          <div class="explain-card">
+            <h3>Training / Validation 관점에서 읽는 방법</h3>
+            <p>
+              전처리본은 학습용 기준 데이터로 보고, validation 생성 결과는 검증/시뮬레이션용으로 사용합니다.
+              특히 <code>*_prepro_with_valid.xlsx</code>는 뒤쪽 validation 블록이 붙어 있어 후단 솔루션에서 구간을 나누기 쉽고,
+              <code>*_valid.xlsx</code>는 validation 블록만 별도로 떼어서 시뮬레이션 입력으로 쓰기 좋습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="warn">
+        이 기능은 “실제 미래 validation 구간을 원본에서 잘라내는 기능”이 아니라,
+        전처리 결과를 기준으로 validation용 synthetic 블록을 새로 만드는 기능입니다.
+      </div>
+    </section>
+
+    <section class="page" id="page9">
+      <div class="page-header">
+        <h2>파일 저장 규칙과 접미어 의미</h2>
+        <div class="page-no">9</div>
+      </div>
       <table class="table">
         <thead>
           <tr>
-            <th>영역</th>
-            <th>항목</th>
-            <th>무엇을 하는가</th>
+            <th>구분</th>
+            <th>파일명 규칙</th>
+            <th>의미</th>
             <th>언제 쓰는가</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>파일 선택</td>
-            <td><code>파일 불러오기</code></td>
-            <td>Excel/CSV를 읽고 숫자 컬럼, 날짜 컬럼, 미리보기를 만듭니다.</td>
-            <td>항상 첫 단계입니다.</td>
+            <td>수동 저장</td>
+            <td><code>입력파일명_processed_YYYYMMDD_HHMMSS.확장자</code></td>
+            <td>현재 전처리 결과 전체</td>
+            <td>기본 학습용 전처리본을 남길 때</td>
           </tr>
           <tr>
-            <td>필터 조건</td>
-            <td><code>+ 필터 추가</code></td>
-            <td>새 필터 한 줄을 추가합니다. 컬럼, 연산자, 값을 직접 고릅니다.</td>
-            <td>불필요한 운전구간이나 범위 밖 데이터를 먼저 줄이고 싶을 때 씁니다.</td>
+            <td>자동 저장 1</td>
+            <td><code>입력파일명_prepro.xlsx</code></td>
+            <td>순수 전처리본</td>
+            <td>학습용 기준 파일로 사용할 때</td>
           </tr>
           <tr>
-            <td>이상값 처리</td>
-            <td><code>2σ / 2.5σ / 3σ / IQR</code></td>
-            <td>이상값을 판단하는 통계 기준입니다.</td>
-            <td>분포가 대체로 안정적이면 sigma, 비대칭이면 IQR을 우선 봅니다.</td>
+            <td>자동 저장 2</td>
+            <td><code>입력파일명_prepro_with_valid.xlsx</code></td>
+            <td>전처리본 뒤에 validation 블록을 붙인 파일</td>
+            <td>후단 솔루션에서 validation 구간을 같이 보며 테스트할 때</td>
           </tr>
           <tr>
-            <td>이상값 처리</td>
-            <td><code>이상값 처리 적용</code></td>
-            <td>선택한 기준을 실제 제거 로직에 반영합니다.</td>
-            <td>학습용 정상 데이터 품질을 먼저 맞추고 싶을 때 켭니다.</td>
-          </tr>
-          <tr>
-            <td>정규화</td>
-            <td><code>정규화 적용</code></td>
-            <td>숫자 스케일을 맞춥니다.</td>
-            <td>후단 솔루션이 값 범위 차이에 민감할 때 켭니다.</td>
-          </tr>
-          <tr>
-            <td>정규화</td>
-            <td><code>Z-Score</code>, <code>Min-Max</code></td>
-            <td>표준편차 기준 또는 0~1 기준으로 값을 바꿉니다.</td>
-            <td>기본 선택은 <code>Min-Max</code>입니다.</td>
-          </tr>
-          <tr>
-            <td>시간 처리</td>
-            <td><code>시간 정규화</code></td>
-            <td>틀어진 시각을 설정한 간격에 맞춰 스냅합니다.</td>
-            <td>초 단위 흔들림 때문에 시계열 간격이 깨졌을 때 사용합니다.</td>
-          </tr>
-          <tr>
-            <td>시간 처리</td>
-            <td><code>시간 재정렬</code></td>
-            <td>지정한 시작시각부터 새 시간축을 다시 부여합니다.</td>
-            <td>필터 후 연속 데이터처럼 다시 배열해야 할 때 사용합니다.</td>
-          </tr>
-          <tr>
-            <td>실행</td>
-            <td><code>🚀 전처리 실행</code></td>
-            <td>현재 화면의 설정을 순서대로 적용합니다.</td>
-            <td>필터와 옵션 설정을 마친 뒤 실행합니다.</td>
-          </tr>
-          <tr>
-            <td>실행</td>
-            <td><code>💾 결과 저장</code></td>
-            <td>현재 전처리 결과를 사용자가 지정한 경로에 저장합니다.</td>
-            <td>전처리 후 결과를 별도 파일로 남길 때 사용합니다.</td>
-          </tr>
-          <tr>
-            <td>분석 메뉴</td>
-            <td><code>🧪 Validation 데이터 생성...</code></td>
-            <td>검증용 synthetic 블록을 만들어 원본 폴더에 3개 파일을 자동 저장합니다.</td>
-            <td>시뮬레이션, 검증, 조기경보 추이 확인용 파일이 필요할 때 사용합니다.</td>
-          </tr>
-          <tr>
-            <td>정보 배지</td>
-            <td><code>i</code></td>
-            <td>마우스를 올리면 간단한 설명과 장단점이 나옵니다.</td>
-            <td>통계 방법 차이가 헷갈릴 때 바로 참고합니다.</td>
+            <td>자동 저장 3</td>
+            <td><code>입력파일명_valid.xlsx</code></td>
+            <td>validation 블록만 분리한 파일</td>
+            <td>시뮬레이션 데이터만 따로 입력하고 싶을 때</td>
           </tr>
         </tbody>
       </table>
-    </section>
 
-    <section class="card">
-      <span class="pill">작업 흐름</span>
-      <h2>기본 사용 순서</h2>
-      <div class="steps">
-        <div class="step">
-          <strong>파일 불러오기</strong>
-          <code>파일 불러오기</code> 버튼으로 데이터를 엽니다. 숫자 컬럼과 날짜 컬럼이 자동 감지됩니다.
+      <div class="file-grid">
+        <div class="mini-card">
+          <h3><code>_processed_시각</code></h3>
+          <p>사용자가 “결과 저장” 버튼을 눌렀을 때 제안되는 기본 이름입니다. 같은 입력 파일이라도 실행 시점을 구분하기 쉽습니다.</p>
         </div>
-        <div class="step">
-          <strong>필터 조건 설정</strong>
-          필요하면 <code>+ 필터 추가</code>로 범위 조건 또는 비교 조건을 넣습니다.
+        <div class="mini-card">
+          <h3><code>_prepro</code></h3>
+          <p>전처리만 끝난 기준 파일이라는 뜻입니다. 가장 기본이 되는 학습용 결과물입니다.</p>
         </div>
-        <div class="step">
-          <strong>이상값/정규화/시간 처리 선택</strong>
-          목적에 따라 옵션을 켭니다. 일반적으로 이상값 제거는 켠 상태로 사용합니다.
+        <div class="mini-card">
+          <h3><code>_prepro_with_valid</code></h3>
+          <p>전처리본 + validation 블록이 한 파일에 같이 들어 있다는 뜻입니다.</p>
         </div>
-        <div class="step">
-          <strong>전처리 실행</strong>
-          <code>🚀 전처리 실행</code>을 누르면 필터링 → 이상값 제거 → 정규화 → 시간 보정/재정렬 순으로 수행됩니다.
-        </div>
-        <div class="step">
-          <strong>결과 저장 또는 Validation 생성</strong>
-          전처리 결과를 저장하거나, <code>분석 &gt; Validation 데이터 생성</code>으로 검증용 파일 3종을 생성합니다.
+        <div class="mini-card">
+          <h3><code>_valid</code></h3>
+          <p>validation 블록만 따로 저장한 파일이라는 뜻입니다. 시뮬레이션 전용 파일로 쓰기 쉽습니다.</p>
         </div>
       </div>
-    </section>
 
-    <section class="card">
-      <span class="pill">전처리 규칙</span>
-      <h2>내부 동작 순서</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>순서</th>
-            <th>기능</th>
-            <th>설명</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>필터링</td>
-            <td>조건에 맞지 않는 행을 제거합니다.</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>이상값 처리</td>
-            <td>선택한 통계 기준을 벗어나는 행을 전체 삭제합니다.</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>정규화</td>
-            <td><code>Min-Max</code> 또는 <code>Z-Score</code>를 적용합니다.</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>시간 정규화</td>
-            <td>밀린 시간을 가장 가까운 간격으로 보정합니다.</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>시간 재정렬</td>
-            <td>지정한 시작 시각부터 일정 간격으로 새 시간축을 부여합니다.</td>
-          </tr>
-        </tbody>
-      </table>
       <div class="note">
-        이상값으로 제거된 행은 버려지지 않고 메모리에 저장되며, 이후 Validation 데이터 생성 시 재료로 사용됩니다.
+        자동 저장 3종은 원본 파일과 같은 폴더에 생성됩니다.
+        즉 원본 파일이 있는 위치를 기준으로 같은 이름 뿌리에 접미어만 달라지는 구조입니다.
       </div>
     </section>
 
-    <section class="card">
-      <span class="pill">Validation 생성</span>
-      <h2>Validation 데이터 생성 화면 설명</h2>
-      <div class="app-window">
-        <div class="app-titlebar">
-          <span>Validation 데이터 생성</span>
-          <span>_ □ ×</span>
+    <section class="page" id="page10">
+      <div class="page-header">
+        <h2>실행 전/후 체크리스트와 자주 생기는 문제</h2>
+        <div class="page-no">10</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="mini-card">
+          <h3>실행 전 체크</h3>
+          <p>
+            1. 문서보안 해제 여부 확인<br>
+            2. 날짜 컬럼/숫자 컬럼 인식 확인<br>
+            3. 필터 조건이 너무 강하지 않은지 확인<br>
+            4. 시간 간격(예: 2분)과 시작 시각 확인
+          </p>
         </div>
-        <div class="app-body">
-          <div class="mock-group">
-            <div class="mock-title">Validation 데이터 자동 생성</div>
-            <div class="mini">전처리 결과를 기준으로 validation 블록을 새로 만들고 원본 폴더에 3개 파일을 자동 저장합니다.</div>
-          </div>
-          <div class="mock-group">
-            <div class="mock-title">설정</div>
-            <div class="mock-row">
-              <span class="mock-input">Validation 비율 20%</span>
-              <span class="mock-input">Sigma 시작 2.5</span>
-              <span class="mock-input">Sigma 끝 4.0</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-input">정상1 25%</span>
-              <span class="mock-input">제거행 25%</span>
-              <span class="mock-input">정상2 25%</span>
-              <span class="mock-input">Sigma 25%</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-input">대상 태그 다중 선택: FAN_CURRENT, GEARBOX_OIL_TEMP</span>
-            </div>
-          </div>
-          <div class="mock-group">
-            <div class="mock-title">미리보기</div>
-            <div class="mock-row">
-              <span class="mock-input" style="min-width: 100%;">예상 결과: 원본 N행 + validation M행 / 구간별 행 수 / 저장 파일 3종 경로</span>
-            </div>
-          </div>
-          <div class="mock-group">
-            <div class="mock-row">
-              <span class="mock-button primary">💾 3개 파일 자동 생성</span>
-              <span class="mock-button warn">닫기</span>
-            </div>
-            <div class="mock-row">
-              <span class="mock-input" style="min-width: 100%;">결과 영역: 생성 성공/실패 메시지와 저장 경로가 표시됩니다.</span>
-            </div>
-          </div>
+        <div class="mini-card">
+          <h3>전처리 후 체크</h3>
+          <p>
+            1. 로그에 실패 메시지가 없는지<br>
+            2. 행 수가 지나치게 줄지 않았는지<br>
+            3. 전처리본 미리보기 값이 정상적인지<br>
+            4. 필요하면 트렌드 차트로 주요 태그 확인
+          </p>
+        </div>
+        <div class="mini-card">
+          <h3>Validation 생성 후 체크</h3>
+          <p>
+            1. 대상 태그만 이상 추이가 들어갔는지<br>
+            2. 파일 3종이 원본 폴더에 생성됐는지<br>
+            3. validation 비율과 구간 비율이 의도대로인지<br>
+            4. 후단 솔루션에서 구간 지정이 쉬운지
+          </p>
         </div>
       </div>
 
-      <div class="layout">
-        <div class="block">
-          <strong>대상 컬럼 선택</strong>
-          이상 패턴을 넣을 태그를 다중 선택합니다. 선택하지 않은 컬럼은 최근 정상 추세를 최대한 유지합니다.
-        </div>
-        <div class="block">
-          <strong>Validation 비율</strong>
-          전처리 결과 행 수 대비 validation 블록 길이 비율입니다. 기본값은 <code>20%</code>입니다.
-        </div>
-        <div class="block">
-          <strong>내부 구간 비율 4개</strong>
-          기본값은 <code>25 / 25 / 25 / 25</code>입니다.
-          순서는 <code>정상1 → 제거행 기반 이상 → 정상2 → Sigma 기반 이상</code>입니다.
-        </div>
-        <div class="block">
-          <strong>Sigma 시작/끝</strong>
-          마지막 Sigma 구간에서 평균 대비 몇 표준편차까지 벗어날지 지정합니다.
-          기본값은 <code>2.5σ ~ 4.0σ</code>입니다.
-        </div>
-        <div class="block">
-          <strong>자동 저장 파일 미리보기</strong>
-          생성 버튼을 누르면 원본 파일 폴더에 저장될 3개 파일 경로를 미리 보여줍니다.
-        </div>
-      </div>
-      <div class="annot-grid">
-        <div class="annot-card">
-          <strong><span class="num">1</span> 대상 컬럼</strong>
-          여기서 고른 태그만 이상 패턴이 바뀝니다. 선택하지 않은 태그는 정상 추세를 최대한 유지합니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">2</span> Validation 비율</strong>
-          전처리 결과 길이 대비 몇 %를 validation 블록으로 만들지 정합니다. 기본값은 20%입니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">3</span> 구간 비율 4개</strong>
-          정상1, 제거행 기반 이상, 정상2, sigma 기반 이상 순서입니다. 합계는 반드시 100이어야 합니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">4</span> Sigma 시작/끝</strong>
-          마지막 구간에서 평균 대비 얼마나 벗어날지를 정합니다. 값이 클수록 더 강한 이상 패턴이 만들어집니다.
-        </div>
-        <div class="annot-card">
-          <strong><span class="num">5</span> 자동 생성 버튼</strong>
-          눌렀을 때 전처리본, 전처리+validation, validation 전용 파일 3개를 원본 폴더에 저장합니다.
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <span class="pill">저장 파일</span>
-      <h2>Validation 생성 결과물 3종</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>파일명</th>
-            <th>내용</th>
+            <th>문제</th>
+            <th>확인할 것</th>
+            <th>즉시 조치</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>*_prepro.xlsx</code></td>
-            <td>전처리만 끝난 전체 데이터</td>
+            <td>파일 로드 실패</td>
+            <td>문서보안, 파일 형식, 손상 여부</td>
+            <td>문서보안 해제 후 다시 로드</td>
           </tr>
           <tr>
-            <td><code>*_prepro_with_valid.xlsx</code></td>
-            <td>전처리 결과 뒤에 synthetic validation 블록을 붙인 파일</td>
+            <td>Validation 생성 불가</td>
+            <td>전처리 실행 여부, 제거된 행 존재 여부</td>
+            <td>필터/이상값 처리를 먼저 실행하고 다시 생성</td>
           </tr>
           <tr>
-            <td><code>*_valid.xlsx</code></td>
-            <td>validation 블록만 따로 저장한 파일</td>
+            <td>파일이 덮어써짐</td>
+            <td>같은 이름 파일이 폴더에 이미 있는지</td>
+            <td>생성 전 기존 파일 백업 또는 폴더 정리</td>
+          </tr>
+          <tr>
+            <td>모델 입력값이 이상함</td>
+            <td>정규화 사용 여부, 시간 재정렬 간격</td>
+            <td>후단 솔루션 기준에 맞게 Min-Max/시간 간격 재검토</td>
           </tr>
         </tbody>
       </table>
+
       <div class="warn">
-        파일명은 고정 규칙을 사용합니다. 같은 이름 파일이 이미 있으면 덮어쓸 수 있으므로 생성 전 폴더 상태를 확인하세요.
+        이 매뉴얼은 먼저 내용을 충분히 담는 방향으로 작성했습니다.
+        다음 단계에서는 실제 사용자 피드백을 받아 중복 설명을 줄이고, 화면 캡처가 가능해지면 HTML 모형을 실제 앱 스크린샷으로 교체하면 됩니다.
       </div>
-    </section>
-
-    <section class="card">
-      <span class="pill">예시 시나리오</span>
-      <h2>실무에서 자주 쓰는 흐름</h2>
-      <ol>
-        <li><code>sample_data.csv</code> 또는 실데이터를 불러옵니다.</li>
-        <li><code>AMBIENT_TEMP &gt;= 15</code>, <code>FAN_CURRENT 30~60</code> 같은 필터를 넣습니다.</li>
-        <li>이상값 처리 방법을 <code>2.5σ</code>로 선택합니다.</li>
-        <li>필요하면 시간 재정렬을 켜고 시작 시간과 간격을 입력합니다.</li>
-        <li><code>🚀 전처리 실행</code>으로 데이터 품질을 맞춥니다.</li>
-        <li><code>분석 &gt; Validation 데이터 생성</code>을 열어 대상 태그와 비율을 선택합니다.</li>
-        <li>생성된 <code>*_prepro_with_valid.xlsx</code> 또는 <code>*_valid.xlsx</code>를 시뮬레이션/검증에 사용합니다.</li>
-      </ol>
-    </section>
-
-    <section class="card">
-      <span class="pill">문제 해결</span>
-      <h2>자주 발생하는 문제</h2>
-      <ul>
-        <li>파일 로드가 안 되면 문서보안(AIP/DRM) 해제가 필요한지 먼저 확인합니다.</li>
-        <li>Validation 생성 버튼이 안 되면 먼저 전처리를 실행하고, 실제 제거된 행이 있는지 확인합니다.</li>
-        <li>Sigma 입력값을 직접 수정했다면 숫자인지 확인합니다.</li>
-        <li>저장 파일이 덮어써질 수 있으므로 같은 이름 파일이 남아있는지 확인합니다.</li>
-      </ul>
     </section>
   </div>
 </body>
