@@ -19,14 +19,14 @@ from PyQt5.QtWidgets import (
     QRadioButton, QButtonGroup, QProgressBar, QTextEdit, QTableWidget,
     QTableWidgetItem, QFileDialog, QMessageBox, QDialog, QDialogButtonBox,
     QListWidget, QMenuBar, QMenu, QAction, QScrollArea, QFrame,
-    QSplitter, QHeaderView, QSpinBox
+    QSplitter, QHeaderView, QSpinBox, QDoubleSpinBox
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 
 # 핵심 로직 임포트
 from data_preprocessor import DataPreprocessor
-from preset_manager import PresetManager, create_settings_from_gui, apply_settings_to_gui
+from preset_manager import PresetManager
 from version import __version__, APP_NAME
 
 
@@ -222,7 +222,14 @@ class DataPreprocessorMac(QMainWindow):
         self.current_file = None
         self.filter_widgets: List[FilterWidget] = []
         self.processing_thread = None
-        
+        self.current_preset_name: Optional[str] = None
+        self.validation_settings = {
+            "ratio": 20,
+            "segment_ratios": [25, 25, 25, 25],
+            "sigma_start": 2.5,
+            "sigma_end": 4.0,
+        }
+
         self._setup_ui()
         self._create_menu()
     
@@ -278,10 +285,10 @@ class DataPreprocessorMac(QMainWindow):
         
         analysis_menu.addSeparator()
         
-        simulation_action = QAction("🔬 시뮬레이션 데이터 생성...", self)
-        simulation_action.setShortcut("Ctrl+Shift+S")
-        simulation_action.triggered.connect(self._show_simulation_dialog)
-        analysis_menu.addAction(simulation_action)
+        validation_action = QAction("🧪 Validation 데이터 생성...", self)
+        validation_action.setShortcut("Ctrl+Shift+S")
+        validation_action.triggered.connect(self._show_simulation_dialog)
+        analysis_menu.addAction(validation_action)
         
         # 도움말 메뉴
         help_menu = menubar.addMenu("도움말")
@@ -492,25 +499,43 @@ class DataPreprocessorMac(QMainWindow):
             self, "데이터 파일 선택", "",
             "Excel/CSV 파일 (*.xlsx *.xls *.csv);;모든 파일 (*.*)"
         )
-        
+
         if not file_path:
             return
-        
+
+        # 대용량 파일 로딩 안내
+        file_size = os.path.getsize(file_path)
+        if file_size > DataPreprocessor.LARGE_FILE_BYTES:
+            self.progress_label.setText("대용량 파일 로딩 중...")
+            self.progress_bar.setValue(0)
+
         success, msg = self.preprocessor.load_data(file_path)
-        
+
         if success:
             self.current_file = file_path
             self.file_label.setText(os.path.basename(file_path))
             self.file_label.setStyleSheet("color: black;")
-            
+
             rows = len(self.preprocessor.original_df)
             cols = len(self.preprocessor.columns)
             self.data_info_label.setText(f"📊 {rows:,}행 × {cols}열")
-            
+
             self._update_preview()
             self._update_filter_columns()
             self._log(f"✅ {msg}")
+            self._log(f"   감지된 숫자 컬럼 ({len(self.preprocessor.numeric_columns)}개): {', '.join(self.preprocessor.numeric_columns[:10])}")
+            if len(self.preprocessor.numeric_columns) > 10:
+                self._log(f"   ... 외 {len(self.preprocessor.numeric_columns) - 10}개")
+
+            # 대용량 데이터 안내
+            if rows >= DataPreprocessor.LARGE_DATA_WARNING_ROWS:
+                self._log(f"⚠️ 대용량 데이터 ({rows:,}행) - 처리에 시간이 소요될 수 있습니다.")
+
+            self.progress_bar.setValue(100)
+            self.progress_label.setText("파일 로드 완료!")
         else:
+            self.progress_bar.setValue(0)
+            self.progress_label.setText("파일 로드 실패")
             QMessageBox.critical(self, "오류", msg)
     
     def _update_preview(self):
@@ -519,7 +544,7 @@ class DataPreprocessorMac(QMainWindow):
         if df.empty:
             return
         
-        columns = list(df.columns)[:30]
+        columns = list(df.columns)[:DataPreprocessor.MAX_PREVIEW_COLUMNS]
         self.preview_table.setColumnCount(len(columns))
         self.preview_table.setRowCount(len(df))
         self.preview_table.setHorizontalHeaderLabels(columns)
@@ -621,7 +646,7 @@ class DataPreprocessorMac(QMainWindow):
         from PyQt5.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, "프리셋 저장", "프리셋 이름:")
         if ok and name:
-            settings = self._get_current_settings()
+            settings = self._create_settings()
             if self.preset_manager.save_preset(name, settings, ""):
                 self._log(f"💾 프리셋 저장: {name}")
                 QMessageBox.information(self, "저장 완료", f"프리셋 '{name}'이(가) 저장되었습니다.")
@@ -674,14 +699,14 @@ class DataPreprocessorMac(QMainWindow):
             # 자동 실행
             self._run_preprocessing()
     
-    def _get_current_settings(self) -> Dict:
-        """현재 설정 추출"""
+    def _create_settings(self) -> Dict:
+        """현재 GUI 상태에서 설정 딕셔너리를 추출합니다."""
         filters = []
         for fw in self.filter_widgets:
             f = fw.get_filter()
             if f:
                 filters.append(f)
-        
+
         return {
             'filters': filters,
             'outlier': {
@@ -698,15 +723,21 @@ class DataPreprocessorMac(QMainWindow):
                 'realign': self.apply_time_realign.isChecked(),
                 'start_time': self.start_time_edit.text(),
                 'interval': self.interval_edit.text()
+            },
+            'validation': {
+                'ratio': self.validation_settings.get('ratio', 20),
+                'segment_ratios': self.validation_settings.get('segment_ratios', [25, 25, 25, 25]),
+                'sigma_start': self.validation_settings.get('sigma_start', 2.5),
+                'sigma_end': self.validation_settings.get('sigma_end', 4.0),
             }
         }
     
     def _apply_settings(self, settings: Dict):
-        """설정 적용"""
+        """설정 딕셔너리를 GUI에 적용합니다."""
         # 기존 필터 제거
         for fw in self.filter_widgets[:]:
             self._remove_filter(fw)
-        
+
         # 필터 추가
         for f in settings.get('filters', []):
             self._add_filter()
@@ -718,29 +749,45 @@ class DataPreprocessorMac(QMainWindow):
                 fw.max_edit.setText(str(f.get('max', '')))
             else:
                 fw.value_edit.setText(str(f.get('value', '')))
-        
-        # 이상값
+
+        # 이상값 처리 설정
         outlier = settings.get('outlier', {})
         self.apply_outlier.setChecked(outlier.get('apply', True))
         if outlier.get('action') == 'nan':
             self.outlier_nan.setChecked(True)
         else:
             self.outlier_drop.setChecked(True)
-        
-        # 정규화
+
+        # 이상값 방법 설정
+        target_method = outlier.get('method', '2.5sigma')
+        for btn in self.outlier_method_group.buttons():
+            if btn.property('value') == target_method:
+                btn.setChecked(True)
+                break
+
+        # 정규화 설정
         normalize = settings.get('normalize', {})
         self.apply_normalize.setChecked(normalize.get('apply', False))
         if normalize.get('method') == 'minmax':
             self.norm_minmax.setChecked(True)
         else:
             self.norm_zscore.setChecked(True)
-        
-        # 시간
+
+        # 시간 처리 설정
         time_settings = settings.get('time', {})
         self.apply_time_normalize.setChecked(time_settings.get('normalize', False))
         self.apply_time_realign.setChecked(time_settings.get('realign', False))
         self.start_time_edit.setText(time_settings.get('start_time', ''))
         self.interval_edit.setText(time_settings.get('interval', '2'))
+
+        # Validation 설정
+        validation = settings.get('validation', {})
+        self.validation_settings = {
+            'ratio': validation.get('ratio', 20),
+            'segment_ratios': validation.get('segment_ratios', [25, 25, 25, 25]),
+            'sigma_start': validation.get('sigma_start', 2.5),
+            'sigma_end': validation.get('sigma_end', 4.0),
+        }
     
     def _show_manual(self):
         """매뉴얼 표시"""
@@ -824,52 +871,76 @@ class DataPreprocessorMac(QMainWindow):
         
         dialog.exec_()
     
+    def _get_validation_output_paths(self) -> Dict[str, str]:
+        """Validation 자동 저장 파일 경로 계산"""
+        if self.current_file:
+            original = Path(self.current_file)
+            base_dir = original.parent
+            base_name = original.stem
+        else:
+            base_dir = Path.cwd()
+            base_name = "processed_data"
+
+        return {
+            "prepro": str(base_dir / f"{base_name}_prepro.xlsx"),
+            "prepro_with_valid": str(base_dir / f"{base_name}_prepro_with_valid.xlsx"),
+            "valid": str(base_dir / f"{base_name}_valid.xlsx"),
+        }
+
     def _show_simulation_dialog(self):
-        """시뮬레이션 데이터 생성 다이얼로그"""
+        """Validation 데이터 생성 다이얼로그"""
         if self.preprocessor.processed_df is None:
             QMessageBox.warning(self, "경고", "먼저 데이터를 로드하고 전처리를 실행하세요.")
             return
-        
+
+        if not self.current_file:
+            QMessageBox.warning(self, "경고", "원본 파일 경로를 확인할 수 없습니다. 파일을 다시 불러온 뒤 시도하세요.")
+            return
+
         # 제거된 행 확인
         summary = self.preprocessor.get_removed_rows_summary()
         if summary['total'] == 0:
-            QMessageBox.warning(self, "경고", 
+            QMessageBox.warning(self, "경고",
                 "제거된 이상값이 없습니다.\n필터링 또는 이상값 처리를 먼저 실행하세요.")
             return
-        
+
         dialog = QDialog(self)
-        dialog.setWindowTitle("🔬 시뮬레이션 데이터 생성")
-        dialog.resize(550, 480)
+        dialog.setWindowTitle("🧪 Validation 데이터 생성")
+        dialog.resize(760, 680)
         layout = QVBoxLayout(dialog)
         layout.setSpacing(5)
-        
-        # 설명 (간결하게)
-        info_label = QLabel(f"<b>ML 테스트용 시뮬레이션 데이터</b> | 제거된 이상값: {summary['total']}행 | 구조: 정상→전환→비정상")
+
+        # 설명
+        info_label = QLabel(
+            f"<b>Validation 데이터 자동 생성</b><br>"
+            f"전처리 결과를 기준으로 validation 블록을 새로 만들고 원본 폴더에 3개 파일을 자동 저장합니다.<br>"
+            f"<b>제거된 데이터: {summary['total']}행</b>"
+        )
         info_label.setStyleSheet("padding: 5px; background: #e8f4fd; font-size: 11px;")
+        info_label.setWordWrap(True)
         layout.addWidget(info_label)
-        
+
         # 설정
         settings_group = QGroupBox("설정")
         settings_layout = QVBoxLayout(settings_group)
-        
+
         # 대상 컬럼 선택 (다중 선택 가능)
         target_group = QGroupBox("🎯 이상값 발생 컬럼 (다중 선택 가능)")
         target_layout = QVBoxLayout(target_group)
-        
+
         target_hint = QLabel("Ctrl+클릭으로 다중 선택. 선택한 컬럼들만 이상값으로 변화합니다.")
         target_hint.setStyleSheet("color: gray; font-size: 10px;")
         target_layout.addWidget(target_hint)
-        
+
         target_list = QListWidget()
         target_list.setSelectionMode(QListWidget.MultiSelection)
         target_list.setMaximumHeight(70)
         for col in self.preprocessor.numeric_columns:
             target_list.addItem(col)
-        # 첫번째 컬럼 기본 선택
         if target_list.count() > 0:
             target_list.item(0).setSelected(True)
         target_layout.addWidget(target_list)
-        
+
         # 전체 선택/해제 버튼
         btn_layout2 = QHBoxLayout()
         select_all = QPushButton("전체 선택")
@@ -880,122 +951,185 @@ class DataPreprocessorMac(QMainWindow):
         btn_layout2.addWidget(clear_all)
         btn_layout2.addStretch()
         target_layout.addLayout(btn_layout2)
-        
+
         settings_layout.addWidget(target_group)
-        
+
         # 설명
         explain_label = QLabel(
-            "💡 선택한 컬럼들만 정상→이상값으로 변화합니다.\n"
-            "   다른 모든 컬럼은 정상값을 유지하며, 원본 형식이 보존됩니다."
+            "💡 선택한 태그만 validation 구간에서 점진적으로 이상값으로 이동합니다.\n"
+            "   다른 컬럼은 최근 추세를 최대한 유지합니다."
         )
         explain_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px; background: #f5f5f5;")
         settings_layout.addWidget(explain_label)
-        
-        # 시간 설정
-        time_layout = QHBoxLayout()
-        
-        time_layout.addWidget(QLabel("정상 구간:"))
-        normal_spin = QSpinBox()
-        normal_spin.setRange(10, 120)
-        normal_spin.setValue(30)
-        normal_spin.setSuffix(" 분")
-        time_layout.addWidget(normal_spin)
-        
-        time_layout.addWidget(QLabel("전환 구간:"))
-        transition_spin = QSpinBox()
-        transition_spin.setRange(5, 30)
-        transition_spin.setValue(10)
-        transition_spin.setSuffix(" 분")
-        time_layout.addWidget(transition_spin)
-        
-        time_layout.addWidget(QLabel("비정상 구간:"))
-        abnormal_spin = QSpinBox()
-        abnormal_spin.setRange(30, 180)
-        abnormal_spin.setValue(60)
-        abnormal_spin.setSuffix(" 분")
-        time_layout.addWidget(abnormal_spin)
-        
-        time_layout.addStretch()
-        settings_layout.addLayout(time_layout)
-        
-        # 간격 설정
-        interval_layout = QHBoxLayout()
-        interval_layout.addWidget(QLabel("데이터 간격:"))
-        interval_spin = QSpinBox()
-        interval_spin.setRange(1, 10)
-        interval_spin.setValue(2)
-        interval_spin.setSuffix(" 분")
-        interval_layout.addWidget(interval_spin)
-        interval_layout.addStretch()
-        settings_layout.addLayout(interval_layout)
-        
+
+        # Validation 비율 및 Sigma 설정
+        ratio_layout = QHBoxLayout()
+
+        ratio_layout.addWidget(QLabel("Validation 비율:"))
+        validation_ratio_spin = QSpinBox()
+        validation_ratio_spin.setRange(5, 50)
+        validation_ratio_spin.setValue(int(self.validation_settings.get("ratio", 20)))
+        validation_ratio_spin.setSuffix(" %")
+        ratio_layout.addWidget(validation_ratio_spin)
+
+        ratio_layout.addWidget(QLabel("Sigma 시작/끝:"))
+        sigma_start_spin = QDoubleSpinBox()
+        sigma_start_spin.setRange(1.0, 6.0)
+        sigma_start_spin.setSingleStep(0.5)
+        sigma_start_spin.setValue(float(self.validation_settings.get("sigma_start", 2.5)))
+        ratio_layout.addWidget(sigma_start_spin)
+
+        ratio_layout.addWidget(QLabel("~"))
+        sigma_end_spin = QDoubleSpinBox()
+        sigma_end_spin.setRange(1.5, 8.0)
+        sigma_end_spin.setSingleStep(0.5)
+        sigma_end_spin.setValue(float(self.validation_settings.get("sigma_end", 4.0)))
+        ratio_layout.addWidget(sigma_end_spin)
+        ratio_layout.addWidget(QLabel("σ"))
+
+        ratio_layout.addStretch()
+        settings_layout.addLayout(ratio_layout)
+
+        # Validation 내부 비율 (4 세그먼트)
+        segment_group = QGroupBox("Validation 내부 비율 (합계 100%)")
+        segment_layout = QVBoxLayout(segment_group)
+
+        default_segments = self.validation_settings.get("segment_ratios", [25, 25, 25, 25])
+        segment_labels = ["정상1", "제거행", "정상2", "Sigma"]
+        segment_spins = []
+
+        for idx, label in enumerate(segment_labels):
+            row_layout = QHBoxLayout()
+            row_layout.addWidget(QLabel(f"{label}:"))
+            spin = QSpinBox()
+            spin.setRange(0, 100)
+            spin.setValue(int(default_segments[idx]))
+            spin.setSuffix(" %")
+            segment_spins.append(spin)
+            row_layout.addWidget(spin)
+            row_layout.addStretch()
+            segment_layout.addLayout(row_layout)
+
+        settings_layout.addWidget(segment_group)
         layout.addWidget(settings_group)
-        
+
         # 예상 결과
         preview_label = QLabel()
-        def update_preview():
-            n_rows = normal_spin.value() // interval_spin.value()
-            t_rows = transition_spin.value() // interval_spin.value()
-            a_rows = abnormal_spin.value() // interval_spin.value()
-            total = n_rows + t_rows + a_rows
-            preview_label.setText(f"<b>예상 결과:</b> 정상 {n_rows}행 + 전환 {t_rows}행 + 비정상 {a_rows}행 = 총 {total}행")
-        
-        normal_spin.valueChanged.connect(update_preview)
-        transition_spin.valueChanged.connect(update_preview)
-        abnormal_spin.valueChanged.connect(update_preview)
-        interval_spin.valueChanged.connect(update_preview)
-        update_preview()
-        
+        preview_label.setWordWrap(True)
         layout.addWidget(preview_label)
-        
+
+        file_preview_label = QLabel()
+        file_preview_label.setStyleSheet("color: gray; font-size: 10px;")
+        file_preview_label.setWordWrap(True)
+        layout.addWidget(file_preview_label)
+
+        def update_preview():
+            try:
+                original_rows = len(self.preprocessor.processed_df)
+                validation_rows = max(4, int(round(original_rows * (validation_ratio_spin.value() / 100))))
+                segment_ratios = [s.value() for s in segment_spins]
+                ratio_sum = sum(segment_ratios)
+                segment_lengths = self.preprocessor._allocate_segment_lengths(validation_rows, segment_ratios) if ratio_sum > 0 else [0, 0, 0, 0]
+                paths = self._get_validation_output_paths()
+                preview_label.setText(
+                    f"<b>예상 결과:</b> 원본 {original_rows:,}행 + validation {validation_rows:,}행 = 총 {original_rows + validation_rows:,}행<br>"
+                    f"- 정상1 {segment_lengths[0]:,}행 / 제거행 {segment_lengths[1]:,}행 / 정상2 {segment_lengths[2]:,}행 / Sigma {segment_lengths[3]:,}행<br>"
+                    f"- 비율 합계: {ratio_sum}%"
+                )
+                file_preview_label.setText(
+                    f"자동 저장 파일:\n"
+                    f"1) {paths['prepro']}\n"
+                    f"2) {paths['prepro_with_valid']}\n"
+                    f"3) {paths['valid']}"
+                )
+            except Exception:
+                pass
+
+        validation_ratio_spin.valueChanged.connect(update_preview)
+        sigma_start_spin.valueChanged.connect(update_preview)
+        sigma_end_spin.valueChanged.connect(update_preview)
+        for spin in segment_spins:
+            spin.valueChanged.connect(update_preview)
+        update_preview()
+
         # 결과 표시
         result_text = QTextEdit()
         result_text.setReadOnly(True)
-        result_text.setMaximumHeight(70)
+        result_text.setMaximumHeight(80)
         layout.addWidget(result_text)
-        
+
         # 버튼
         btn_layout = QHBoxLayout()
-        
+
         def generate():
             # 선택된 컬럼 수집
             selected_columns = []
             for i in range(target_list.count()):
                 if target_list.item(i).isSelected():
                     selected_columns.append(target_list.item(i).text())
-            
+
             if not selected_columns:
                 QMessageBox.warning(dialog, "경고", "이상값 발생 컬럼을 최소 1개 선택하세요.")
                 return
-            
-            result_text.setText(f"시뮬레이션 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
+
+            segment_ratios = [s.value() for s in segment_spins]
+            if sum(segment_ratios) != 100:
+                QMessageBox.warning(dialog, "경고", "Validation 내부 비율의 합계는 100이어야 합니다.")
+                return
+
+            sigma_start = float(sigma_start_spin.value())
+            sigma_end = float(sigma_end_spin.value())
+            if sigma_start <= 0 or sigma_end <= 0 or sigma_end < sigma_start:
+                QMessageBox.warning(dialog, "경고", "Sigma 시작/끝 값을 다시 확인하세요.")
+                return
+
+            self.validation_settings = {
+                "ratio": validation_ratio_spin.value(),
+                "segment_ratios": segment_ratios,
+                "sigma_start": sigma_start,
+                "sigma_end": sigma_end,
+            }
+
+            result_text.setText(f"Validation 데이터 생성 중...\n대상 컬럼: {', '.join(selected_columns)}")
             QApplication.processEvents()
-            
-            success, msg = self.preprocessor.generate_simulation_data(
+
+            try:
+                interval_minutes = int(self.interval_edit.text())
+            except ValueError:
+                interval_minutes = self.preprocessor._infer_interval_minutes()
+
+            success, msg, paths = self.preprocessor.generate_validation_outputs(
                 target_columns=selected_columns,
-                normal_minutes=normal_spin.value(),
-                abnormal_minutes=abnormal_spin.value(),
-                transition_minutes=transition_spin.value(),
-                interval_minutes=interval_spin.value()
+                validation_ratio=validation_ratio_spin.value() / 100,
+                segment_ratios=segment_ratios,
+                sigma_start=sigma_start,
+                sigma_end=sigma_end,
+                interval_minutes=interval_minutes,
+                original_path=self.current_file,
             )
-            
+
+            result_text.clear()
             if success:
                 result_text.setText(f"✅ {msg}")
-                self._log(f"✅ 시뮬레이션 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
+                self._log(f"✅ Validation 데이터 생성 완료 ({len(selected_columns)}개 컬럼)")
+                self._log(f"   - 전처리본: {paths.get('prepro', '-')}")
+                self._log(f"   - 전처리+Validation: {paths.get('prepro_with_valid', '-')}")
+                self._log(f"   - Validation 전용: {paths.get('valid', '-')}")
+                QMessageBox.information(dialog, "생성 완료", msg)
             else:
                 result_text.setText(f"❌ {msg}")
                 QMessageBox.critical(dialog, "오류", msg)
-        
-        generate_btn = QPushButton("🔬 생성")
+
+        generate_btn = QPushButton("💾 3개 파일 자동 생성")
         generate_btn.clicked.connect(generate)
         btn_layout.addWidget(generate_btn)
-        
+
         close_btn = QPushButton("닫기")
         close_btn.clicked.connect(dialog.close)
         btn_layout.addWidget(close_btn)
-        
+
         layout.addLayout(btn_layout)
-        
+
         dialog.exec_()
     
     def _show_trend_chart(self):

@@ -17,7 +17,28 @@ class DataPreprocessor:
 
     ZIP_SIGNATURE = b'PK\x03\x04'
     OLE_SIGNATURE = b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'
-    
+
+    # 처리 상수
+    MAX_NUMERIC_COLUMNS = 30
+    IQR_MULTIPLIER = 1.5
+    MAX_VALIDATION_RATIO = 0.8
+    MIN_VALIDATION_ROWS = 4
+    DEFAULT_INTERVAL_MINUTES = 2
+    LARGE_FILE_BYTES = 10 * 1024 * 1024
+    LARGE_DATA_WARNING_ROWS = 100_000
+    MAX_PREVIEW_COLUMNS = 30
+    SIGMA_MAP = {
+        '2sigma': 2.0,
+        '2.5sigma': 2.5,
+        '3sigma': 3.0,
+    }
+    SIGMA_DISPLAY = {
+        '2sigma': '2σ (95.4%)',
+        '2.5sigma': '2.5σ (98.8%)',
+        '3sigma': '3σ (99.7%)',
+        'iqr': 'IQR',
+    }
+
     # 용어 도움말
     HELP_TEXTS = {
         '2sigma': '2σ: 평균에서 2표준편차 밖의 값을 이상값으로 봅니다.\n장점: 기준이 단순하고 빠릅니다.\n단점: 실제 정상값도 같이 지울 수 있어 다소 보수적입니다.',
@@ -199,7 +220,7 @@ class DataPreprocessor:
                 try:
                     self.original_df[col] = pd.to_datetime(self.original_df[col])
                     self.processed_df[col] = pd.to_datetime(self.processed_df[col])
-                except:
+                except (ValueError, TypeError):
                     pass
                 break
     
@@ -211,7 +232,7 @@ class DataPreprocessor:
             if col != self.date_column and 'Unnamed' not in str(col):
                 if pd.api.types.is_numeric_dtype(self.original_df[col]):
                     self.numeric_columns.append(col)
-                    if len(self.numeric_columns) >= 30:  # 최대 30개
+                    if len(self.numeric_columns) >= self.MAX_NUMERIC_COLUMNS:
                         break
     
     def get_column_stats(self, column: str) -> Dict[str, float]:
@@ -332,68 +353,56 @@ class DataPreprocessor:
 
             # 정책상 이상값은 항상 해당 행 전체 삭제
             action = 'drop'
-            
+
             target_columns = columns if columns else self.numeric_columns
-            outlier_count = 0
-            
+
+            # Phase 1: 원본 데이터에서 모든 컬럼의 이상값 마스크를 먼저 계산
+            combined_mask = pd.Series(False, index=self.processed_df.index)
+            col_outlier_counts = {}
+
             for col in target_columns:
                 if col not in self.numeric_columns:
                     continue
-                
+
                 data = self.processed_df[col]
-                
+
                 if method == 'iqr':
                     q1 = data.quantile(0.25)
                     q3 = data.quantile(0.75)
                     iqr = q3 - q1
-                    lower = q1 - 1.5 * iqr
-                    upper = q3 + 1.5 * iqr
+                    lower = q1 - self.IQR_MULTIPLIER * iqr
+                    upper = q3 + self.IQR_MULTIPLIER * iqr
                 else:
-                    # 표준편차 기반
-                    sigma_map = {
-                        '2sigma': 2.0,
-                        '2.5sigma': 2.5,
-                        '3sigma': 3.0
-                    }
-                    n = sigma_map.get(method, 2.5)
-                    
+                    n = self.SIGMA_MAP.get(method, 2.5)
                     mean = data.mean()
                     std = data.std()
                     lower = mean - n * std
                     upper = mean + n * std
-                
-                # 이상값 마스크
+
                 outlier_mask = (data < lower) | (data > upper)
-                col_outliers = outlier_mask.sum()
-                outlier_count += col_outliers
-                
-                # 제거될 행 저장 (시뮬레이션용)
-                if col_outliers > 0 and action == 'drop':
-                    removed = self.processed_df[outlier_mask].copy()
-                    removed['_removal_reason'] = f'outlier_{col}'
-                    removed['_outlier_column'] = col
-                    self.removed_rows.append(removed)
-                
-                if action == 'nan':
-                    self.processed_df.loc[outlier_mask, col] = np.nan
-                elif action == 'drop':
-                    self.processed_df = self.processed_df[~outlier_mask]
-            
+                col_outliers = int(outlier_mask.sum())
+                if col_outliers > 0:
+                    col_outlier_counts[col] = col_outliers
+                combined_mask |= outlier_mask
+
+            outlier_count = int(combined_mask.sum())
+
+            # Phase 2: 제거될 행 저장 (시뮬레이션/validation용, 중복 없이 한 번만)
+            if outlier_count > 0:
+                removed = self.processed_df[combined_mask].copy()
+                removed['_removal_reason'] = 'outlier'
+                removed['_outlier_columns'] = ', '.join(col_outlier_counts.keys())
+                self.removed_rows.append(removed)
+
+            # Phase 3: 통합 마스크로 한 번에 삭제
             if action == 'drop':
-                self.processed_df = self.processed_df.reset_index(drop=True)
-            
+                self.processed_df = self.processed_df[~combined_mask].reset_index(drop=True)
+
             self.stats['outliers_removed'] = outlier_count
             self.stats['rows_after_outlier'] = len(self.processed_df)
-            
-            method_names = {
-                '2sigma': '2σ (95.4%)',
-                '2.5sigma': '2.5σ (98.8%)',
-                '3sigma': '3σ (99.7%)',
-                'iqr': 'IQR'
-            }
-            
-            return True, f"이상값 처리 완료 ({method_names.get(method, method)}): {outlier_count}개 처리"
-            
+
+            return True, f"이상값 처리 완료 ({self.SIGMA_DISPLAY.get(method, method)}): {outlier_count}개 행 제거"
+
         except Exception as e:
             return False, f"이상값 처리 실패: {str(e)}"
     
@@ -512,7 +521,8 @@ class DataPreprocessor:
         self,
         df: pd.DataFrame,
         output_path: Path,
-        date_format: str = '%Y-%m-%d %H:%M:%S'
+        date_format: str = '%Y-%m-%d %H:%M:%S',
+        sheet_name: Optional[str] = None,
     ) -> None:
         """데이터프레임을 Excel 또는 CSV로 저장합니다."""
         save_df = df.copy()
@@ -520,7 +530,7 @@ class DataPreprocessor:
         if self.date_column and self.date_column in save_df.columns:
             try:
                 save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime(date_format)
-            except Exception:
+            except (ValueError, TypeError):
                 pass
 
         if output_path.suffix.lower() in ['.xlsx', '.xls']:
@@ -529,6 +539,8 @@ class DataPreprocessor:
 
             wb = Workbook()
             ws = wb.active
+            if sheet_name:
+                ws.title = sheet_name
 
             for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
                 for c_idx, value in enumerate(row, 1):
@@ -575,9 +587,9 @@ class DataPreprocessor:
         if sigma_start <= 0 or sigma_end <= 0 or sigma_end < sigma_start:
             return False, "표준편차 배수는 0보다 커야 하며 종료 배수는 시작 배수 이상이어야 합니다.", None, {}
 
-        validation_ratio = max(0.01, min(validation_ratio, 0.8))
+        validation_ratio = max(0.01, min(validation_ratio, self.MAX_VALIDATION_RATIO))
         source_df = self.processed_df.reset_index(drop=True).copy()
-        validation_rows = max(4, int(round(len(source_df) * validation_ratio)))
+        validation_rows = max(self.MIN_VALIDATION_ROWS, int(round(len(source_df) * validation_ratio)))
         segment_lengths = self._allocate_segment_lengths(validation_rows, segment_ratios)
         removed_source = self._get_removed_source_df().reset_index(drop=True)
 
@@ -820,31 +832,8 @@ class DataPreprocessor:
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 output_path = f"Residual_Challenge_{timestamp}.xlsx"
 
-            save_df = combined_df.copy()
-            if self.date_column and self.date_column in save_df.columns:
-                try:
-                    save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime('%Y-%m-%d %H:%M:%S')
-                except Exception:
-                    pass
-
             output_path = Path(output_path)
-            if output_path.suffix.lower() in ['.xlsx', '.xls']:
-                from openpyxl.utils.dataframe import dataframe_to_rows
-                from openpyxl import Workbook
-
-                wb = Workbook()
-                ws = wb.active
-                ws.title = "ResidualChallenge"
-
-                for r_idx, row in enumerate(dataframe_to_rows(save_df, index=False, header=True), 1):
-                    for c_idx, value in enumerate(row, 1):
-                        cell = ws.cell(row=r_idx, column=c_idx, value=value)
-                        if self.date_column and save_df.columns[c_idx - 1] == self.date_column and r_idx > 1:
-                            cell.number_format = 'YYYY-MM-DD HH:MM:SS'
-
-                wb.save(output_path)
-            else:
-                save_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+            self._save_dataframe(combined_df, output_path, sheet_name="ResidualChallenge")
 
             return True, (
                 f"후행 이상 tail 파일 생성 완료: {output_path}\n"
@@ -874,47 +863,48 @@ class DataPreprocessor:
         try:
             if self.processed_df is None or self.date_column is None:
                 return False, "데이터 또는 날짜 컬럼이 없습니다."
-            
-            # 날짜 컬럼을 datetime으로 변환
+
             dates = pd.to_datetime(self.processed_df[self.date_column])
-            
-            corrected_count = 0
-            new_times = []
-            
-            for dt in dates:
-                # 원본 시간의 총 분 계산 (초 포함)
-                total_minutes = dt.hour * 60 + dt.minute + dt.second / 60 + dt.microsecond / 60000000
-                
-                # 가장 가까운 간격으로 반올림
-                snapped_minutes = round(total_minutes / interval_minutes) * interval_minutes
-                
-                # 24시간 넘어가면 다음 날로
-                days_add = int(snapped_minutes // (24 * 60))
-                snapped_minutes = snapped_minutes % (24 * 60)
-                
-                snapped_hour = int(snapped_minutes // 60)
-                snapped_min = int(snapped_minutes % 60)
-                
-                # 새 시간 생성
-                try:
-                    new_dt = dt.replace(hour=snapped_hour, minute=snapped_min, second=0, microsecond=0)
-                    if days_add > 0:
-                        new_dt = new_dt + timedelta(days=days_add)
-                except:
-                    new_dt = dt
-                
-                # 변경 여부 확인
-                if dt.minute != snapped_min or dt.second != 0 or dt.microsecond != 0:
-                    corrected_count += 1
-                
-                new_times.append(new_dt)
-            
-            # 날짜 컬럼 업데이트
-            self.processed_df[self.date_column] = new_times
-            
+
+            # 벡터화: 자정부터의 총 분 계산
+            total_minutes = (
+                dates.dt.hour * 60
+                + dates.dt.minute
+                + dates.dt.second / 60
+                + dates.dt.microsecond / 60_000_000
+            )
+
+            # 가장 가까운 간격으로 반올림
+            snapped_minutes = (total_minutes / interval_minutes).round() * interval_minutes
+
+            # 24시간 넘어가면 다음 날로
+            days_add = (snapped_minutes // (24 * 60)).astype(int)
+            snapped_minutes = snapped_minutes % (24 * 60)
+
+            snapped_hours = (snapped_minutes // 60).astype(int)
+            snapped_mins = (snapped_minutes % 60).astype(int)
+
+            # 벡터화된 새 시간 생성
+            new_dates = (
+                dates.dt.normalize()
+                + pd.to_timedelta(snapped_hours, unit='h')
+                + pd.to_timedelta(snapped_mins, unit='m')
+                + pd.to_timedelta(days_add, unit='D')
+            )
+
+            # 변경된 행 수 계산
+            corrected_mask = (
+                (dates.dt.minute != snapped_mins)
+                | (dates.dt.second != 0)
+                | (dates.dt.microsecond != 0)
+            )
+            corrected_count = int(corrected_mask.sum())
+
+            self.processed_df[self.date_column] = new_dates
+
             return True, f"시간 정규화 완료: {corrected_count}개 시간 보정 ({interval_minutes}분 간격)"
-            
-        except Exception as e:
+
+        except (ValueError, TypeError) as e:
             return False, f"시간 정규화 실패: {str(e)}"
     
     def realign_timestamps(self, 
@@ -975,7 +965,7 @@ class DataPreprocessor:
             if self.date_column and self.date_column in save_df.columns:
                 try:
                     save_df[self.date_column] = pd.to_datetime(save_df[self.date_column]).dt.strftime(date_format)
-                except:
+                except (ValueError, TypeError):
                     pass  # 변환 실패 시 그대로 저장
             
             if output_path is None:
@@ -1120,23 +1110,7 @@ class DataPreprocessor:
                 output_path = f"Simulation_Data_{timestamp}.xlsx"
             
             output_path = Path(output_path)
-            
-            # Excel로 저장
-            from openpyxl.utils.dataframe import dataframe_to_rows
-            from openpyxl import Workbook
-            
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Simulation"
-            
-            for r_idx, row in enumerate(dataframe_to_rows(simulation_df, index=False, header=True), 1):
-                for c_idx, value in enumerate(row, 1):
-                    cell = ws.cell(row=r_idx, column=c_idx, value=value)
-                    # 날짜 형식 지정
-                    if self.date_column and simulation_df.columns[c_idx-1] == self.date_column and r_idx > 1:
-                        cell.number_format = 'YYYY-MM-DD HH:MM:SS'
-            
-            wb.save(output_path)
+            self._save_dataframe(simulation_df, output_path, sheet_name="Simulation")
             
             return True, f"시뮬레이션 데이터 생성 완료: {str(output_path)}\n" \
                          f"- 대상 컬럼: {', '.join(target_columns)}\n" \

@@ -15,7 +15,7 @@ import time
 from typing import List, Dict, Optional
 from datetime import datetime
 from data_preprocessor import DataPreprocessor
-from preset_manager import PresetManager, create_settings_from_gui, apply_settings_to_gui
+from preset_manager import PresetManager
 from version import __version__, APP_NAME
 
 
@@ -650,7 +650,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 대용량 파일 로딩 안내
         file_size = os.path.getsize(file_path)
-        if file_size > 10 * 1024 * 1024:  # 10MB 이상
+        if file_size > DataPreprocessor.LARGE_FILE_BYTES:
             self._update_progress(0, "대용량 파일 로딩 중...")
         
         self._update_progress(10, "파일 읽는 중...")
@@ -674,7 +674,7 @@ https://github.com/lee-minki/data-preprocessing-tool
                 self._log(f"   ... 외 {len(self.preprocessor.numeric_columns) - 10}개")
             
             # 대용량 데이터 안내
-            if rows >= 100000:
+            if rows >= DataPreprocessor.LARGE_DATA_WARNING_ROWS:
                 self._log(f"⚠️ 대용량 데이터 ({rows:,}행) - 처리에 시간이 소요될 수 있습니다.")
         else:
             self._update_progress(0, "파일 로드 실패")
@@ -690,8 +690,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         if df.empty:
             return
         
-        # 실제 존재하는 컬럼만 표시 (최대 30개)
-        columns = list(df.columns)[:30]
+        columns = list(df.columns)[:DataPreprocessor.MAX_PREVIEW_COLUMNS]
         self.preview_tree['columns'] = columns
         
         # 컬럼 너비 자동 조절
@@ -703,7 +702,7 @@ https://github.com/lee-minki/data-preprocessing-tool
         
         # 데이터 추가
         for _, row in df.iterrows():
-            values = [str(v)[:15] if pd.notna(v) else '' for v in row.values[:30]]
+            values = [str(v)[:15] if pd.notna(v) else '' for v in row.values[:DataPreprocessor.MAX_PREVIEW_COLUMNS]]
             self.preview_tree.insert('', tk.END, values=values)
     
     def _update_filter_columns(self):
@@ -727,20 +726,24 @@ https://github.com/lee-minki/data-preprocessing-tool
             filter_frame.destroy()
     
     def _update_progress(self, value: float, status: str, elapsed: float = None):
-        """진행률 업데이트"""
-        self.progress_var.set(value)
-        self.progress_label.config(text=status)
-        
-        if elapsed is not None:
-            if value > 0 and value < 100:
-                remaining = (elapsed / value) * (100 - value)
-                self.time_label.config(text=f"⏱ 경과: {elapsed:.1f}초 | 예상 남은 시간: {remaining:.1f}초")
+        """진행률 업데이트 (스레드 안전)"""
+        def _do_update():
+            self.progress_var.set(value)
+            self.progress_label.config(text=status)
+
+            if elapsed is not None:
+                if 0 < value < 100:
+                    remaining = (elapsed / value) * (100 - value)
+                    self.time_label.config(text=f"⏱ 경과: {elapsed:.1f}초 | 예상 남은 시간: {remaining:.1f}초")
+                else:
+                    self.time_label.config(text=f"⏱ 총 소요 시간: {elapsed:.1f}초")
             else:
-                self.time_label.config(text=f"⏱ 총 소요 시간: {elapsed:.1f}초")
+                self.time_label.config(text="")
+
+        if threading.current_thread() is threading.main_thread():
+            _do_update()
         else:
-            self.time_label.config(text="")
-        
-        self.root.update_idletasks()
+            self.root.after(0, _do_update)
     
     def _cancel_processing(self):
         """처리 취소"""
@@ -960,8 +963,98 @@ https://github.com/lee-minki/data-preprocessing-tool
             "valid": str(base_dir / f"{base_name}_valid.xlsx"),
         }
     
+    # ===== 프리셋 설정 추출/적용 =====
+
+    def _create_settings(self) -> Dict:
+        """현재 GUI 상태에서 설정 딕셔너리를 추출합니다."""
+        filters = []
+        for ff in self.filter_frames:
+            f = ff.get_filter()
+            if f:
+                filters.append(f)
+
+        return {
+            "filters": filters,
+            "outlier": {
+                "apply": self.apply_outlier.get(),
+                "method": self.outlier_method.get(),
+                "action": "drop"
+            },
+            "normalize": {
+                "apply": self.apply_normalize.get(),
+                "method": self.normalize_method.get()
+            },
+            "time": {
+                "normalize": self.apply_time_normalize.get(),
+                "realign": self.apply_time_realign.get(),
+                "start_time": self.start_time_entry.get(),
+                "interval": self.interval_entry.get()
+            },
+            "validation": {
+                "ratio": self.validation_settings.get("ratio", 20),
+                "segment_ratios": self.validation_settings.get("segment_ratios", [25, 25, 25, 25]),
+                "sigma_start": self.validation_settings.get("sigma_start", 2.5),
+                "sigma_end": self.validation_settings.get("sigma_end", 4.0),
+            }
+        }
+
+    def _apply_settings(self, settings: Dict):
+        """설정 딕셔너리를 GUI에 적용합니다."""
+        # 기존 필터 제거
+        for ff in self.filter_frames[:]:
+            self._remove_filter(ff)
+
+        # 필터 추가
+        for f in settings.get("filters", []):
+            self._add_filter()
+            ff = self.filter_frames[-1]
+            ff.column_var.set(f.get("column", ""))
+            ff.operator_var.set(f.get("operator", "range"))
+            ff._on_operator_change(None)
+
+            if f.get("operator") == "range":
+                ff.min_entry.delete(0, "end")
+                ff.min_entry.insert(0, str(f.get("min", "")))
+                ff.max_entry.delete(0, "end")
+                ff.max_entry.insert(0, str(f.get("max", "")))
+            else:
+                ff.value_entry.delete(0, "end")
+                ff.value_entry.insert(0, str(f.get("value", "")))
+
+        # 이상값 처리 설정
+        outlier = settings.get("outlier", {})
+        self.apply_outlier.set(outlier.get("apply", True))
+        self.outlier_method.set(outlier.get("method", "2.5sigma"))
+        if hasattr(self, "outlier_action"):
+            self.outlier_action.set("drop")
+
+        # 정규화 설정
+        normalize = settings.get("normalize", {})
+        self.apply_normalize.set(normalize.get("apply", False))
+        self.normalize_method.set(normalize.get("method", "minmax"))
+
+        # 시간 처리 설정
+        time_settings = settings.get("time", {})
+        self.apply_time_normalize.set(time_settings.get("normalize", False))
+        self.apply_time_realign.set(time_settings.get("realign", False))
+
+        self.start_time_entry.delete(0, "end")
+        self.start_time_entry.insert(0, time_settings.get("start_time", ""))
+
+        self.interval_entry.delete(0, "end")
+        self.interval_entry.insert(0, time_settings.get("interval", "2"))
+
+        # Validation 설정
+        validation = settings.get("validation", {})
+        self.validation_settings = {
+            "ratio": validation.get("ratio", 20),
+            "segment_ratios": validation.get("segment_ratios", [25, 25, 25, 25]),
+            "sigma_start": validation.get("sigma_start", 2.5),
+            "sigma_end": validation.get("sigma_end", 4.0),
+        }
+
     # ===== 프리셋 관련 메서드 =====
-    
+
     def _save_preset(self):
         """현재 설정을 프리셋으로 저장"""
         # 프리셋 저장 다이얼로그
@@ -986,7 +1079,7 @@ https://github.com/lee-minki/data-preprocessing-tool
                 messagebox.showwarning("경고", "프리셋 이름을 입력하세요.")
                 return
             
-            settings = create_settings_from_gui(self)
+            settings = self._create_settings()
             description = desc_entry.get().strip()
             
             if self.preset_manager.save_preset(name, settings, description):
@@ -1056,7 +1149,7 @@ https://github.com/lee-minki/data-preprocessing-tool
             
             if preset_data:
                 settings = preset_data.get('settings', {})
-                apply_settings_to_gui(self, settings)
+                self._apply_settings(settings)
                 self.current_preset_name = preset['name']
                 self._log(f"📂 프리셋 로드 완료: {preset['name']}")
                 dialog.destroy()
@@ -1259,7 +1352,7 @@ https://github.com/lee-minki/data-preprocessing-tool
             preset_data = self.preset_manager.load_preset(preset['path'])
             if preset_data:
                 settings = preset_data.get('settings', {})
-                apply_settings_to_gui(self, settings)
+                self._apply_settings(settings)
                 self.current_preset_name = preset['name']
                 self._log(f"📂 프리셋 적용: {preset['name']}")
                 

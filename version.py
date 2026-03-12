@@ -82,7 +82,7 @@ def get_developer_info() -> dict:
             try:
                 with open(path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
+            except (json.JSONDecodeError, OSError, KeyError):
                 pass
-    
+
     return DEVELOPER_INFO

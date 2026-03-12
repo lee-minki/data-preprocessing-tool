@@ -112,7 +112,7 @@ class PresetManager:
                         "description": data.get("description", ""),
                         "created_at": data.get("created_at", "")
                     })
-            except:
+            except (json.JSONDecodeError, OSError, KeyError):
                 continue
         
         # 생성일 기준 역순 정렬
@@ -197,112 +197,6 @@ class PresetManager:
         except Exception as e:
             print(f"프리셋 가져오기 실패: {e}")
             return None
-
-
-def create_settings_from_gui(app) -> Dict[str, Any]:
-    """
-    GUI 앱에서 현재 설정을 추출합니다.
-    
-    Args:
-        app: DataPreprocessorApp 인스턴스
-        
-    Returns:
-        설정 딕셔너리
-    """
-    # 필터 조건 추출
-    filters = []
-    for ff in app.filter_frames:
-        f = ff.get_filter()
-        if f:
-            filters.append(f)
-    
-    return {
-        "filters": filters,
-        "outlier": {
-            "apply": app.apply_outlier.get(),
-            "method": app.outlier_method.get(),
-            "action": "drop"
-        },
-        "normalize": {
-            "apply": app.apply_normalize.get(),
-            "method": app.normalize_method.get()
-        },
-        "time": {
-            "normalize": app.apply_time_normalize.get(),
-            "realign": app.apply_time_realign.get(),
-            "start_time": app.start_time_entry.get(),
-            "interval": app.interval_entry.get()
-        },
-        "validation": {
-            "ratio": app.validation_settings.get("ratio", 20),
-            "segment_ratios": app.validation_settings.get("segment_ratios", [25, 25, 25, 25]),
-            "sigma_start": app.validation_settings.get("sigma_start", 2.5),
-            "sigma_end": app.validation_settings.get("sigma_end", 4.0),
-        }
-    }
-
-
-def apply_settings_to_gui(app, settings: Dict[str, Any]):
-    """
-    설정을 GUI 앱에 적용합니다.
-    
-    Args:
-        app: DataPreprocessorApp 인스턴스
-        settings: 설정 딕셔너리
-    """
-    # 기존 필터 제거
-    for ff in app.filter_frames[:]:
-        app._remove_filter(ff)
-    
-    # 필터 추가
-    filters = settings.get("filters", [])
-    for f in filters:
-        app._add_filter()
-        ff = app.filter_frames[-1]
-        ff.column_var.set(f.get("column", ""))
-        ff.operator_var.set(f.get("operator", "range"))
-        ff._on_operator_change(None)
-        
-        if f.get("operator") == "range":
-            ff.min_entry.delete(0, "end")
-            ff.min_entry.insert(0, str(f.get("min", "")))
-            ff.max_entry.delete(0, "end")
-            ff.max_entry.insert(0, str(f.get("max", "")))
-        else:
-            ff.value_entry.delete(0, "end")
-            ff.value_entry.insert(0, str(f.get("value", "")))
-    
-    # 이상값 처리 설정
-    outlier = settings.get("outlier", {})
-    app.apply_outlier.set(outlier.get("apply", True))
-    app.outlier_method.set(outlier.get("method", "2.5sigma"))
-    if hasattr(app, "outlier_action"):
-        app.outlier_action.set("drop")
-    
-    # 정규화 설정
-    normalize = settings.get("normalize", {})
-    app.apply_normalize.set(normalize.get("apply", False))
-    app.normalize_method.set(normalize.get("method", "minmax"))
-    
-    # 시간 처리 설정
-    time_settings = settings.get("time", {})
-    app.apply_time_normalize.set(time_settings.get("normalize", False))
-    app.apply_time_realign.set(time_settings.get("realign", False))
-    
-    app.start_time_entry.delete(0, "end")
-    app.start_time_entry.insert(0, time_settings.get("start_time", ""))
-    
-    app.interval_entry.delete(0, "end")
-    app.interval_entry.insert(0, time_settings.get("interval", "2"))
-
-    validation = settings.get("validation", {})
-    if hasattr(app, "validation_settings"):
-        app.validation_settings = {
-            "ratio": validation.get("ratio", 20),
-            "segment_ratios": validation.get("segment_ratios", [25, 25, 25, 25]),
-            "sigma_start": validation.get("sigma_start", 2.5),
-            "sigma_end": validation.get("sigma_end", 4.0),
-        }
 
 
 if __name__ == "__main__":
