@@ -24,11 +24,12 @@ jobs:
       run: |
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
         else
           VERSION=$(python -c "from version import __version__; print(__version__)")
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Building version: $VERSION"
+        echo "Building version: v$VERSION"
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -39,28 +40,28 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pyinstaller
-    
+        pip install -r build_requirements.txt
+
     - name: Build EXE
       run: |
-        pyinstaller --onefile --windowed --name "DataPreprocessor_${{ steps.get_version.outputs.VERSION }}" --icon=NONE gui_app.py
-    
+        pyinstaller --noconfirm --clean DataPreprocessor_windows.spec
+
     - name: Upload EXE artifact
       uses: actions/upload-artifact@v4
       with:
-        name: DataPreprocessor-${{ steps.get_version.outputs.VERSION }}-Windows
-        path: dist/DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe
+        name: DataPreprocessor-v${{ steps.get_version.outputs.VERSION }}-Windows
+        path: dist/DataPreprocessor_v${{ steps.get_version.outputs.VERSION }}.exe
     
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe
+        files: dist/DataPreprocessor_v${{ steps.get_version.outputs.VERSION }}.exe
         body: |
-          ## 시계열 데이터 전처리 프로그램 ${{ steps.get_version.outputs.VERSION }}
+          ## 시계열 데이터 전처리 프로그램 v${{ steps.get_version.outputs.VERSION }}
           
           ### 다운로드
-          - `DataPreprocessor_${{ steps.get_version.outputs.VERSION }}.exe` - Windows 실행 파일 (Python 설치 불필요)
+          - `DataPreprocessor_v${{ steps.get_version.outputs.VERSION }}.exe` - Windows 실행 파일 (Python 설치 불필요)
           
           ### 주요 기능
           - 📁 Excel/CSV 파일 로드

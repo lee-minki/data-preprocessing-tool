@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from version import __version__
 
 a = Analysis(
     ['gui_app.py'],
     pathex=[],
     binaries=[],
     datas=[
+        ('MANUAL.html', '.'),
         ('MANUAL.md', '.'),
         ('developer_info.json', '.'),
         ('data_preprocessor.py', '.'),
@@ -29,7 +31,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='DataPreprocessor_v1.7.0',
+    name=f'DataPreprocessor_v{__version__}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
