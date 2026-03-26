@@ -791,29 +791,13 @@ class DataPreprocessorMac(QMainWindow):
     
     def _show_manual(self):
         """매뉴얼 표시"""
-        manual_path = Path(__file__).parent / "MANUAL.md"
-        content = ""
+        import webbrowser
+        manual_path = Path(__file__).parent / "MANUAL.html"
+        
         if manual_path.exists():
-            with open(manual_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            webbrowser.open(f"file://{manual_path.absolute()}")
         else:
-            content = "매뉴얼 파일을 찾을 수 없습니다.\nGitHub에서 MANUAL.md를 확인하세요."
-        
-        dialog = QDialog(self)
-        dialog.setWindowTitle("사용자 매뉴얼")
-        dialog.resize(700, 500)
-        layout = QVBoxLayout(dialog)
-        
-        text = QTextEdit()
-        text.setReadOnly(True)
-        text.setPlainText(content)
-        layout.addWidget(text)
-        
-        close_btn = QPushButton("닫기")
-        close_btn.clicked.connect(dialog.close)
-        layout.addWidget(close_btn)
-        
-        dialog.exec_()
+            QMessageBox.information(self, "알림", "매뉴얼 파일을 찾을 수 없습니다.\nMANUAL.html 파일을 확인하세요.")
     
     def _show_about(self):
         """프로그램 정보 (내장 정보 사용)"""

@@ -227,88 +227,14 @@ class DataPreprocessorApp:
     
     def _show_manual(self):
         """사용자 매뉴얼 창 표시"""
+        import webbrowser
         from pathlib import Path
         
-        manual_window = tk.Toplevel(self.root)
-        manual_window.title("사용자 매뉴얼")
-        manual_window.geometry("700x600")
-        manual_window.transient(self.root)
-        
-        # 매뉴얼 텍스트 로드
-        manual_content = ""
-        possible_paths = [
-            Path(__file__).parent / "MANUAL.md",
-            Path.cwd() / "MANUAL.md",
-        ]
-        
-        for path in possible_paths:
-            if path.exists():
-                try:
-                    with open(path, 'r', encoding='utf-8') as f:
-                        manual_content = f.read()
-                    break
-                except:
-                    continue
-        
-        if not manual_content:
-            manual_content = self._get_embedded_manual()
-        
-        text = ScrolledText(manual_window, wrap=tk.WORD, font=('맑은 고딕', 10))
-        text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        text.insert(tk.END, manual_content)
-        text.config(state=tk.DISABLED)
-        
-        # 닫기 버튼
-        ttk.Button(manual_window, text="닫기", command=manual_window.destroy).pack(pady=10)
-    
-    def _get_embedded_manual(self) -> str:
-        """내장 매뉴얼 반환"""
-        return """# σ 조기경보 시계열 데이터 전처리프로그램 사용자 매뉴얼
-
-Version 1.6.0
-
-## 빠른 시작
-
-1. 파일 → 열기로 Excel/CSV 파일 불러오기
-2. + 필터 추가로 숫자 컬럼 조건 설정
-3. 필요 시 이상값 처리 / 정규화 / 시간 처리 옵션 선택
-4. 🚀 전처리 실행
-5. 💾 결과 저장
-
-## 처리 순서
-
-1. 필터링
-2. 이상값 처리
-3. 정규화
-4. 시간 정규화
-5. 시간 재정렬
-
-## 주요 기능
-
-- 다중 필터 (AND)
-- 이상값 처리: 2σ / 2.5σ / 3σ / IQR
-- 정규화: Z-Score / Min-Max
-- 시간 정규화 및 시간 재정렬
-- 프리셋 저장 / 불러오기 / 내보내기 / 가져오기
-- 파일+프리셋 한번에 열기
-- 분석 > 트렌드 차트
-- 메인 화면 > Validation 데이터 생성 (3개 파일 자동 저장)
-
-## 단축키
-
-- Ctrl+O: 파일 열기
-- Ctrl+S: 결과 저장
-- Ctrl+P: 프리셋 저장
-- Ctrl+T: 트렌드 차트
-- F1: 매뉴얼
-
-## 참고
-
-- 필터 대상은 숫자 컬럼만 표시됩니다.
-- 날짜 컬럼은 Date / Time / 날짜 / 시간 / timestamp 등을 기준으로 자동 감지합니다.
-- 자세한 설명은 배포된 MANUAL.md 또는 GitHub 문서를 확인하세요.
-https://github.com/lee-minki/data-preprocessing-tool
-"""
+        manual_path = Path(__file__).parent / "MANUAL.html"
+        if manual_path.exists():
+            webbrowser.open(f"file://{manual_path.absolute()}")
+        else:
+            messagebox.showinfo("알림", "매뉴얼 파일을 찾을 수 없습니다.\nMANUAL.html 파일을 확인해 주세요.")
     
     def _show_help(self):
         """도움말 창 표시"""
