@@ -1,8 +1,6 @@
 {
-    "developer": {
-        "name": "Your Name",
-        "company": "Your Company",
-        "phone": "",
-        "email": ""
-    }
+  "name": "Your Name",
+  "email": "your.email@example.com",
+  "organization": "Your Organization",
+  "github": "github.com/your-account/your-repo"
 }

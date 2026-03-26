@@ -1,3 +1,6 @@
+from collections.abc import Mapping
+from typing import cast
+
 # 버전 정보
 __version__ = "1.7.0"
 __version_info__ = (1, 7, 0)
@@ -12,7 +15,7 @@ DEVELOPER_INFO = {
     "name": "이민기",
     "email": "minki.lee@sk.com",
     "organization": "나래O&M",
-    "github": "github.com/lee-minki/data-preprocessing-tool"
+    "github": "github.com/lee-minki/data-preprocessing-tool",
 }
 
 # 최근 패치노트 (앱 내 표시용)
@@ -67,21 +70,59 @@ FEATURES = [
     "📈 트렌드 차트 (다중 컬럼, 인터랙티브)",
     "🕐 시간 정규화/재정렬",
     "🧪 Validation 데이터 자동 생성",
+    "🧬 시뮬레이션 데이터 생성",
     "💾 프리셋 저장/불러오기",
-    "⏳ 진행률 표시 (대용량 지원)"
+    "⏳ 진행률 표시 (대용량 지원)",
 ]
 
-def get_developer_info() -> dict:
+
+def _normalize_developer_info(data: object) -> dict[str, str]:
+    if not isinstance(data, Mapping):
+        return DEVELOPER_INFO.copy()
+
+    def to_string_key_dict(source: Mapping[object, object]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for raw_key, value in source.items():
+            result[str(raw_key)] = value
+        return result
+
+    data_map = to_string_key_dict(cast(Mapping[object, object], data))
+    nested = data_map.get("developer")
+    source_map = (
+        to_string_key_dict(cast(Mapping[object, object], nested))
+        if isinstance(nested, Mapping)
+        else data_map
+    )
+
+    def read_text(key: str) -> str:
+        value = source_map.get(key)
+        return value if isinstance(value, str) else ""
+
+    normalized = {
+        "name": read_text("name"),
+        "email": read_text("email"),
+        "organization": read_text("organization") or read_text("company"),
+        "github": read_text("github"),
+    }
+
+    return {key: normalized[key] or DEVELOPER_INFO[key] for key in DEVELOPER_INFO}
+
+
+def get_developer_info() -> dict[str, str]:
     """개발자 정보 반환 (외부 파일 우선, 없으면 기본값)"""
     import json
     from pathlib import Path
-    
+
     # 외부 파일 확인
-    for path in [Path(__file__).parent / "developer_info.json", Path.cwd() / "developer_info.json"]:
+    for path in [
+        Path(__file__).parent / "developer_info.json",
+        Path.cwd() / "developer_info.json",
+    ]:
         if path.exists():
             try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                with open(path, "r", encoding="utf-8") as f:
+                    raw_data = cast(object, json.load(f))
+                    return _normalize_developer_info(raw_data)
             except (json.JSONDecodeError, OSError, KeyError):
                 pass
 
