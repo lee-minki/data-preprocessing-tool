@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>σ 조기경보 시계열 데이터 전처리 프로그램</title>
+<meta name="description" content="Excel/CSV 파일의 시계열 데이터 필터링, 이상값 처리, 시간 정규화 도구 - 웹 서버 버전">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM
+   ═══════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0c14;
+  --bg-gradient:linear-gradient(135deg,#0a0c14 0%,#0f1225 50%,#131831 100%);
+  --surface:#13162a;
+  --surface2:#1a1e38;
+  --surface3:#222748;
+  --surface4:#2a3058;
+  --border:rgba(99,115,255,.12);
+  --border-hover:rgba(99,115,255,.3);
+  --text:#e8eaff;
+  --text2:#9da3c7;
+  --text3:#5d6387;
+  --accent:#6373ff;
+  --accent2:#4f5de6;
+  --accent-light:#8b97ff;
+  --accent-glow:rgba(99,115,255,.12);
+  --accent-glow2:rgba(99,115,255,.06);
+  --success:#34d399;
+  --success-bg:rgba(52,211,153,.08);
+  --warning:#fbbf24;
+  --warning-bg:rgba(251,191,36,.08);
+  --error:#f87171;
+  --error-bg:rgba(248,113,113,.08);
+  --info:#60a5fa;
+  --radius:12px;
+  --radius-lg:16px;
+  --shadow:0 8px 32px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.2);
+  --shadow-lg:0 16px 64px rgba(0,0,0,.5);
+  --transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+
+body{
+  font-family:'Inter',-apple-system,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',sans-serif;
+  background:var(--bg);
+  background-image:var(--bg-gradient);
+  background-attachment:fixed;
+  color:var(--text);
+  min-height:100vh;
+  line-height:1.6;
+  font-size:14px;
+  overflow-x:hidden;
+}
+
+/* Ambient glow */
+body::before{
+  content:'';
+  position:fixed;
+  top:-200px;left:50%;transform:translateX(-50%);
+  width:800px;height:600px;
+  background:radial-gradient(circle,rgba(99,115,255,.06) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+#app{
+  max-width:1140px;margin:0 auto;padding:16px 24px 60px;
+  position:relative;z-index:1;
+}
+
+/* ═══ HEADER ═══ */
+.header{
+  display:flex;align-items:center;gap:16px;
+  padding:24px 0 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:20px;
+}
+.header .logo{
+  font-size:36px;font-weight:800;
+  background:linear-gradient(135deg,#6373ff,#a78bfa,#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 20px rgba(99,115,255,.3));
+  animation:logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse{
+  0%,100%{filter:drop-shadow(0 0 20px rgba(99,115,255,.3))}
+  50%{filter:drop-shadow(0 0 30px rgba(99,115,255,.5))}
+}
+.header .title-group{display:flex;flex-direction:column;gap:2px}
+.header .title{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.header .subtitle{font-size:12px;color:var(--text3);font-weight:400}
+.header .ver{
+  margin-left:auto;
+  background:var(--accent-glow);border:1px solid var(--border);
+  padding:6px 14px;border-radius:20px;
+  font-size:11px;font-weight:600;color:var(--accent-light);
+  letter-spacing:.5px;
+}
+
+/* ═══ WORKFLOW BANNER ═══ */
+.workflow-banner{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;
+  background:linear-gradient(135deg,var(--accent-glow2),rgba(167,139,250,.04));
+  border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:16px;
+  font-size:13px;color:var(--text2);
+}
+.workflow-banner .wf-icon{font-size:16px}
+.workflow-banner b{color:var(--accent-light);font-weight:600}
+.workflow-banner .step{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:6px;
+  background:var(--accent-glow);
+  font-weight:500;color:var(--text);
+  font-size:12px;
+}
+.workflow-banner .arrow{color:var(--text3);font-size:10px}
+
+/* ═══ SECTIONS ═══ */
+.section{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  margin-bottom:14px;
+  overflow:hidden;
+  transition:var(--transition);
+}
+.section:hover{border-color:var(--border-hover)}
+.section-head{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 20px;
+  background:linear-gradient(180deg,var(--surface2),var(--surface));
+  font-weight:600;font-size:14px;
+  cursor:pointer;user-select:none;
+  transition:var(--transition);
+}
+.section-head:hover{background:var(--surface2)}
+.section-head .icon{
+  font-size:18px;
+  filter:drop-shadow(0 0 8px rgba(99,115,255,.2));
+}
+.section-head .badge{
+  margin-left:auto;
+  font-size:11px;font-weight:500;
+  color:var(--text3);
+  padding:3px 10px;border-radius:10px;
+  background:var(--surface3);
+}
+.section-body{padding:18px 20px}
+.section-body.collapsed{display:none}
+
+/* ═══ BUTTONS ═══ */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 18px;border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  color:var(--text);
+  cursor:pointer;
+  font-size:13px;font-weight:500;
+  font-family:inherit;
+  transition:var(--transition);
+  white-space:nowrap;
+}
+.btn:hover{
+  background:var(--surface3);
+  border-color:var(--border-hover);
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+}
+.btn:active{transform:translateY(0);box-shadow:none}
+.btn.primary{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border-color:rgba(99,115,255,.4);
+  color:#fff;font-weight:600;
+  box-shadow:0 4px 20px rgba(99,115,255,.2);
+}
+.btn.primary:hover{
+  box-shadow:0 6px 28px rgba(99,115,255,.35);
+  border-color:var(--accent-light);
+}
+.btn.success{
+  background:var(--success-bg);
+  border-color:rgba(52,211,153,.25);
+  color:var(--success);font-weight:600;
+}
+.btn.success:hover{border-color:var(--success);box-shadow:0 4px 16px rgba(52,211,153,.15)}
+.btn.danger{background:var(--error-bg);border-color:rgba(248,113,113,.2);color:var(--error)}
+.btn.danger:hover{border-color:var(--error)}
+.btn:disabled{opacity:.35;pointer-events:none;transform:none;box-shadow:none}
+.btn .spinner{
+  width:14px;height:14px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin .6s linear infinite;
+  display:none;
+}
+.btn.loading .spinner{display:inline-block}
+.btn.loading{pointer-events:none;opacity:.7}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ INPUTS ═══ */
+input,select{
+  background:var(--surface3);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:13px;
+  font-family:inherit;
+  outline:none;
+  transition:var(--transition);
+}
+input:focus,select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+input::placeholder{color:var(--text3)}
+select{cursor:pointer;appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235d6387' viewBox='0 0 16 16'%3E%3Cpath d='M1.5 5.5l6.5 6 6.5-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+}
+label{
+  display:inline-flex;align-items:center;gap:8px;
+  cursor:pointer;font-size:13px;
+}
+input[type=checkbox],input[type=radio]{
+  accent-color:var(--accent);
+  width:16px;height:16px;cursor:pointer;
+}
+
+/* ═══ DROPZONE ═══ */
+.dropzone{
+  border:2px dashed var(--border);
+  border-radius:var(--radius-lg);
+  padding:40px;text-align:center;
+  transition:var(--transition);
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+}
+.dropzone::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(circle at center,var(--accent-glow2),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.dropzone:hover::before,.dropzone.over::before{opacity:1}
+.dropzone.over{border-color:var(--accent);background:var(--accent-glow)}
+.dropzone .dz-icon{font-size:42px;margin-bottom:10px;filter:grayscale(.5);transition:var(--transition)}
+.dropzone:hover .dz-icon{filter:grayscale(0)}
+.dropzone .dz-text{color:var(--text2);font-size:13px}
+.dropzone .dz-hint{color:var(--text3);font-size:11px;margin-top:6px}
+
+.file-info{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;margin-top:12px;
+  background:var(--surface2);border-radius:10px;
+  border:1px solid var(--border);
+  font-size:13px;
+}
+.file-info .badge{
+  background:var(--accent-glow);color:var(--accent-light);
+  padding:4px 12px;border-radius:14px;
+  font-weight:600;font-size:12px;
+  border:1px solid var(--border);
+}
+
+/* ═══ TABLE ═══ */
+.table-wrap{
+  overflow-x:auto;margin-top:12px;
+  border-radius:10px;border:1px solid var(--border);
+  max-height:260px;overflow-y:auto;
+}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{
+  background:var(--surface3);
+  padding:10px 12px;text-align:left;
+  font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text2);
+  position:sticky;top:0;z-index:1;
+  white-space:nowrap;
+}
+td{
+  padding:7px 12px;border-top:1px solid var(--border);
+  white-space:nowrap;max-width:140px;
+  overflow:hidden;text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums;
+}
+tr:hover td{background:var(--surface2)}
+
+/* ═══ FILTER ═══ */
+.filter-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;margin-bottom:6px;
+  background:var(--surface2);border-radius:10px;
+  border:1px solid var(--border);
+  flex-wrap:wrap;
+  transition:var(--transition);
+  animation:filterIn .2s ease-out;
+}
+@keyframes filterIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.filter-row:hover{border-color:var(--border-hover)}
+.filter-row select,.filter-row input[type=number]{width:auto}
+.del-btn{
+  background:none;border:none;color:var(--error);
+  cursor:pointer;font-size:16px;padding:4px 8px;
+  border-radius:6px;transition:var(--transition);
+}
+.del-btn:hover{background:var(--error-bg)}
+
+/* ═══ OPTION GROUPS ═══ */
+.opt-group{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+}
+.opt-group label{
+  padding:6px 14px;border-radius:8px;
+  border:1px solid transparent;
+  transition:var(--transition);
+}
+.opt-group label:hover{background:var(--surface3);border-color:var(--border)}
+.opt-group label:has(input:checked){
+  background:var(--accent-glow);
+  border-color:var(--border-hover);
+}
+
+/* ═══ PROGRESS ═══ */
+.progress-container{display:flex;align-items:center;gap:16px}
+.progress-bar{
+  flex:1;height:8px;
+  background:var(--surface3);
+  border-radius:4px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent2),var(--accent),var(--accent-light));
+  border-radius:4px;
+  transition:width .4s cubic-bezier(.4,0,.2,1);
+  width:0%;
+  position:relative;
+}
+.progress-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  animation:shimmer 1.5s ease-in-out infinite;
+}
+@keyframes shimmer{
+  0%{transform:translateX(-100%)}
+  100%{transform:translateX(100%)}
+}
+.progress-pct{
+  font-size:13px;font-weight:600;
+  color:var(--accent-light);
+  min-width:45px;text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.progress-text{font-size:12px;color:var(--text2);margin-top:6px}
+
+/* ═══ ACTION BAR ═══ */
+.action-bar{
+  display:flex;gap:12px;flex-wrap:wrap;
+  padding:8px 0;
+}
+.action-bar .divider{
+  width:1px;background:var(--border);
+  margin:0 4px;align-self:stretch;
+}
+
+/* ═══ LOG ═══ */
+.log{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 18px;
+  font-family:'JetBrains Mono','Menlo','Consolas','D2Coding',monospace;
+  font-size:12px;
+  max-height:280px;
+  overflow-y:auto;
+  white-space:pre-wrap;
+  line-height:1.8;
+  color:var(--text2);
+  scroll-behavior:smooth;
+}
+.log::-webkit-scrollbar{width:6px}
+.log::-webkit-scrollbar-track{background:transparent}
+.log::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+.log::-webkit-scrollbar-thumb:hover{background:var(--surface4)}
+
+/* ═══ MODALS ═══ */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(8px);
+  z-index:1000;display:none;
+  align-items:center;justify-content:center;
+  animation:fadeIn .2s;
+}
+.modal-overlay.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:28px;
+  min-width:400px;max-width:560px;
+  width:90%;
+  box-shadow:var(--shadow-lg);
+  animation:modalIn .25s ease-out;
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal h3{margin-bottom:18px;font-size:16px;font-weight:700}
+.modal input[type=text]{width:100%;margin-bottom:12px}
+.modal .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+.preset-list{max-height:240px;overflow-y:auto}
+.preset-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;border-radius:8px;
+  cursor:pointer;transition:var(--transition);
+  border:1px solid transparent;
+}
+.preset-item:hover{background:var(--surface2);border-color:var(--border)}
+.preset-item .name{font-weight:500;font-size:14px}
+.preset-item .date{font-size:11px;color:var(--text3)}
+
+/* ═══ VALIDATION SECTION ═══ */
+.valid-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.valid-grid .field{display:flex;flex-direction:column;gap:4px}
+.valid-grid .field label{font-size:12px;color:var(--text2);font-weight:500}
+.valid-grid .field input,.valid-grid .field select{width:100%}
+.tag-select{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin-top:8px;max-height:120px;overflow-y:auto;
+  padding:8px;background:var(--surface2);
+  border-radius:8px;border:1px solid var(--border);
+}
+.tag-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:6px;
+  background:var(--surface3);border:1px solid var(--border);
+  font-size:12px;cursor:pointer;transition:var(--transition);
+}
+.tag-chip:hover{border-color:var(--border-hover)}
+.tag-chip.selected{
+  background:var(--accent-glow);
+  border-color:var(--accent);color:var(--accent-light);
+}
+
+/* ═══ TOAST ═══ */
+.toast{
+  position:fixed;bottom:28px;right:28px;
+  padding:14px 24px;border-radius:12px;
+  font-size:13px;font-weight:500;
+  z-index:2000;
+  opacity:0;transform:translateY(12px);
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+  backdrop-filter:blur(12px);
+  box-shadow:var(--shadow);
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{
+  background:rgba(52,211,153,.15);
+  border:1px solid rgba(52,211,153,.3);
+  color:var(--success);
+}
+.toast.err{
+  background:rgba(248,113,113,.15);
+  border:1px solid rgba(248,113,113,.3);
+  color:var(--error);
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){
+  #app{padding:12px 14px 40px}
+  .header{flex-wrap:wrap;gap:10px}
+  .header .ver{margin-left:0}
+  .workflow-banner{flex-wrap:wrap;gap:8px;font-size:12px}
+  .opt-group{gap:8px}
+  .action-bar{flex-direction:column}
+  .valid-grid{grid-template-columns:1fr}
+  .modal{min-width:auto;padding:20px}
+}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--surface4)}
+
+/* ═══ TABS ═══ */
+.tabs{
+  display:flex;gap:2px;
+  background:var(--surface2);
+  border-radius:10px;padding:3px;
+  margin-bottom:14px;
+}
+.tab{
+  flex:1;text-align:center;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:500;
+  color:var(--text2);cursor:pointer;
+  transition:var(--transition);
+}
+.tab:hover{color:var(--text);background:var(--surface3)}
+.tab.active{
+  color:var(--text);
+  background:var(--accent-glow);
+  box-shadow:0 2px 8px rgba(99,115,255,.15);
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <span class="logo">σ</span>
+    <div class="title-group">
+      <span class="title">조기경보 시계열 데이터 전처리</span>
+      <span class="subtitle">Excel/CSV 파일 필터링 · 이상값 처리 · 시간 보정 · Validation 생성</span>
+    </div>
+    <span class="ver" id="verBadge">Web Server</span>
+  </div>
+
+  <!-- WORKFLOW -->
+  <div class="workflow-banner">
+    <span class="wf-icon">🧭</span>
+    <b>권장 순서:</b>
+    <span class="step">1. 파일 업로드</span>
+    <span class="arrow">→</span>
+    <span class="step">2. 옵션 설정</span>
+    <span class="arrow">→</span>
+    <span class="step">3. 전처리 실행</span>
+    <span class="arrow">→</span>
+    <span class="step">4. Validation / 저장</span>
+  </div>
+
+  <!-- FILE SECTION -->
+  <div class="section" id="sec-file">
+    <div class="section-head" onclick="toggleSection('file')">
+      <span class="icon">📁</span> 파일 업로드
+      <span class="badge" id="fileBadge">대기</span>
+    </div>
+    <div class="section-body" id="body-file">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">📂</div>
+        <div class="dz-text">파일을 드래그하거나 클릭해서 선택</div>
+        <div class="dz-hint">CSV, XLSX, XLS 지원 · 최대 200MB</div>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+      </div>
+      <div class="file-info" id="fileInfo" style="display:none">
+        <span id="fileName"></span>
+        <span class="badge" id="dataSize"></span>
+      </div>
+      <div class="table-wrap" id="previewWrap" style="display:none">
+        <table>
+          <thead id="previewHead"></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER SECTION -->
+  <div class="section" id="sec-filter">
+    <div class="section-head" onclick="toggleSection('filter')">
+      <span class="icon">🔧</span> 필터 조건 (AND 결합)
+      <span class="badge" id="filterBadge">0개</span>
+    </div>
+    <div class="section-body" id="body-filter">
+      <div id="filterContainer"></div>
+      <button class="btn" id="addFilterBtn" onclick="app.addFilter()">
+        <span>+</span> 필터 추가
+      </button>
+    </div>
+  </div>
+
+  <!-- OUTLIER SECTION -->
+  <div class="section" id="sec-outlier">
+    <div class="section-head" onclick="toggleSection('outlier')">
+      <span class="icon">📊</span> 이상값 처리
+    </div>
+    <div class="section-body" id="body-outlier">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--text2);font-weight:600">탐지 방법</div>
+      <div class="opt-group" style="margin-bottom:14px">
+        <label><input type="radio" name="outlierMethod" value="2sigma"> 2σ (95.4%)</label>
+        <label><input type="radio" name="outlierMethod" value="2.5sigma" checked> 2.5σ (98.8%)</label>
+        <label><input type="radio" name="outlierMethod" value="3sigma"> 3σ (99.7%)</label>
+        <label><input type="radio" name="outlierMethod" value="iqr"> IQR</label>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">처리 방식: 이상값 포함 행 전체 삭제</div>
+      <label><input type="checkbox" id="applyOutlier" checked> 이상값 처리 적용</label>
+    </div>
+  </div>
+
+  <!-- TIME SECTION -->
+  <div class="section" id="sec-time">
+    <div class="section-head" onclick="toggleSection('time')">
+      <span class="icon">🕐</span> 시간 처리 (선택사항)
+    </div>
+    <div class="section-body" id="body-time">
+      <label style="margin-bottom:10px;display:flex"><input type="checkbox" id="applyTimeNorm"> 시간 정규화 (2분 간격 스냅)</label>
+      <div style="font-size:11px;color:var(--text3);margin:0 0 14px 26px">00:01:00, 00:02:01 같은 시간을 정확한 간격으로 보정</div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+      <label style="margin-bottom:10px;display:flex"><input type="checkbox" id="applyTimeRealign"> 시간 재정렬 (새 시작 시간부터)</label>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <label style="font-size:12px">시작 시간:
+          <input type="text" id="startTime" style="width:180px" placeholder="2026-03-30 00:00:00">
+        </label>
+        <label style="font-size:12px">간격(분):
+          <input type="number" id="interval" value="2" style="width:70px" min="1">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="section" id="sec-progress">
+    <div class="section-head">
+      <span class="icon">⏳</span> 진행 상황
+    </div>
+    <div class="section-body">
+      <div class="progress-container">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="progress-text" id="progressText">대기 중...</div>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="action-bar">
+    <button class="btn primary" id="processBtn" onclick="app.runPreprocessing()" disabled>
+      <span class="spinner"></span> 🚀 전처리 실행
+    </button>
+    <button class="btn" id="validBtn" onclick="app.showValidationModal()" disabled>
+      🧪 Validation 생성
+    </button>
+    <div class="divider"></div>
+    <button class="btn success" id="saveCsvBtn" onclick="app.saveFile('csv')" disabled>
+      💾 CSV 저장
+    </button>
+    <button class="btn success" id="saveXlsxBtn" onclick="app.saveFile('xlsx')" disabled>
+      📊 XLSX 저장
+    </button>
+    <div class="divider"></div>
+    <button class="btn" onclick="app.showPresetSaveModal()">📋 프리셋 저장</button>
+    <button class="btn" onclick="app.showPresetLoadModal()">📂 프리셋 불러오기</button>
+  </div>
+
+  <!-- RESULT LOG -->
+  <div class="section" id="sec-result">
+    <div class="section-head">
+      <span class="icon">📋</span> 처리 결과
+    </div>
+    <div class="section-body">
+      <div class="log" id="logOutput">σ 조기경보 시계열 데이터 전처리 (Web Server)
+로그 출력 대기 중...
+</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRESET SAVE MODAL -->
+<div class="modal-overlay" id="presetSaveModal">
+  <div class="modal">
+    <h3>📋 프리셋 저장</h3>
+    <input type="text" id="presetNameInput" placeholder="프리셋 이름을 입력하세요">
+    <input type="text" id="presetDescInput" placeholder="설명 (선택사항)">
+    <div class="modal-actions">
+      <button class="btn" onclick="app.closeModal('presetSaveModal')">취소</button>
+      <button class="btn primary" onclick="app.savePreset()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRESET LOAD MODAL -->
+<div class="modal-overlay" id="presetLoadModal">
+  <div class="modal">
+    <h3>📂 프리셋 불러오기</h3>
+    <div class="preset-list" id="presetList"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="app.closeModal('presetLoadModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- VALIDATION MODAL -->
+<div class="modal-overlay" id="validationModal">
+  <div class="modal" style="max-width:600px">
+    <h3>🧪 Validation 데이터 생성</h3>
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:6px">대상 태그 선택</div>
+      <div class="tag-select" id="tagSelect"></div>
+    </div>
+    <div class="valid-grid">
+      <div class="field">
+        <label>Validation 비율 (%)</label>
+        <input type="number" id="validRatio" value="20" min="1" max="80" step="1">
+      </div>
+      <div class="field">
+        <label>간격 (분)</label>
+        <input type="number" id="validInterval" value="2" min="1">
+      </div>
+      <div class="field">
+        <label>Sigma 시작</label>
+        <input type="number" id="sigmaStart" value="2.5" step="0.1" min="0.1">
+      </div>
+      <div class="field">
+        <label>Sigma 종료</label>
+        <input type="number" id="sigmaEnd" value="4.0" step="0.1" min="0.1">
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text3)">
+      구간 비율: 정상1(25%) / 제거행기반(25%) / 정상2(25%) / σ기반(25%)
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="app.closeModal('validationModal')">취소</button>
+      <button class="btn primary" id="validRunBtn" onclick="app.runValidation()">
+        <span class="spinner"></span> 생성 및 다운로드
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   APP CONTROLLER - Server-backed
+   ============================================================ */
+const app = {
+  columns: [],
+  numericColumns: [],
+  dateColumn: null,
+  fileLoaded: false,
+  processed: false,
+  filterIdx: 0,
+  selectedTags: new Set(),
+
+  init() {
+    // Dropzone
+    const dz = document.getElementById('dropzone');
+    const fi = document.getElementById('fileInput');
+    dz.addEventListener('click', () => fi.click());
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) this.uploadFile(e.dataTransfer.files[0]); });
+    fi.addEventListener('change', e => { if(e.target.files[0]) this.uploadFile(e.target.files[0]); });
+
+    // Default start time
+    const now = new Date();
+    const p = n => String(n).padStart(2,'0');
+    document.getElementById('startTime').value = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:00`;
+
+    // Load version
+    fetch('/api/info').then(r=>r.json()).then(d=>{
+      document.getElementById('verBadge').textContent = `Web v${d.version}`;
+      document.title = `${d.name} v${d.version}`;
+    }).catch(()=>{});
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', e => {
+        if(e.target === el) el.classList.remove('show');
+      });
+    });
+
+    // ESC to close modals
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+      }
+    });
+  },
+
+  // ─── FILE UPLOAD ───
+  async uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.progress(15, '파일 업로드 중...');
+    this.log(`\n📤 파일 업로드: ${file.name} (${(file.size/1024/1024).toFixed(1)}MB)`);
+
+    try {
+      const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await resp.json();
+
+      if(data.success) {
+        this.columns = data.data.columns;
+        this.numericColumns = data.data.numeric_columns;
+        this.dateColumn = data.data.date_column;
+        this.fileLoaded = true;
+        this.processed = false;
+
+        document.getElementById('fileInfo').style.display = 'flex';
+        document.getElementById('fileName').textContent = '📄 ' + file.name;
+        document.getElementById('dataSize').textContent = `📊 ${data.data.rows.toLocaleString()}행 × ${data.data.cols}열`;
+        document.getElementById('fileBadge').textContent = `${data.data.rows.toLocaleString()}행`;
+        document.getElementById('processBtn').disabled = false;
+
+        this.renderPreview(data.data.preview, data.data.columns);
+        this.progress(100, '파일 로드 완료!');
+        this.log(`✅ ${data.message}`);
+        this.log(`   감지된 숫자 컬럼 (${this.numericColumns.length}개): ${this.numericColumns.slice(0,10).join(', ')}${this.numericColumns.length > 10 ? ' ...' : ''}`);
+        if(this.dateColumn) this.log(`   날짜 컬럼: ${this.dateColumn}`);
+        if(data.data.rows >= 100000) this.log('⚠️ 대용량 데이터 - 서버 처리에 시간이 소요될 수 있습니다.');
+
+        this.toast(`파일 로드 완료: ${data.data.rows.toLocaleString()}행`);
+      } else {
+        this.progress(0, '파일 로드 실패');
+        this.log(`❌ ${data.message}`);
+        this.toast(data.message, true);
+      }
+    } catch(e) {
+      this.progress(0, '업로드 실패');
+      this.log(`❌ 업로드 실패: ${e.message}`);
+      this.toast('파일 업로드에 실패했습니다.', true);
+    }
+  },
+
+  renderPreview(rows, cols) {
+    if(!rows || !rows.length) return;
+    const displayCols = cols.slice(0, 30);
+    const head = document.getElementById('previewHead');
+    const body = document.getElementById('previewBody');
+    head.innerHTML = '<tr>' + displayCols.map(c => `<th>${this.esc(c)}</th>`).join('') + '</tr>';
+    body.innerHTML = rows.map(r => '<tr>' + displayCols.map(c => {
+      let v = r[c]; if(v === null || v === undefined) v = '';
+      return `<td>${this.esc(String(v).slice(0,18))}</td>`;
+    }).join('') + '</tr>').join('');
+    document.getElementById('previewWrap').style.display = 'block';
+  },
+
+  // ─── FILTERS ───
+  addFilter() {
+    if(!this.numericColumns.length) { this.toast('먼저 파일을 업로드하세요', true); return; }
+    const id = this.filterIdx++;
+    const div = document.createElement('div');
+    div.className = 'filter-row'; div.id = 'filter-' + id;
+    div.innerHTML = `
+      <select id="fcol-${id}">${this.numericColumns.map(c => `<option>${this.esc(c)}</option>`).join('')}</select>
+      <select id="fop-${id}" onchange="app.onFilterOpChange(${id})">
+        <option value="range">range</option>
+        <option value=">=">&gt;=</option><option value="<=">&lt;=</option>
+        <option value=">">&gt;</option><option value="<">&lt;</option>
+        <option value="=">=</option><option value="!=">!=</option>
+      </select>
+      <span id="frange-${id}">
+        <input type="number" id="fmin-${id}" placeholder="최소" style="width:90px" step="any">
+        <span style="color:var(--text3);margin:0 2px">~</span>
+        <input type="number" id="fmax-${id}" placeholder="최대" style="width:90px" step="any">
+      </span>
+      <span id="fval-${id}" style="display:none">
+        <input type="number" id="fv-${id}" placeholder="값" style="width:110px" step="any">
+      </span>
+      <button class="del-btn" onclick="app.removeFilter(${id})">✕</button>`;
+    document.getElementById('filterContainer').appendChild(div);
+    this.updateFilterBadge();
+  },
+
+  onFilterOpChange(id) {
+    const op = document.getElementById('fop-' + id).value;
+    document.getElementById('frange-' + id).style.display = op === 'range' ? '' : 'none';
+    document.getElementById('fval-' + id).style.display = op === 'range' ? 'none' : '';
+  },
+
+  removeFilter(id) {
+    const el = document.getElementById('filter-' + id);
+    if(el) el.remove();
+    this.updateFilterBadge();
+  },
+
+  updateFilterBadge() {
+    const count = document.querySelectorAll('.filter-row').length;
+    document.getElementById('filterBadge').textContent = `${count}개`;
+  },
+
+  getFilters() {
+    const filters = [];
+    document.querySelectorAll('.filter-row').forEach(row => {
+      const id = row.id.split('-')[1];
+      const col = document.getElementById('fcol-' + id)?.value;
+      const op = document.getElementById('fop-' + id)?.value;
+      if(!col) return;
+      if(op === 'range') {
+        const mn = document.getElementById('fmin-' + id)?.value;
+        const mx = document.getElementById('fmax-' + id)?.value;
+        filters.push({ column: col, operator: 'range', min: mn !== '' ? Number(mn) : -Infinity, max: mx !== '' ? Number(mx) : Infinity });
+      } else {
+        const v = document.getElementById('fv-' + id)?.value;
+        if(v !== '' && v !== undefined) filters.push({ column: col, operator: op, value: Number(v) });
+      }
+    });
+    return filters;
+  },
+
+  // ─── PREPROCESSING ───
+  async runPreprocessing() {
+    if(!this.fileLoaded) { this.toast('먼저 파일을 업로드하세요', true); return; }
+
+    const btn = document.getElementById('processBtn');
+    btn.classList.add('loading');
+    this.progress(20, '서버에서 전처리 중...');
+
+    const params = {
+      filters: this.getFilters(),
+      outlier: {
+        apply: document.getElementById('applyOutlier').checked,
+        method: document.querySelector('input[name=outlierMethod]:checked')?.value || '2.5sigma'
+      },
+      time: {
+        normalize: document.getElementById('applyTimeNorm').checked,
+        realign: document.getElementById('applyTimeRealign').checked,
+        start_time: document.getElementById('startTime').value,
+        interval: document.getElementById('interval').value
+      }
+    };
+
+    try {
+      const resp = await fetch('/api/process', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(params)
+      });
+      const data = await resp.json();
+
+      if(data.logs) {
+        this.log('\n' + '═'.repeat(50));
+        data.logs.forEach(l => this.log(l));
+      }
+
+      if(data.success) {
+        this.processed = true;
+        this.progress(100, '✅ 전처리 완료!');
+        document.getElementById('saveCsvBtn').disabled = false;
+        document.getElementById('saveXlsxBtn').disabled = false;
+        document.getElementById('validBtn').disabled = false;
+
+        if(data.preview) this.renderPreview(data.preview, this.columns);
+        this.toast('전처리 완료!');
+      } else {
+        this.progress(0, '전처리 실패');
+        this.toast(data.message || '전처리 실패', true);
+      }
+    } catch(e) {
+      this.progress(0, '서버 오류');
+      this.log(`❌ 서버 통신 오류: ${e.message}`);
+      this.toast('서버 통신 오류', true);
+    } finally {
+      btn.classList.remove('loading');
+    }
+  },
+
+  // ─── SAVE ───
+  async saveFile(fmt) {
+    if(!this.processed) { this.toast('먼저 전처리를 실행하세요', true); return; }
+
+    const btnId = fmt === 'xlsx' ? 'saveXlsxBtn' : 'saveCsvBtn';
+    const btn = document.getElementById(btnId);
+    btn.classList.add('loading');
+
+    try {
+      const resp = await fetch('/api/download', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ format: fmt })
+      });
+      const data = await resp.json();
+
+      if(data.success) {
+        // 다운로드 트리거
+        const a = document.createElement('a');
+        a.href = data.download_url;
+        a.download = data.filename;
+        a.click();
+        this.log(`\n💾 저장 완료: ${data.filename}`);
+        this.toast(`${fmt.toUpperCase()} 파일 저장 완료!`);
+      } else {
+        this.toast(data.message || '저장 실패', true);
+      }
+    } catch(e) {
+      this.toast('저장 실패: ' + e.message, true);
+    } finally {
+      btn.classList.remove('loading');
+    }
+  },
+
+  // ─── VALIDATION ───
+  showValidationModal() {
+    if(!this.processed) { this.toast('먼저 전처리를 실행하세요', true); return; }
+
+    const tagSelect = document.getElementById('tagSelect');
+    this.selectedTags.clear();
+    tagSelect.innerHTML = this.numericColumns.map(c =>
+      `<div class="tag-chip" data-col="${this.esc(c)}" onclick="app.toggleTag(this,'${this.esc(c)}')">${this.esc(c)}</div>`
+    ).join('');
+    document.getElementById('validationModal').classList.add('show');
+  },
+
+  toggleTag(el, col) {
+    if(this.selectedTags.has(col)) {
+      this.selectedTags.delete(col);
+      el.classList.remove('selected');
+    } else {
+      this.selectedTags.add(col);
+      el.classList.add('selected');
+    }
+  },
+
+  async runValidation() {
+    if(!this.selectedTags.size) { this.toast('대상 태그를 1개 이상 선택하세요', true); return; }
+
+    const btn = document.getElementById('validRunBtn');
+    btn.classList.add('loading');
+
+    const params = {
+      target_columns: [...this.selectedTags],
+      ratio: parseFloat(document.getElementById('validRatio').value) || 20,
+      segment_ratios: [25, 25, 25, 25],
+      sigma_start: parseFloat(document.getElementById('sigmaStart').value) || 2.5,
+      sigma_end: parseFloat(document.getElementById('sigmaEnd').value) || 4.0,
+      interval: parseInt(document.getElementById('validInterval').value) || 2,
+    };
+
+    try {
+      const resp = await fetch('/api/validation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(params)
+      });
+      const data = await resp.json();
+
+      if(data.success) {
+        this.log('\n' + data.message);
+        // 자동 다운로드 모든 파일
+        if(data.files) {
+          for(const [key,info] of Object.entries(data.files)) {
+            const a = document.createElement('a');
+            a.href = info.url;
+            a.download = info.filename;
+            setTimeout(() => a.click(), 500);
+          }
+        }
+        this.toast('Validation 데이터 생성 완료!');
+        this.closeModal('validationModal');
+      } else {
+        this.toast(data.message || 'Validation 생성 실패', true);
+        this.log(`❌ ${data.message}`);
+      }
+    } catch(e) {
+      this.toast('Validation 생성 실패: ' + e.message, true);
+    } finally {
+      btn.classList.remove('loading');
+    }
+  },
+
+  // ─── PRESETS (Server-backed) ───
+  getCurrentSettings() {
+    return {
+      outlier: {
+        apply: document.getElementById('applyOutlier').checked,
+        method: document.querySelector('input[name=outlierMethod]:checked')?.value || '2.5sigma'
+      },
+      time: {
+        normalize: document.getElementById('applyTimeNorm').checked,
+        realign: document.getElementById('applyTimeRealign').checked,
+        start_time: document.getElementById('startTime').value,
+        interval: document.getElementById('interval').value
+      },
+      filters: this.getFilters()
+    };
+  },
+
+  applySettings(s) {
+    if(!s) return;
+    document.getElementById('applyOutlier').checked = s.outlier?.apply ?? true;
+    const om = s.outlier?.method || '2.5sigma';
+    document.querySelectorAll('input[name=outlierMethod]').forEach(r => { r.checked = r.value === om; });
+    document.getElementById('applyTimeNorm').checked = s.time?.normalize ?? false;
+    document.getElementById('applyTimeRealign').checked = s.time?.realign ?? false;
+    if(s.time?.start_time) document.getElementById('startTime').value = s.time.start_time;
+    if(s.time?.interval) document.getElementById('interval').value = s.time.interval;
+  },
+
+  showPresetSaveModal() {
+    document.getElementById('presetSaveModal').classList.add('show');
+    document.getElementById('presetNameInput').focus();
+  },
+
+  async showPresetLoadModal() {
+    try {
+      const resp = await fetch('/api/presets');
+      const data = await resp.json();
+      const list = data.presets || [];
+      const el = document.getElementById('presetList');
+
+      if(!list.length) {
+        el.innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center">저장된 프리셋이 없습니다</div>';
+      } else {
+        el.innerHTML = list.map(p => `<div class="preset-item" onclick="app.loadPreset('${this.esc(p.name)}')">
+          <div>
+            <span class="name">${this.esc(p.name)}</span>
+            ${p.description ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${this.esc(p.description)}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="date">${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</span>
+            <button class="del-btn" onclick="event.stopPropagation();app.deletePreset('${this.esc(p.name)}')">✕</button>
+          </div>
+        </div>`).join('');
+      }
+      document.getElementById('presetLoadModal').classList.add('show');
+    } catch(e) {
+      this.toast('프리셋 목록 로드 실패', true);
+    }
+  },
+
+  closeModal(id) { document.getElementById(id).classList.remove('show'); },
+
+  async savePreset() {
+    const name = document.getElementById('presetNameInput').value.trim();
+    const desc = document.getElementById('presetDescInput').value.trim();
+    if(!name) { this.toast('이름을 입력하세요', true); return; }
+
+    try {
+      await fetch('/api/presets', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name, description: desc, settings: this.getCurrentSettings() })
+      });
+      this.closeModal('presetSaveModal');
+      document.getElementById('presetNameInput').value = '';
+      document.getElementById('presetDescInput').value = '';
+      this.toast(`프리셋 "${name}" 저장 완료!`);
+      this.log(`💾 프리셋 저장: ${name}`);
+    } catch(e) {
+      this.toast('프리셋 저장 실패', true);
+    }
+  },
+
+  async loadPreset(name) {
+    try {
+      const resp = await fetch(`/api/presets/${encodeURIComponent(name)}`);
+      const data = await resp.json();
+      if(data.success && data.preset?.settings) {
+        this.applySettings(data.preset.settings);
+        this.closeModal('presetLoadModal');
+        this.toast(`프리셋 "${name}" 로드 완료!`);
+        this.log(`📂 프리셋 로드: ${name}`);
+      }
+    } catch(e) {
+      this.toast('프리셋 로드 실패', true);
+    }
+  },
+
+  async deletePreset(name) {
+    try {
+      await fetch(`/api/presets/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      this.toast(`프리셋 "${name}" 삭제됨`);
+      this.showPresetLoadModal();
+    } catch(e) {
+      this.toast('프리셋 삭제 실패', true);
+    }
+  },
+
+  // ─── UI HELPERS ───
+  progress(val, text) {
+    document.getElementById('progressFill').style.width = val + '%';
+    document.getElementById('progressPct').textContent = val + '%';
+    document.getElementById('progressText').textContent = text;
+  },
+
+  log(msg) {
+    const el = document.getElementById('logOutput');
+    el.textContent += msg + '\n';
+    el.scrollTop = el.scrollHeight;
+  },
+
+  toast(msg, isErr = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + (isErr ? 'err' : 'ok');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+  },
+
+  esc(s) {
+    if(!s) return '';
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+};
+
+// ─── SECTION TOGGLE ───
+function toggleSection(name) {
+  const body = document.getElementById('body-' + name);
+  if(body) body.classList.toggle('collapsed');
+}
+
+document.addEventListener('DOMContentLoaded', () => app.init());
+</script>
+</body>
+</html>

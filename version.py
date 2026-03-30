@@ -14,7 +14,7 @@ APP_DESCRIPTION = "Excel/CSV 파일의 시계열 데이터 필터링, 이상값 
 DEVELOPER_INFO = {
     "name": "이민기",
     "email": "minki.lee@sk.com",
-    "organization": "나래O&M",
+    "organization": "발전지원실 발전AX팀",
     "github": "github.com/lee-minki/data-preprocessing-tool",
 }
 
