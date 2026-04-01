@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Preprocessing Control Room | 조기경보 모델링 데이터 전처리 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/vendor/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --font-body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;
+  --font-display:'Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang',serif;
+  --bg:#EDF2FB;--white:#FFFFFF;--gray50:#F7F9FD;--gray100:#EEF2F8;--gray200:#DDE5F0;
+  --gray300:#C2CDDD;--gray400:#8C99AD;--gray500:#637188;--gray600:#49576E;--gray700:#2C3A53;--gray800:#17253D;--gray900:#09111F;
+  --primary:#7657FF;--primary-light:#EEE9FF;--primary-dark:#5434EC;
+  --blue:#44D3FF;--blue-light:#EAFBFF;
+  --success:#179C73;--success-light:#DDF8EF;
+  --warning:#C97A12;--warning-light:#FFF1DA;
+  --error:#D85A66;--error-light:#FFE7EB;
+  --surface-dark:#07111F;--surface-dark-2:#0D1B32;
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 14px 36px rgba(10,22,41,.08);
+  --shadow-lg:0 28px 72px rgba(6,15,30,.16);
+  --shell-width:min(1200px,calc(100% - 40px));
+  --shell-pad:clamp(18px,1.8vw,28px);
+  --content-width:min(100%,1200px);
+  --content-width-wide:min(100%,1200px);
+  --section-space:clamp(14px,1.2vw,20px);
+}
+body{font-family:var(--font-body);background:radial-gradient(circle at top left,rgba(118,87,255,.16),transparent 24%),radial-gradient(circle at top right,rgba(68,211,255,.12),transparent 18%),var(--bg);color:var(--gray800);min-height:100vh;line-height:1.62;font-size:14px;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+
+/* LANDING */
+#landingView{display:block;min-height:100vh;padding:clamp(20px,2vw,32px) 0 clamp(48px,4vw,72px);animation:fadeIn .5s ease;position:relative}
+#dashboardView{display:none;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.site-nav{position:sticky;top:20px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:clamp(18px,1.8vw,28px);width:var(--shell-width);margin:0 auto var(--section-space);padding:clamp(15px,1.3vw,18px) var(--shell-pad);border-radius:24px;background:rgba(7,17,31,.82);border:1px solid rgba(255,255,255,.08);box-shadow:0 28px 60px rgba(6,15,30,.28);backdrop-filter:blur(18px)}
+.nav-brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff}
+.nav-mark{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--primary),var(--blue));color:#fff;font-size:24px;font-weight:800;box-shadow:0 14px 30px rgba(118,87,255,.35);flex-shrink:0}
+.nav-copy{display:flex;flex-direction:column;gap:2px}
+.nav-copy strong{font-size:15px;font-weight:700;letter-spacing:.01em}
+.nav-copy span{font-size:12px;color:rgba(255,255,255,.66)}
+.nav-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+.nav-link:hover,.nav-link.active{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.42);color:#fff}
+.landing-shell{width:var(--shell-width);margin:0 auto;display:flex;flex-direction:column;gap:var(--section-space);align-items:center}
+.landing-shell>*{width:100%}
+.hero-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.76fr);gap:clamp(14px,1.3vw,20px);padding:clamp(18px,1.7vw,24px);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,253,.98));border:1px solid rgba(195,207,223,.72);box-shadow:var(--shadow);color:var(--gray800);position:relative;overflow:hidden;max-width:var(--content-width-wide);margin:0 auto}
+.hero-panel::after{content:'';position:absolute;inset:auto -70px -90px auto;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(118,87,255,.12),rgba(118,87,255,0));pointer-events:none}
+.hero-copy,.hero-visual{position:relative;z-index:1}
+.landing-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:var(--primary-light);border:1px solid rgba(118,87,255,.24);color:var(--primary-dark);font-size:12px;font-weight:700;letter-spacing:.08em;margin-bottom:14px}
+.landing-title{font-family:var(--font-display);font-size:clamp(26px,2.6vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.16;color:var(--gray900);margin-bottom:10px}
+.landing-subtitle{max-width:min(48ch,100%);font-size:clamp(13px,1vw,15px);color:var(--gray600);margin-bottom:14px}
+.hero-audience{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-bottom:14px}
+.audience-card{padding:13px;border-radius:18px;background:var(--gray50);border:1px solid var(--gray100);box-shadow:inset 0 1px 0 rgba(255,255,255,.52)}
+.audience-card span{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray500);margin-bottom:6px}
+.audience-card strong{font-size:14px;line-height:1.6;font-weight:600;color:var(--gray800)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s}
+.hero-btn.primary{background:linear-gradient(135deg,var(--primary),#5434ec);color:#fff;box-shadow:0 16px 30px rgba(118,87,255,.28)}
+.hero-btn.secondary{background:var(--gray900);color:#fff}
+.hero-btn.ghost{border:1px solid rgba(44,58,83,.12);background:rgba(255,255,255,.58);color:var(--gray700)}
+.hero-btn:hover{transform:translateY(-1px)}
+.hero-visual{display:flex;flex-direction:column;gap:clamp(10px,1vw,14px)}
+.hero-image-card,.hero-process-card,.route-card,.landing-card,.feature-card,.launch-copy{background:var(--white);border:1px solid rgba(195,207,223,.55);box-shadow:var(--shadow)}
+.hero-image-card{padding:14px;border-radius:24px;background:linear-gradient(180deg,#13213a,#0d1830);border-color:rgba(255,255,255,.08);overflow:hidden}
+.hero-image-card img{display:block;width:100%;height:auto;border-radius:20px;object-fit:cover}
+.hero-process-card{padding:14px 14px 4px;border-radius:22px;background:rgba(255,255,255,.96)}
+.process-step{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--gray100)}
+.process-step:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.process-step span{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--primary-light);color:var(--primary-dark);font-size:12px;font-weight:800}
+.process-step strong{display:block;font-size:14px;color:var(--gray900);margin-bottom:3px}
+.process-step p{margin:0;font-size:12px;color:var(--gray500);line-height:1.6}
+.route-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(16px,1.6vw,22px);max-width:var(--content-width);margin:0 auto}
+.route-card{display:block;padding:20px;border-radius:24px;text-decoration:none;color:inherit;transition:all .22s}
+.route-card:hover{transform:translateY(-3px);border-color:rgba(118,87,255,.34);box-shadow:var(--shadow-lg)}
+.route-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--primary-light);color:var(--primary-dark);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.route-card h3{font-family:var(--font-display);font-size:21px;letter-spacing:-.01em;line-height:1.24;color:var(--gray900);margin-bottom:7px}
+.route-card p{font-size:13px;color:var(--gray500);margin-bottom:14px;max-width:30ch}
+.route-meta{font-size:12px;color:var(--gray700);font-weight:700}
+.launch-section{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.72fr);gap:clamp(14px,1.3vw,20px);align-items:stretch;padding:clamp(18px,1.7vw,24px);border-radius:30px;background:linear-gradient(135deg,#07111f 0%,#0d1b32 56%,#13264b 100%);box-shadow:var(--shadow-lg);position:relative;overflow:hidden;max-width:var(--content-width-wide);margin:0 auto}
+.launch-section::after{content:'';position:absolute;inset:-40px auto auto -20px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(68,211,255,.18),rgba(68,211,255,0));pointer-events:none}
+.launch-copy,.landing-card{border-radius:24px;padding:clamp(18px,1.7vw,24px);position:relative;z-index:1}
+.launch-copy{background:rgba(255,255,255,.94)}
+.section-kicker{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--blue-light);color:#006e96;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.launch-copy h2{font-family:var(--font-display);font-size:clamp(24px,2.2vw,31px);font-weight:700;letter-spacing:-.02em;line-height:1.16;color:var(--gray900);margin-bottom:8px}
+.launch-copy p{font-size:clamp(13px,1vw,14px);color:var(--gray500);margin-bottom:12px;max-width:44ch}
+.launch-list{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.launch-list li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:16px;background:#fff;border:1px solid var(--gray100);font-size:12px;color:var(--gray600)}
+.launch-list li strong{color:var(--gray900)}
+.launch-list li::before{content:'•';color:var(--primary);font-size:20px;line-height:1;margin-top:-2px}
+.landing-card{text-align:left;background:linear-gradient(180deg,#fff 0%,#f7f9ff 100%);border-color:rgba(118,87,255,.18);box-shadow:0 24px 56px rgba(6,15,30,.22)}
+.upload-card-head{margin-bottom:14px}
+.upload-badge{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:linear-gradient(135deg,var(--primary),var(--blue));color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;box-shadow:0 12px 24px rgba(118,87,255,.24)}
+.landing-card h1,.landing-card h2{font-size:clamp(26px,2.3vw,32px);letter-spacing:-.02em;line-height:1.12;font-family:var(--font-display);font-weight:700;color:var(--gray900);margin-bottom:6px}
+.landing-card p{color:var(--gray600);margin-bottom:0;font-size:clamp(13px,1vw,15px);max-width:30ch}
+.dropzone{border:1.5px dashed rgba(118,87,255,.42);border-radius:22px;padding:clamp(24px,2.8vw,36px) clamp(20px,2vw,28px);background:linear-gradient(180deg,#faf8ff,#eef8ff);transition:all .25s;cursor:pointer;margin-bottom:8px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 18px 34px rgba(118,87,255,.08);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dropzone:hover,.dropzone.over{border-color:var(--primary);background:linear-gradient(180deg,#f2eeff,#e8f6ff);transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 22px 42px rgba(118,87,255,.16)}
+.dz-icon{display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;margin:0 auto 12px;border-radius:22px;background:linear-gradient(135deg,var(--primary),var(--blue));font-size:27px;color:#fff;box-shadow:0 18px 30px rgba(118,87,255,.22)}
+.dz-text{color:var(--gray700);font-size:14px;font-weight:600;margin-bottom:12px}
+.dz-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--gray900);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 16px 28px rgba(9,17,31,.16)}
+.dz-btn:hover{background:var(--primary-dark)}
+.dz-format{font-size:11px;color:var(--gray500);margin-top:10px;line-height:1.5;max-width:28ch}
+.feature-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(16px,1.6vw,22px);max-width:var(--content-width);margin:0 auto}
+.feature-card{border-radius:24px;padding:20px;text-align:left;transition:all .2s}
+.feature-card:hover{border-color:rgba(118,87,255,.34);transform:translateY(-2px)}
+.feature-card .fc-icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:var(--primary-light);font-size:22px;color:var(--primary-dark);margin-bottom:12px}
+.feature-card .fc-title{font-weight:700;font-size:16px;color:var(--gray900);margin-bottom:5px}
+.feature-card .fc-desc{font-size:13px;color:var(--gray600);max-width:30ch}
+.feature-card .fc-note{font-size:11px;color:var(--gray400);margin-top:10px;line-height:1.6}
+.landing-footnote{text-align:center;font-size:12px;color:var(--gray500);margin:2px auto 0;max-width:var(--content-width)}
+
+/* DASHBOARD */
+.dash-header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(135deg,var(--surface-dark),var(--surface-dark-2));border-bottom:1px solid rgba(118,87,255,.18);position:sticky;top:0;z-index:100;box-shadow:0 14px 28px rgba(6,15,30,.18)}
+.dash-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
+.dash-title{font-size:15px;font-weight:700;color:#fff}
+.dash-file{display:flex;align-items:center;gap:6px;margin-left:12px;padding:4px 12px;background:rgba(255,255,255,.08);border-radius:20px;font-size:12px;color:rgba(255,255,255,.82)}
+  .dash-links{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+  .dash-links a{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.82);text-decoration:none;font-size:12px;font-weight:600;transition:all .2s;white-space:nowrap}
+.dash-links a:hover{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.34);color:#fff}
+  .dash-ver{font-size:11px;color:rgba(255,255,255,.72);padding:4px 10px;background:rgba(255,255,255,.08);border-radius:20px;flex-shrink:0}
+.dash-body{display:grid;grid-template-columns:clamp(320px,24vw,460px) minmax(0,1fr);height:calc(100vh - 53px)}
+
+/* SIDEBAR */
+.sidebar{width:auto;min-width:0;background:var(--white);border-right:1px solid var(--gray200);overflow-y:auto;padding:clamp(16px,1.4vw,24px)}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--gray300);border-radius:2px}
+.sb-section{margin-bottom:10px;border:1px solid var(--gray200);border-radius:var(--radius-sm);overflow:visible}
+.sb-head{display:flex;align-items:center;gap:6px;padding:9px 12px;font-weight:600;font-size:12px;color:var(--gray700);cursor:pointer;user-select:none;transition:background .15s;text-transform:uppercase;letter-spacing:.3px}
+.sb-head:hover{background:var(--gray50)}
+.sb-head .sb-toggle{margin-left:auto;font-size:10px;color:var(--gray400);transition:transform .2s}
+.sb-head.collapsed .sb-toggle{transform:rotate(-90deg)}
+.sb-body{padding:10px 12px;border-top:1px solid var(--gray100)}
+.sb-body.hidden{display:none}
+.sb-label{font-size:11px;font-weight:600;color:var(--gray500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.sb-value{font-size:13px;color:var(--gray800);margin-bottom:8px}
+.sb-divider{border:none;border-top:1px solid var(--gray100);margin:8px 0}
+.workflow-list{display:flex;flex-direction:column;gap:6px}
+.workflow-step{display:flex;gap:0;align-items:flex-start;padding:6px 8px;background:var(--gray50);border:1px solid var(--gray100);border-radius:8px}
+.workflow-step-text{font-size:11px;color:var(--gray600);line-height:1.5}
+.chart-guide{margin:0 16px 10px;padding:8px 10px;border-radius:8px;background:var(--blue-light);color:#334155;font-size:11px;line-height:1.55;border:1px solid rgba(59,130,246,.12)}
+
+/* TOOLTIP */
+.tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--gray200);color:var(--gray500);font-size:9px;font-weight:800;cursor:help;flex-shrink:0;vertical-align:middle;margin-left:3px;font-style:normal}
+.tip::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#1F2937;color:#fff;font-size:11px;font-weight:400;white-space:pre-line;padding:8px 12px;border-radius:8px;z-index:9999;width:min(230px,calc(100vw - 64px));line-height:1.55;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .15s;text-transform:none;letter-spacing:0}
+.tip::before{content:'';position:absolute;left:calc(100% + 1px);top:50%;transform:translateY(-50%);border:5px solid transparent;border-right-color:#1F2937;opacity:0;pointer-events:none;transition:opacity .15s}
+.tip:hover::after,.tip:hover::before{opacity:1}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--gray200);background:var(--white);color:var(--gray700);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;width:100%}
+.btn:hover{background:var(--gray50);border-color:var(--gray300)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+.btn.primary:hover{background:var(--primary-dark)}
+.btn.success{background:var(--success);border-color:var(--success);color:#fff}
+.btn.success:hover{background:#059669}
+.btn.warning{background:var(--warning);border-color:var(--warning);color:#fff}
+.btn.warning:hover{background:#D97706}
+.btn.danger{background:var(--white);border-color:var(--error);color:var(--error)}
+.btn.danger:hover{background:var(--error-light)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn-row{display:flex;gap:6px}
+.btn-row .btn{flex:1}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* INPUTS */
+input,select{background:var(--white);border:1px solid var(--gray200);color:var(--gray800);padding:6px 10px;border-radius:6px;font-size:13px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+select{cursor:pointer}
+label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px}
+input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:14px;height:14px;flex-shrink:0}
+.opt-group{display:flex;flex-direction:column;gap:5px}
+
+/* FILTER ROWS */
+.filter-row{padding:6px 0;border-bottom:1px solid var(--gray100)}
+.filter-row:last-child{border-bottom:none}
+.filter-inputs{display:flex;align-items:center;gap:3px;flex-wrap:nowrap}
+.filter-inputs select,.filter-inputs input{padding:4px 6px;font-size:12px;min-width:0}
+.del-btn{background:none;border:none;color:var(--error);cursor:pointer;font-size:14px;padding:3px 5px;border-radius:4px;flex-shrink:0;line-height:1}
+.del-btn:hover{background:var(--error-light)}
+.filter-stats-row{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.filter-stat-line{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.filter-stat-badge{font-size:10px;color:var(--gray500);background:var(--gray100);padding:1px 6px;border-radius:10px;white-space:nowrap}
+.filter-auto-btn{font-size:10px;color:var(--primary);background:var(--primary-light);border:none;padding:2px 8px;border-radius:10px;cursor:pointer;font-weight:600;line-height:1.6}
+.filter-auto-btn:hover{background:var(--primary);color:#fff}
+.filter-stat-focus{font-size:10px;color:var(--primary-dark);background:var(--primary-light);padding:1px 6px;border-radius:10px;white-space:nowrap;font-weight:700}
+.method-choice{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.method-title{font-weight:600;color:var(--gray800)}
+.method-badge{font-size:10px;padding:1px 6px;border-radius:10px;white-space:nowrap;font-weight:600}
+.method-badge.clean{background:var(--warning-light);color:#B45309}
+.method-badge.balance{background:var(--primary-light);color:var(--primary-dark)}
+.method-badge.volume{background:var(--blue-light);color:#4338CA}
+.method-badge.shape{background:var(--gray100);color:var(--gray600)}
+
+/* MAIN PANEL */
+.main-panel{min-width:0;overflow-y:auto;padding:clamp(16px,1.4vw,24px) clamp(18px,1.8vw,32px);background:var(--bg)}
+
+/* STATS CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.2vw,18px);margin-bottom:clamp(14px,1.4vw,20px)}
+.stat-card{background:var(--white);border:1px solid var(--gray200);border-radius:var(--radius-sm);padding:14px}
+.stat-card .sc-label{font-size:11px;font-weight:600;color:var(--gray500);text-transform:uppercase;letter-spacing:.5px}
+.stat-card .sc-value{font-size:22px;font-weight:700;margin-top:3px}
+.stat-card .sc-sub{font-size:11px;color:var(--gray400);margin-top:2px}
+.stat-card.red .sc-value{color:var(--error)}
+.stat-card.green .sc-value{color:var(--success)}
+
+/* COMPARE CARD */
+.compare-card{background:var(--white);border:1px solid var(--gray200);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.compare-table{width:100%;border-collapse:collapse;font-size:12px}
+.compare-table th{background:var(--gray50);padding:7px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--gray600);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--gray200)}
+.compare-table th:not(:first-child){text-align:right}
+.compare-table td{padding:7px 14px;border-bottom:1px solid var(--gray100)}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table td:first-child{font-weight:500;color:var(--gray700)}
+.compare-table td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--error);font-weight:500}
+.delta-neg{color:var(--success);font-weight:500}
+.delta-neu{color:var(--gray500)}
+
+/* CHART CARD */
+.chart-card{background:var(--white);border:1px solid rgba(59,130,246,.28);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;box-shadow:0 10px 28px rgba(59,130,246,.08)}
+.chart-sel{padding:4px 8px;border:1px solid var(--gray200);border-radius:6px;font-size:12px;cursor:pointer;background:var(--white);outline:none;color:var(--gray800);width:auto}
+.chart-sel:focus{border-color:var(--primary)}
+
+/* Column chip bar */
+.col-chip-bar{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--gray50);border-top:1px solid var(--gray100);border-bottom:1px solid var(--gray100);overflow-x:auto;flex-wrap:wrap}
+.col-chip-bar::-webkit-scrollbar{height:3px}
+.col-chip-bar::-webkit-scrollbar-thumb{background:var(--gray300);border-radius:2px}
+.col-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:500;cursor:pointer;user-select:none;border:1.5px solid;transition:all .15s;white-space:nowrap;line-height:1.5}
+.col-chip.active{color:#fff}
+.col-chip:not(.active){background:var(--white)!important;color:var(--gray600)!important;border-color:var(--gray200)!important}
+.col-chip-actions{display:flex;gap:4px;margin-left:auto;flex-shrink:0}
+.chip-action-btn{padding:3px 8px;border:1px solid var(--gray200);border-radius:8px;font-size:10px;background:var(--white);cursor:pointer;color:var(--gray600);white-space:nowrap}
+.chip-action-btn:hover{background:var(--gray100)}
+
+.chart-split{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);border-top:1px solid var(--gray100)}
+.chart-panel{padding:10px 14px 14px;height:clamp(230px,28vh,360px)}
+.chart-panel:first-child{border-right:1px solid var(--gray100)}
+.chart-panel-label{font-size:10px;font-weight:600;color:var(--gray500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+
+/* TABLE CARD */
+.table-card{background:var(--white);border:1px solid var(--gray200);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--gray100);flex-wrap:wrap;gap:8px}
+.table-title{font-weight:600;font-size:14px}
+.table-meta{font-size:12px;color:var(--gray500)}
+.table-search{padding:5px 10px;border:1px solid var(--gray200);border-radius:6px;font-size:12px;width:190px;outline:none;background:var(--white)}
+.table-search:focus{border-color:var(--primary)}
+.table-wrap{overflow-x:auto;max-height:clamp(340px,40vh,560px);overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--gray50);padding:7px 10px;text-align:left;font-weight:600;position:sticky;top:0;white-space:nowrap;border-bottom:1px solid var(--gray200);cursor:pointer;user-select:none;font-size:11px;color:var(--gray600);text-transform:uppercase;letter-spacing:.3px;transition:background .1s}
+th:hover{background:var(--gray100)}
+td{padding:5px 10px;border-bottom:1px solid var(--gray100);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+tr:hover td{background:var(--blue-light)}
+.table-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-top:1px solid var(--gray100);font-size:12px;color:var(--gray500);flex-wrap:wrap;gap:8px}
+.page-btns{display:flex;align-items:center;gap:6px}
+.page-btn{padding:3px 10px;border:1px solid var(--gray200);border-radius:6px;background:var(--white);cursor:pointer;font-size:12px;transition:all .15s}
+.page-btn:hover{background:var(--gray50)}
+.page-btn:disabled{opacity:.3;pointer-events:none}
+.page-size-sel{padding:3px 6px;border:1px solid var(--gray200);border-radius:5px;font-size:11px;cursor:pointer;background:var(--white);outline:none;width:auto;color:var(--gray700)}
+
+/* LOG */
+.log-card{background:var(--white);border:1px solid var(--gray200);border-radius:var(--radius);overflow:hidden}
+.log{background:var(--gray50);padding:10px 14px;font-family:'Menlo','Consolas','D2Coding',monospace;font-size:11px;max-height:clamp(160px,22vh,280px);overflow-y:auto;white-space:pre-wrap;line-height:1.7;color:var(--gray600)}
+
+/* PROGRESS */
+.progress-wrap{padding:10px 20px;background:var(--white);border-top:1px solid var(--gray200);display:none}
+.progress-wrap.show{display:block}
+.progress-inner{display:flex;align-items:center;gap:12px}
+.progress-bar{flex:1;height:6px;background:var(--gray200);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--blue));border-radius:3px;transition:width .3s;width:0%}
+.progress-text{font-size:12px;color:var(--gray500);min-width:120px;text-align:right}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px;padding:24px;min-width:380px;max-width:480px;box-shadow:var(--shadow-lg)}
+.modal h3{margin-bottom:14px;font-size:16px;font-weight:700}
+.modal input[type=text]{margin-bottom:10px}
+.modal .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.modal .modal-actions .btn{width:auto}
+.preset-list{max-height:240px;overflow-y:auto}
+.preset-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:4px}
+.preset-item:hover{background:var(--gray50);border-color:var(--gray200)}
+.preset-item .name{font-weight:500;font-size:13px}
+.preset-item .date{font-size:11px;color:var(--gray400)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:2000;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{background:var(--success-light);border:1px solid var(--success);color:#065F46}
+.toast.err{background:var(--error-light);border:1px solid var(--error);color:#991B1B}
+
+/* VALIDATION */
+.val-col-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;max-height:100px;overflow-y:auto}
+.val-col-grid label{font-size:11px;padding:2px 0}
+.seg-inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}
+.seg-inputs input{text-align:center;padding:4px;font-size:11px}
+.seg-label{font-size:10px;color:var(--gray400);text-align:center;margin-top:2px}
+
+/* VAL DOWNLOAD DESC */
+.val-dl-desc{font-size:10px;color:var(--gray400);line-height:1.6;padding:4px 0}
+
+@media(max-width:1600px){
+  .site-nav,.landing-shell{width:min(1200px,calc(100% - 40px))}
+  .launch-section,.hero-panel{grid-template-columns:1fr;max-width:min(100%,1120px)}
+  .launch-section{gap:16px}
+  .hero-panel{gap:16px}
+  .launch-copy,.landing-card{padding:20px}
+  .dropzone{min-height:200px;padding:28px 20px}
+}
+@media(max-width:768px){
+  .dash-body{display:flex;flex-direction:column}
+  .sidebar{width:100%;min-width:auto;border-right:none;border-bottom:1px solid var(--gray200)}
+  .site-nav{position:static;width:calc(100% - 28px);padding:16px;flex-direction:column;align-items:flex-start}
+  .nav-links,.hero-actions{width:100%}
+  .nav-link,.hero-btn{flex:1}
+  .hero-panel,.route-grid,.launch-section,.hero-audience,.feature-cards,.stats-row{grid-template-columns:1fr}
+  .landing-shell{width:calc(100% - 28px)}
+  .hero-panel,.launch-section,.launch-copy,.landing-card{padding:22px}
+  .landing-title{font-size:34px}
+  .chart-split{grid-template-columns:1fr}
+  .chart-panel:first-child{border-right:none;border-bottom:1px solid var(--gray100)}
+  .dash-file{display:none}
+  .dash-header{flex-wrap:wrap;align-items:flex-start;row-gap:8px}
+  .dash-links{display:flex;width:100%;margin-left:0;justify-content:flex-start}
+  .dash-links a{flex:1}
+  .dash-ver{margin-left:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landingView">
+  <header class="site-nav">
+    <a class="nav-brand" href="Preprocessing.html">
+      <span class="nav-mark">σ</span>
+      <span class="nav-copy">
+        <strong>Data Preprocessing Control Room</strong>
+        <span>조기경보 모델링 데이터 전처리 시스템</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="주요 이동">
+      <a class="nav-link active" href="Preprocessing.html">메인</a>
+      <a class="nav-link" href="program_intro.html">프로그램 소개</a>
+      <a class="nav-link" href="MANUAL.html">사용자 매뉴얼</a>
+    </nav>
+  </header>
+
+  <main class="landing-shell">
+    <section class="launch-section" id="launchPanel">
+      <div class="landing-card">
+        <div class="upload-card-head">
+          <span class="upload-badge">Gateway</span>
+          <h1>파일 업로드로 바로 시작</h1>
+          <p>Excel 파일을 올리면 곧바로 대시보드가 열리고 원본 확인부터 전처리 설정·저장까지 한 흐름으로 이어집니다.</p>
+        </div>
+        <div class="dropzone" id="dropzone">
+          <div class="dz-icon">☁️</div>
+          <div class="dz-text">XLSX / XLS 파일을 드래그하거나 클릭해 불러오세요</div>
+          <button class="dz-btn" type="button">파일 선택</button>
+          <div class="dz-format">브라우저 로컬 처리 · 서버 업로드 없음</div>
+          <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+        </div>
+      </div>
+
+      <div class="launch-copy">
+        <span class="section-kicker">Start Here</span>
+          <h2>업로드 후 바로 검토</h2>
+          <p>업로드만 끝나면 기존 대시보드로 넘어가 파일 상태를 확인하고 필요한 기준만 정하면 됩니다.</p>
+          <ul class="launch-list">
+            <li><div><strong>먼저</strong> 파일명, 행/열 수, 원본 추세를 빠르게 확인합니다.</div></li>
+            <li><div><strong>그다음</strong> 기준을 정해 실행하고 저장 결과와 로그만 다시 확인합니다.</div></li>
+          </ul>
+      </div>
+    </section>
+
+    <section class="hero-panel">
+      <div class="hero-copy">
+        <span class="landing-eyebrow">DATA PREPROCESSING CONTROL ROOM</span>
+        <h2 class="landing-title">업로드 뒤 바로 이어지는 전처리 흐름</h2>
+        <p class="landing-subtitle">현업 파일을 올리면 원본 추세 확인, 기준 설정, 자동 저장까지 기존 전처리 화면에서 바로 이어집니다.</p>
+
+        <div class="hero-audience">
+          <div class="audience-card">
+            <span>무엇을 하나</span>
+              <strong>모델링 전 데이터 정리와 산출물 생성을 한 흐름으로 묶습니다.</strong>
+          </div>
+          <div class="audience-card">
+            <span>누가 쓰나</span>
+              <strong>실사용자, 검토자, 운영 담당자가 같은 기준으로 봅니다.</strong>
+          </div>
+          <div class="audience-card">
+            <span>추가 안내</span>
+              <strong>소개와 매뉴얼은 필요할 때만 참고하면 되고 시작은 업로드 카드면 충분합니다.</strong>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a class="hero-btn primary" href="#launchPanel">업로드 영역으로 이동</a>
+          <a class="hero-btn secondary" href="MANUAL.html">사용자 매뉴얼</a>
+          <a class="hero-btn ghost" href="program_intro.html">도입 배경 보기</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-image-card">
+          <img src="assets/Gemini_Generated_Image_kal48vkal48vkal4.jpeg" alt="Excel 기반 원본 데이터가 전처리 포털로 유입되는 분위기 이미지">
+        </div>
+        <div class="hero-process-card">
+          <div class="process-step">
+            <span>01</span>
+            <div>
+              <strong>원본 상태 확인</strong>
+              <p>업로드 직후 차트와 테이블로 현재 상태를 먼저 봅니다.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <span>02</span>
+            <div>
+              <strong>기준 설정</strong>
+              <p>이상값 처리, 필터, 시간 처리, Validation / Simulation 조건을 정합니다.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <span>03</span>
+            <div>
+              <strong>자동 저장</strong>
+              <p>결과 파일을 생성하고 로그와 비교 카드로 다시 확인합니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="route-grid">
+      <a class="route-card" href="#launchPanel">
+        <span class="route-tag">실행</span>
+        <h3>업로드 카드로 복귀</h3>
+        <p>어디까지 내려가도 상단 업로드 영역으로 돌아와 바로 파일을 올릴 수 있습니다.</p>
+        <span class="route-meta">XLSX / XLS 지원</span>
+      </a>
+      <a class="route-card" href="program_intro.html">
+        <span class="route-tag">배경</span>
+        <h3>표준화 필요성</h3>
+        <p>문제 배경, 표준화 이유, 실제 업무 흐름, 기대 효과를 짧게 확인합니다.</p>
+        <span class="route-meta">검토자 · 관리자용 요약</span>
+      </a>
+      <a class="route-card" href="MANUAL.html">
+        <span class="route-tag">실무</span>
+        <h3>화면별 사용법</h3>
+        <p>빠른 시작, 화면 구조, 저장 파일, 주의사항을 화면 캡처와 함께 따라갑니다.</p>
+        <span class="route-meta">실사용자용 안내서</span>
+      </a>
+    </section>
+
+    <section class="feature-cards">
+      <div class="feature-card">
+        <div class="fc-icon">📈</div>
+        <div class="fc-title">원본 추세 먼저 확인</div>
+        <div class="fc-desc">업로드 직후 차트와 테이블로 전체 흐름과 튀는 구간을 먼저 읽고 기준을 정합니다.</div>
+        <div class="fc-note">현재 현업의 확인 순서를 그대로 반영한 구조입니다.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🧹</div>
+        <div class="fc-title">전처리 기준 표준화</div>
+        <div class="fc-desc">이상값 처리, 선제거, 필터, 시간 처리를 같은 인터페이스에서 반복 가능하게 만듭니다.</div>
+        <div class="fc-note">프리셋으로 동일 조건을 재사용할 수 있습니다.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🧪</div>
+        <div class="fc-title">Validation / Simulation 생성</div>
+        <div class="fc-desc">정상 holdout 20%와 Alert 점검용 Simulation Data를 전처리 흐름에 함께 묶었습니다.</div>
+        <div class="fc-note">검증구간과 점검 시나리오를 별도 수작업으로 준비하지 않아도 됩니다.</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🔒</div>
+        <div class="fc-title">브라우저 로컬 처리</div>
+        <div class="fc-desc">업로드된 데이터는 브라우저 안에서 처리해 외부 전송 없이 빠르게 검토할 수 있습니다.</div>
+        <div class="fc-note">현장 확인과 내부 검토 상황에 맞는 가벼운 사용성을 유지합니다.</div>
+      </div>
+    </section>
+
+    <p class="landing-footnote">순수 클라이언트사이드 처리 · 상대 경로 링크 유지 · 기존 대시보드 인터랙션 보존</p>
+  </main>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardView">
+  <div class="dash-header">
+    <div class="dash-logo">σ</div>
+    <span class="dash-title">조기경보 모델링 데이터 전처리 시스템</span>
+    <div class="dash-file">📄 <span id="dashFileName">-</span></div>
+    <div class="dash-links">
+          <a href="Preprocessing.html">메인</a>
+      <a href="program_intro.html">소개</a>
+      <a href="MANUAL.html">매뉴얼</a>
+    </div>
+    <span class="dash-ver">v3.1</span>
+  </div>
+
+  <div class="dash-body">
+    <!-- ===== SIDEBAR ===== -->
+    <div class="sidebar">
+
+      <!-- 파일 정보 -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>📄</span> 파일 정보 <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <div class="sb-label">파일명</div><div class="sb-value" id="sbFileName">-</div>
+          <div class="sb-label">행 수</div><div class="sb-value" id="sbRows">-</div>
+          <div class="sb-label">열 수</div><div class="sb-value" id="sbCols">-</div>
+          <hr class="sb-divider">
+          <button type="button" class="btn btn-sm danger" onclick="app.resetAll()">🔄 새 파일 열기</button>
+          <div class="btn-row" style="margin-top:6px">
+            <button type="button" class="btn btn-sm" onclick="app.showPresetSaveModal()">📋 전처리프리셋 저장</button>
+            <button type="button" class="btn btn-sm" onclick="app.showPresetLoadModal()">📂 프리셋불러오기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>🧭</span> 사용 순서 <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <div class="workflow-list">
+            <div class="workflow-step"><div class="workflow-step-text"><b>원본 트렌드 확인</b><br>업로드 직후 우측 차트에서 전체 추세와 튀는 구간을 먼저 확인합니다.</div></div>
+            <div class="workflow-step"><div class="workflow-step-text"><b>이상값 / 필터 / 시간 설정</b><br>좌측에서 제거 기준, 필터 조건, 시간 보정 기준을 정합니다.</div></div>
+            <div class="workflow-step"><div class="workflow-step-text"><b>전처리 실행 · 자동 저장</b><br>전처리데이터(정상 Validation 20% 포함)와 Simulation Data가 한 번에 저장됩니다.</div></div>
+            <div class="workflow-step"><div class="workflow-step-text"><b>차트와 로그 재확인</b><br>전처리 후 추세, 분포, 로그를 보고 설정이 적절했는지 확인합니다.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 이상값 처리 -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>📊</span> 이상값 처리
+          <i class="tip" data-tip="이상값 처리를 켜면 숫자 컬럼에서 튀는 행을 제거합니다.&#10;많이 제거할수록 학습 데이터는 더 촘촘하고 안정적이지만 전체 데이터 양은 줄어듭니다.&#10;덜 제거할수록 원본 데이터 양은 더 많이 남지만 이상값이 일부 포함될 수 있습니다.">i</i>
+          <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <label style="margin-bottom:8px">
+            <input type="checkbox" id="applyOutlier" checked> 이상값 처리 적용
+          </label>
+          <div class="sb-label" style="margin-top:6px">방법</div>
+          <div class="opt-group">
+            <label>
+              <input type="radio" name="outlierMethod" value="2sigma">
+              <span class="method-choice"><span class="method-title">2σ · 보수적</span><span class="method-badge clean">제거↑</span><span class="method-badge clean">데이터량↓</span></span>
+              <i class="tip" data-tip="평균과 표준편차 기준으로 제거합니다.&#10;정상 범위를 보수적으로 잡아 더 많이 제거합니다.&#10;학습 데이터를 더 깔끔하게 만들고 싶을 때 사용하세요.">i</i>
+            </label>
+            <label>
+              <input type="radio" name="outlierMethod" value="2.5sigma" checked>
+              <span class="method-choice"><span class="method-title">2.5σ · 균형형</span><span class="method-badge balance">기본</span><span class="method-badge balance">균형</span></span>
+              <i class="tip" data-tip="평균과 표준편차 기준의 균형형 설정입니다.&#10;너무 많이 지우지 않으면서 튀는 값을 잘 잡습니다.&#10;기본 운영값으로 사용하기 좋습니다.">i</i>
+            </label>
+            <label>
+              <input type="radio" name="outlierMethod" value="3sigma">
+              <span class="method-choice"><span class="method-title">3σ · 보존형</span><span class="method-badge volume">데이터량↑</span><span class="method-badge volume">잔존 가능</span></span>
+              <i class="tip" data-tip="평균과 표준편차 기준이지만 극단값 위주로만 제거합니다.&#10;데이터를 최대한 많이 남기고 싶을 때 적합합니다.&#10;약한 이상은 일부 남을 수 있습니다.">i</i>
+            </label>
+            <label>
+              <input type="radio" name="outlierMethod" value="iqr">
+              <span class="method-choice"><span class="method-title">IQR · 비대칭 대응</span><span class="method-badge shape">분포형 대응</span></span>
+              <i class="tip" data-tip="Q1~Q3 범위(IQR)를 기준으로 제거합니다.&#10;분포가 한쪽으로 치우친 데이터에서 더 안정적입니다.&#10;비대칭 센서 데이터에 우선 고려하세요.">i</i>
+            </label>
+          </div>
+          <div style="font-size:11px;color:var(--gray400);margin-top:6px">처리: 이상값 포함 행 전체 삭제</div>
+          <div class="val-dl-desc" style="display:block;padding-top:4px">
+            <b>필터링 강도 가이드</b><br>
+            2σ: 더 많이 제거 → 학습 데이터는 더 촘촘/보수적, 전체 양은 감소<br>
+            2.5σ: 균형형 (기본)<br>
+            3σ: 덜 제거 → 데이터 양은 더 많이 유지, 이상값 일부 잔존 가능
+          </div>
+          <div class="val-dl-desc" style="display:block;padding-top:4px">
+            <b>방법 선택 요약</b><br>
+            MAD: 아주 큰 극단값을 먼저 잘라내는 1차 정리<br>
+            IQR: 비대칭 분포에서 안정적인 제거 기준<br>
+            3σ: 데이터를 많이 남기고 극단값만 제거하는 보존형 기준
+          </div>
+          <div class="sb-label" style="margin-top:8px">선제거 모드
+            <i class="tip" data-tip="메인 이상값 처리 전에 극단값을 먼저 정리하는 단계입니다.&#10;MAD는 중앙값 기준이라 극단값에 덜 흔들립니다.&#10;1회 선제거: MAD 기반 거친 1차 제거&#10;반복 clipping: median/MAD 기반 3σ clipping을 최대 5회 반복&#10;트렌드 오염이 심한 파일에서 먼저 사용하세요.">i</i>
+          </div>
+          <select id="preRemovalMode" style="margin-bottom:6px">
+            <option value="none">사용 안 함</option>
+            <option value="prefilter" selected>1회 선제거 · MAD 기반</option>
+            <option value="iterative">반복 clipping · 3σ</option>
+          </select>
+          <div class="val-dl-desc" style="display:block;padding-top:0">
+            <b>언제 쓰나</b><br>
+            극단값이 평균/표준편차를 먼저 오염시키는 경우, 메인 이상값 처리 전에 선제거를 적용하면 트렌드를 더 안정적으로 확인할 수 있습니다.
+          </div>
+          <div class="val-dl-desc" style="display:block;padding-top:4px">
+            <b>선제거 해석</b><br>
+            MAD 선제거: 아주 튀는 값 먼저 제거<br>
+            반복 clipping: 선제거를 여러 번 반복해 평균/표준편차 왜곡을 줄임
+          </div>
+          <hr class="sb-divider">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:4px">
+              <span class="sb-label" style="margin:0">대상 컬럼</span>
+              <i class="tip" data-tip="이상값을 검사할 컬럼을 선택합니다.&#10;기본은 모든 숫자 컬럼입니다.&#10;특정 센서만 이상값 처리하고 싶을 때 활용하세요.">i</i>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button type="button" class="chip-action-btn" onclick="app.outlierSelectAll(true)">전체</button>
+              <button type="button" class="chip-action-btn" onclick="app.outlierSelectAll(false)">해제</button>
+            </div>
+          </div>
+          <div class="val-col-grid" id="outlierColGrid" style="max-height:80px">
+            <span style="font-size:11px;color:var(--gray400)">파일 로드 후 표시</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>🔧</span> 필터
+          <i class="tip" data-tip="AND 조건으로 데이터를 필터링합니다.&#10;컬럼을 선택하면 min/max/avg/중앙값과 ±3σ 기준이 표시됩니다.&#10;중요한 수치만 보이도록 정리된 상태입니다.">i</i>
+          <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <div id="filterContainer"></div>
+          <button type="button" class="btn btn-sm" onclick="app.addFilter()" style="margin-top:6px">+ 필터 추가</button>
+        </div>
+      </div>
+
+      <!-- 시간 처리 -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>🕐</span> 시간 처리 <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <label style="margin-bottom:4px">
+            <input type="checkbox" id="applyTimeNorm" checked> 시간 정규화
+            <i class="tip" data-tip="밀린 시간을 가장 가까운 간격으로 보정합니다.&#10;장점: 엑셀 자동채우기 오류를 빠르게 고칠 수 있습니다.&#10;단점: 원래 시간 오차 정보는 사라집니다.">i</i>
+          </label>
+          <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">00:01:00 → 00:02:00 같은 오차 보정</div>
+          <hr class="sb-divider">
+          <label style="margin-bottom:4px">
+            <input type="checkbox" id="applyTimeRealign" checked> 시간 재정렬
+            <i class="tip" data-tip="남은 행에 새 시간축을 다시 붙입니다.&#10;장점: 학습/검증 구간을 일정 간격으로 맞추기 쉽습니다.&#10;단점: 원래 수집 시간과는 달라질 수 있습니다.">i</i>
+          </label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <div style="flex:1">
+              <div class="sb-label">시작 시간</div>
+              <input type="text" id="startTime" placeholder="2026-03-13 00:00:00" style="font-size:11px">
+            </div>
+            <div style="width:62px">
+              <div class="sb-label">간격(분)</div>
+              <input type="number" id="interval" value="2" min="1">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation 생성 -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>🧪</span> Validation / Simulation
+          <i class="tip" data-tip="전처리 완료 데이터 중 일부를 정상 검증용 holdout으로 분리합니다.&#10;이상 데이터는 Validation에 넣지 않습니다.&#10;전체 태그 관계를 유지한 정상 데이터 검증용입니다.">i</i>
+          <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <div class="val-dl-desc" style="display:block;padding-top:0">
+            전처리 완료 데이터 중 뒤쪽 일부를 <b>정상 검증 데이터</b>로 분리합니다.<br>
+            Validation에는 이상값을 넣지 않으며, 태그 선택 없이 전체 관계를 그대로 유지합니다.
+          </div>
+
+          <div class="sb-label">Validation 비율
+            <i class="tip" data-tip="Validation은 20%로 고정됩니다.&#10;전처리 완료 데이터 중 뒤쪽 20%를 정상 검증 데이터로 자동 분리합니다.">i</i>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span class="filter-stat-focus">20% 고정</span>
+            <span style="font-size:12px;color:var(--gray500)">전처리 데이터 기준 정상 holdout</span>
+          </div>
+          <div class="val-dl-desc" id="valDlDesc" style="display:none"></div>
+
+          <hr class="sb-divider">
+          <div class="sb-label" style="margin-top:4px">Simulation Data
+            <i class="tip" data-tip="이상 데이터는 Simulation에서만 생성합니다.&#10;정상 → 전환 → 이상 구간 비율을 설정하고, 대상 태그와 강도를 선택해 시뮬레이션 데이터를 만듭니다.">i</i>
+          </div>
+          <div class="val-dl-desc" style="display:block;padding-top:0">
+            총 길이는 <b>120~180분</b>으로 맞추는 것을 권장합니다. 이상값은 이 Simulation에서만 생성합니다.
+          </div>
+          <div class="sb-label">대상 태그
+            <i class="tip" data-tip="이상 패턴을 넣을 태그를 선택합니다. 선택한 태그만 정상→전환→이상으로 변화하고, 나머지 태그는 정상 흐름을 유지합니다.">i</i>
+          </div>
+          <div class="val-col-grid" id="simColGrid">
+            <span style="font-size:11px;color:var(--gray400)">파일 로드 후 표시</span>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:8px">
+            <button type="button" class="chip-action-btn" onclick="app.simSelectAll(true)">전체선택</button>
+            <button type="button" class="chip-action-btn" onclick="app.simSelectAll(false)">해제</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <div class="sb-label">총 길이(분)</div>
+              <input type="number" id="simTotalMinutes" value="180" min="120" max="180" step="10" style="font-size:11px">
+            </div>
+            <div style="flex:1">
+              <div class="sb-label">강도</div>
+              <select id="simIntensity" style="font-size:11px">
+                <option value="0.8">약</option>
+                <option value="1.0" selected>기본</option>
+                <option value="1.3">강</option>
+              </select>
+            </div>
+          </div>
+          <div class="sb-label">시뮬레이션 구간 비율 (합계 100%)
+            <i class="tip" data-tip="정상 / 전환 / 이상 구간 비율을 100 기준으로 입력합니다. 예: 25 / 25 / 50">i</i>
+          </div>
+          <div class="seg-inputs">
+            <input type="number" id="simSeg0" value="25" min="0" max="100" oninput="app.normSimSegs(0)">
+            <input type="number" id="simSeg1" value="25" min="0" max="100" oninput="app.normSimSegs(1)">
+            <input type="number" id="simSeg2" value="50" min="0" max="100" oninput="app.normSimSegs(2)">
+          </div>
+          <div class="seg-inputs" style="margin-top:0;margin-bottom:8px">
+            <div class="seg-label">정상</div>
+            <div class="seg-label">전환</div>
+            <div class="seg-label">이상</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <div class="val-dl-desc" style="display:block;padding-top:0">예: 25 / 25 / 50이면 총 길이 180분에서 정상 45분, 전환 45분, 이상 90분으로 생성됩니다.</div>
+            </div>
+          </div>
+          <div class="val-dl-desc" id="simulationDlDesc" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- 액션 -->
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="btn primary" id="processBtn" onclick="app.runPreprocessing()" disabled>🚀 전처리 실행 · 자동 저장</button>
+        <div class="val-dl-desc" style="display:block;padding-top:0">
+          실행 시 <b>전처리데이터(정상 Validation 포함)</b>와 <b>Simulation Data</b>를 자동 저장합니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN PANEL ===== -->
+    <div class="main-panel">
+
+      <!-- Stats row -->
+      <div class="stats-row" id="statsRow" style="display:none">
+        <div class="stat-card"><div class="sc-label">원본 데이터</div><div class="sc-value" id="statOrig">-</div><div class="sc-sub">전체 행 수</div></div>
+        <div class="stat-card red"><div class="sc-label">제거된 행</div><div class="sc-value" id="statRemoved">-</div><div class="sc-sub">필터 + 선제거 + 이상값</div></div>
+        <div class="stat-card green"><div class="sc-label">최종 데이터</div><div class="sc-value" id="statFinal">-</div><div class="sc-sub">전처리 완료</div></div>
+      </div>
+
+      <!-- Before/After Compare -->
+      <div class="compare-card" id="compareCard" style="display:none">
+        <div class="table-header">
+          <span class="table-title">📊 전처리 전/후 통계 비교</span>
+          <span class="table-meta" id="compareColLabel" style="color:var(--primary);font-weight:500;font-size:12px"></span>
+        </div>
+        <div style="padding:0 16px 12px">
+          <table class="compare-table">
+            <thead><tr><th>항목</th><th>전처리 전</th><th>전처리 후</th><th>변화</th></tr></thead>
+            <tbody id="compareBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart Card -->
+      <div class="chart-card" id="chartCard" style="display:none">
+        <div class="table-header">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="table-title">📈 데이터 분석</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <label style="font-size:11px;gap:4px"><input type="checkbox" id="normalizeChart" onchange="app.renderChart()" style="width:13px;height:13px"> 정규화</label>
+            <span style="font-size:11px;color:var(--gray400)">샘플:</span>
+            <select class="chart-sel" id="chartSample" onchange="app.renderChart()">
+              <option value="200">200pt</option>
+              <option value="500" selected>500pt</option>
+              <option value="1000">1000pt</option>
+              <option value="0">전체</option>
+            </select>
+            <span style="font-size:11px;color:var(--gray400)">구간:</span>
+            <select class="chart-sel" id="distBins" onchange="app.renderDistribution()">
+              <option value="20">20</option>
+              <option value="30" selected>30</option>
+              <option value="50">50</option>
+            </select>
+            <button type="button" class="btn btn-sm" style="width:auto;padding:4px 10px;font-size:11px" id="chartToggleBtn" onclick="app.toggleChartMode()">원본 비교</button>
+            <button type="button" class="btn btn-sm" style="width:auto;padding:4px 10px;font-size:11px;display:none" id="valChartBtn" onclick="app.toggleValChart()">📊 Val 보기</button>
+          </div>
+        </div>
+        <div class="chart-guide">업로드 직후에는 <b>원본 트렌드</b>를 먼저 보고, 설정 입력 후 전처리 실행 뒤에는 <b>전처리 후 추세 / 분포 / 로그</b>를 다시 확인하세요. Validation은 정상 holdout 20%가 자동 포함됩니다.</div>
+        <!-- Column chip bar -->
+        <div class="col-chip-bar" id="colChipBar">
+          <div class="col-chip-actions">
+            <button type="button" class="chip-action-btn" onclick="app.selectAllChips(true)">전체선택</button>
+            <button type="button" class="chip-action-btn" onclick="app.selectAllChips(false)">전체해제</button>
+          </div>
+        </div>
+        <div class="chart-split">
+          <div class="chart-panel">
+            <div class="chart-panel-label">
+              시계열 트렌드
+              <span id="chartMeta" style="font-size:10px;color:var(--gray400);text-transform:none;letter-spacing:0;font-weight:400"></span>
+            </div>
+            <div style="position:relative;height:calc(100% - 20px)"><canvas id="trendChart"></canvas></div>
+          </div>
+          <div class="chart-panel">
+            <div class="chart-panel-label">
+              정규 분포도 —
+              <select class="chart-sel" id="distColSel" onchange="app.onDistColChange()" style="font-size:10px;padding:1px 4px"></select>
+              <span id="distMeta" style="font-size:10px;color:var(--gray400);text-transform:none;letter-spacing:0;font-weight:400"></span>
+            </div>
+            <div style="position:relative;height:calc(100% - 20px)"><canvas id="distChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div><span class="table-title">데이터 테이블</span> <span class="table-meta" id="tableMeta"></span></div>
+          <input class="table-search" id="tableSearch" placeholder="🔍 검색..." oninput="app.filterTable()">
+        </div>
+        <div class="table-wrap"><table><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div>
+        <div class="table-footer">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="pageInfo">-</span>
+            <select class="page-size-sel" id="pageSizeSel" onchange="app.changePageSize()">
+              <option value="10">10행</option>
+              <option value="25" selected>25행</option>
+              <option value="50">50행</option>
+              <option value="100">100행</option>
+            </select>
+          </div>
+          <div class="page-btns">
+            <button type="button" class="page-btn" id="prevPage" onclick="app.prevPage()" disabled>← 이전</button>
+            <span id="pageNum" style="font-size:12px;color:var(--gray500)">-</span>
+            <button type="button" class="page-btn" id="nextPage" onclick="app.nextPage()" disabled>다음 →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="log-card">
+        <div class="table-header" onclick="document.getElementById('logOutput').classList.toggle('hidden')" style="cursor:pointer">
+          <span class="table-title">📋 처리 로그</span>
+          <span style="font-size:10px;color:var(--gray400)">클릭하여 접기/펼치기</span>
+        </div>
+        <div class="log" id="logOutput">σ 조기경보 시스템 모델링 데이터 전처리 도구 (Web v3.1)
+로그 출력 대기 중...
+</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-inner">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">대기 중...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="presetSaveModal">
+  <div class="modal"><h3>📋 전처리프리셋 저장</h3>
+    <input type="text" id="presetNameInput" placeholder="프리셋 이름을 입력하세요">
+    <input type="text" id="presetDescInput" placeholder="설명 (선택)">
+    <div class="modal-actions">
+      <button type="button" class="btn btn-sm" onclick="app.closeModal('presetSaveModal')">취소</button>
+      <button type="button" class="btn btn-sm primary" onclick="app.savePreset()">저장</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="presetLoadModal">
+  <div class="modal"><h3>📂 프리셋불러오기</h3>
+    <div class="preset-list" id="presetList"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-sm" onclick="app.triggerPresetImport()">가져오기</button>
+      <button type="button" class="btn btn-sm" onclick="app.closeModal('presetLoadModal')">닫기</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="presetImportInput" accept=".json,application/json" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== HELPERS ===== */
+function toggleSection(el){const b=el.nextElementSibling;b.classList.toggle('hidden');el.classList.toggle('collapsed')}
+
+const PALETTE=['#7C3AED','#6366F1','#10B981','#F59E0B','#EF4444','#3B82F6','#EC4899','#8B5CF6','#14B8A6','#F97316',
+  '#06B6D4','#84CC16','#A855F7','#F43F5E','#0EA5E9','#22C55E','#EAB308','#64748B','#FB923C','#2DD4BF'];
+
+function allocateSegments(total,ratios){
+  const raw=ratios.map(r=>total*r/100);
+  const lens=raw.map(Math.floor);
+  let rem=total-lens.reduce((s,x)=>s+x,0);
+  const order=[...raw.keys()].sort((a,b)=>(raw[b]-lens[b])-(raw[a]-lens[a]));
+  for(let i=0;i<rem;i++)lens[order[i]]++;
+  return lens;
+}
+function repeatTail(arr,n){
+  if(!arr.length||n<=0)return[];
+  const result=[];
+  while(result.length<n){result.push(...arr.slice(Math.max(0,arr.length-n)))}
+  return result.slice(0,n).map(r=>({...r}));
+}
+function arrMean(v){return v.reduce((s,x)=>s+x,0)/v.length}
+function arrStd(v){const m=arrMean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/Math.max(v.length-1,1))}
+
+/* ===== DATA PREPROCESSOR ===== */
+class DataPreprocessor{
+  constructor(){this.originalData=null;this.processedData=null;this.columns=[];this.numericColumns=[];this.dateColumn=null;this.stats={};this.removedRows=[]}
+  parseCSV(text){
+    const lines=text.split(/\r?\n/).filter(l=>l.trim()!=='');
+    if(lines.length<2)throw new Error('데이터가 부족합니다 (최소 헤더+1행)');
+    const headers=this._parseLine(lines[0]);const rows=[];
+    for(let i=1;i<lines.length;i++){const vals=this._parseLine(lines[i]);if(!vals.length)continue;const row={};for(let j=0;j<headers.length;j++)row[headers[j]]=vals[j]!==undefined?vals[j]:'';rows.push(row)}
+    return{headers,rows}
+  }
+  _parseLine(line){const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(inQ){if(c==='"'&&line[i+1]==='"'){cur+='"';i++}else if(c==='"')inQ=false;else cur+=c}else{if(c==='"')inQ=true;else if(c===','){r.push(cur.trim());cur=''}else cur+=c}}r.push(cur.trim());return r}
+  loadData(text){
+    const{headers,rows}=this.parseCSV(text);
+    const clean=headers.filter(h=>!h.startsWith('Unnamed'));this.columns=clean;
+    this.originalData=rows.map(r=>{const o={};clean.forEach(h=>{o[h]=r[h]});return o});
+    this.processedData=this.originalData.map(r=>({...r}));this.removedRows=[];
+    this._detectDateColumn();this._detectNumericColumns();
+    this.stats.original_rows=this.originalData.length;this.stats.columns=this.columns.length;
+    return{rows:this.originalData.length,cols:this.columns.length,numCols:this.numericColumns}
+  }
+  _detectDateColumn(){const kw=['date','time','datetime','날짜','시간','timestamp'];this.dateColumn=null;for(const c of this.columns){if(kw.some(k=>c.toLowerCase().includes(k))){this.dateColumn=c;break}}}
+  _detectNumericColumns(){
+    this.numericColumns=[];if(!this.originalData||!this.originalData.length)return;
+    for(const col of this.columns){if(col===this.dateColumn)continue;let n=0;const s=Math.min(20,this.originalData.length);
+      for(let i=0;i<s;i++){const v=this.originalData[i][col];if(v!==''&&v!==null&&v!==undefined&&!isNaN(Number(v)))n++}
+      if(n>s*0.5){this.numericColumns.push(col);if(this.numericColumns.length>=30)break}}
+    for(const d of[this.originalData,this.processedData])for(const row of d)for(const col of this.numericColumns){const v=row[col];row[col]=(v===''||v===null||v===undefined)?NaN:Number(v)}
+  }
+  resetState(){this.removedRows=[];this.processedData=this.originalData.map(r=>({...r}));this.stats.original_rows=this.originalData.length;this.stats.filtered_rows=this.originalData.length;this.stats.filter_removed=0;this.stats.pre_removed=0;this.stats.outliers_removed=0;this.stats.rows_after_outlier=this.originalData.length}
+  _mean(a){const v=a.filter(x=>!isNaN(x));return v.length?v.reduce((s,x)=>s+x,0)/v.length:0}
+  _std(a){const v=a.filter(x=>!isNaN(x));if(v.length<2)return 0;const m=this._mean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/(v.length-1))}
+  _quantile(a,q){const v=a.filter(x=>!isNaN(x)).sort((a,b)=>a-b);if(!v.length)return 0;const p=(v.length-1)*q;const lo=Math.floor(p),hi=Math.ceil(p);return v[lo]+(v[hi]-v[lo])*(p-lo)}
+  _median(a){return this._quantile(a,0.5)}
+  _madStd(a){const v=a.filter(x=>!isNaN(x));if(!v.length)return 0;const med=this._median(v);const abs=v.map(x=>Math.abs(x-med));const mad=this._median(abs);return mad>0?1.4826*mad:0}
+  _removeFlaggedRows(flags, reason, meta={}){const before=this.processedData.length;const kept=[],removed=[];for(let i=0;i<before;i++){if(flags[i])removed.push({...this.processedData[i],_reason:reason,...meta});else kept.push(this.processedData[i])}if(removed.length)this.removedRows.push(...removed);this.processedData=kept;return{before,kept,removed}}
+  applyFilters(filters){
+    this.processedData=this.originalData.map(r=>({...r}));const before=this.processedData.length;
+    if(!filters.length){this.stats.filtered_rows=before;this.stats.filter_removed=0;return{success:true,msg:'ℹ️ 필터 조건 없음 - 전체 데이터 사용'}}
+    const kept=[],removed=[];
+    for(const row of this.processedData){let pass=true;
+      for(const f of filters){const val=Number(row[f.column]);if(isNaN(val)){pass=false;break}
+        if(f.operator==='>='&&!(val>=f.value))pass=false;else if(f.operator==='<='&&!(val<=f.value))pass=false;
+        else if(f.operator==='>'&&!(val>f.value))pass=false;else if(f.operator==='<'&&!(val<f.value))pass=false;
+        else if(f.operator==='='&&val!==f.value)pass=false;
+        else if(f.operator==='range'&&!(val>=f.min&&val<=f.max))pass=false;if(!pass)break}
+      if(pass)kept.push(row);else removed.push({...row,_reason:'filter'})}
+    if(removed.length)this.removedRows.push(...removed);
+    this.processedData=kept;this.stats.filtered_rows=kept.length;this.stats.filter_removed=before-kept.length;
+    return{success:true,msg:`✅ 필터링 완료: ${before} → ${kept.length}행 (${(kept.length/before*100).toFixed(1)}%)`}
+  }
+  removeOutliers(method, targetCols){
+    if(!this.processedData)return{success:false,msg:'데이터 없음'};
+    const sm={'2sigma':2,'2.5sigma':2.5,'3sigma':3};const before=this.processedData.length;
+    const cols=targetCols&&targetCols.length?targetCols.filter(c=>this.numericColumns.includes(c)):this.numericColumns;
+    const flags=new Array(before).fill(false);
+    const colCounts={};
+    for(const col of cols){const vals=this.processedData.map(r=>r[col]);let lo,hi;
+      if(method==='iqr'){const q1=this._quantile(vals,0.25),q3=this._quantile(vals,0.75),iqr=q3-q1;lo=q1-1.5*iqr;hi=q3+1.5*iqr}
+      else{const n=sm[method]||2.5,m=this._mean(vals),s=this._std(vals);lo=m-n*s;hi=m+n*s}
+      let cc=0;
+      for(let i=0;i<before;i++){const v=vals[i];if(!isNaN(v)&&(v<lo||v>hi)){flags[i]=true;cc++}}
+      if(cc>0)colCounts[col]=cc;}
+    const {kept,removed}=this._removeFlaggedRows(flags,'outlier');
+    this.stats.outliers_removed=removed.length;this.stats.rows_after_outlier=kept.length;
+    const disp={'2sigma':'2σ','2.5sigma':'2.5σ','3sigma':'3σ','iqr':'IQR'};
+    const colDetail=Object.entries(colCounts).map(([c,n])=>`${c}:${n}`).join(', ');
+    const msg=`✅ 이상값 처리 완료 (${disp[method]||method}): ${removed.length}개 행 제거`+(colDetail?`\n   컬럼별: ${colDetail}`:'');
+    return{success:true,msg}
+  }
+  preRemoveOutliers(mode, targetCols){
+    if(!this.processedData)return{success:false,msg:'데이터 없음'};
+    if(mode==='none')return{success:true,msg:'ℹ️ 선제거 미사용'};
+    const cols=targetCols&&targetCols.length?targetCols.filter(c=>this.numericColumns.includes(c)):this.numericColumns;
+    if(!cols.length)return{success:false,msg:'선제거 대상 컬럼 없음'};
+    const before=this.processedData.length;
+    const flags=new Array(before).fill(false);
+    const colCounts={};
+    let iterSummary='';
+    if(mode==='prefilter'){
+      for(const col of cols){
+        const vals=this.processedData.map(r=>r[col]);
+        const med=this._median(vals);
+        let spread=this._madStd(vals),lo,hi;
+        if(spread>0){lo=med-3.5*spread;hi=med+3.5*spread}
+        else{const q1=this._quantile(vals,0.25),q3=this._quantile(vals,0.75),iqr=q3-q1;lo=q1-3*iqr;hi=q3+3*iqr}
+        let cc=0;
+        for(let i=0;i<before;i++){const v=vals[i];if(!isNaN(v)&&(v<lo||v>hi)){if(!flags[i])cc++;flags[i]=true}}
+        if(cc>0)colCounts[col]=cc;
+      }
+    }else if(mode==='iterative'){
+      const maxIter=5;const sigma=3.0;const iterCounts=[];
+      for(let iter=0;iter<maxIter;iter++){
+        const activeIdx=[];for(let i=0;i<before;i++)if(!flags[i])activeIdx.push(i);
+        if(activeIdx.length<4)break;
+        const iterFlags=new Array(before).fill(false);
+        for(const col of cols){
+          const vals=activeIdx.map(i=>this.processedData[i][col]);
+          const med=this._median(vals);
+          let spread=this._madStd(vals);if(spread===0)spread=this._std(vals);if(spread===0)continue;
+          const lo=med-sigma*spread,hi=med+sigma*spread;
+          let cc=0;
+          for(const i of activeIdx){const v=this.processedData[i][col];if(!isNaN(v)&&(v<lo||v>hi)){if(!iterFlags[i]&&!flags[i])cc++;iterFlags[i]=true}}
+          if(cc>0)colCounts[col]=(colCounts[col]||0)+cc;
+        }
+        let changed=0;for(let i=0;i<before;i++){if(iterFlags[i]&&!flags[i]){flags[i]=true;changed++}}
+        if(changed===0)break;
+        iterCounts.push(changed);
+      }
+      iterSummary=iterCounts.length?`\n   반복 제거: ${iterCounts.map((n,i)=>`${i+1}차 ${n}행`).join(', ')}`:'\n   반복 제거: 추가 제거 없음';
+    }else return{success:false,msg:'알 수 없는 선제거 모드'};
+    const {kept,removed}=this._removeFlaggedRows(flags,mode==='prefilter'?'prefilter':'sigma_clip',{_pre_mode:mode});
+    this.stats.pre_removed=removed.length;this.stats.rows_after_outlier=kept.length;
+    const label=mode==='prefilter'?'1회 선제거(MAD/IQR)':'반복 clipping(3σ)';
+    const colDetail=Object.entries(colCounts).map(([c,n])=>`${c}:${n}`).join(', ');
+    const msg=`✅ 선제거 완료 (${label}): ${removed.length}개 행 제거`+(colDetail?`\n   컬럼별: ${colDetail}`:'')+iterSummary;
+    return{success:true,msg,removed:removed.length};
+  }
+  normalizeTimestamps(intervalMin){
+    if(!this.processedData||!this.dateColumn)return{success:false,msg:'날짜 컬럼 없음'};let corrected=0;
+    for(const row of this.processedData){const d=new Date(row[this.dateColumn]);if(isNaN(d.getTime()))continue;
+      const tm=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;const sn=Math.round(tm/intervalMin)*intervalMin;
+      const nH=Math.floor((sn%1440)/60),nM=Math.floor(sn%60);
+      if(d.getMinutes()!==nM||d.getSeconds()!==0)corrected++;
+      const nd=new Date(d);nd.setHours(nH,nM,0,0);if(sn>=1440)nd.setDate(nd.getDate()+Math.floor(sn/1440));
+      row[this.dateColumn]=this._fmtDate(nd)}
+    return{success:true,msg:`✅ 시간 정규화: ${corrected}개 보정 (${intervalMin}분 간격)`}
+  }
+  realignTimestamps(startStr,intervalMin){
+    if(!this.processedData||!this.dateColumn)return{success:false,msg:'날짜 컬럼 없음'};
+    const start=new Date(startStr.replace(/-/g,'/'));if(isNaN(start.getTime()))return{success:false,msg:'시작 시간 형식 오류'};
+    for(let i=0;i<this.processedData.length;i++){const nd=new Date(start.getTime()+i*intervalMin*60000);this.processedData[i][this.dateColumn]=this._fmtDate(nd)}
+    return{success:true,msg:`✅ 시간 재정렬: ${startStr}부터 ${intervalMin}분 간격`}
+  }
+  _fmtDate(d){const p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+  inferInterval(){
+    if(!this.processedData||this.processedData.length<2||!this.dateColumn)return 2;
+    try{const times=this.processedData.slice(0,20).map(r=>new Date(r[this.dateColumn]).getTime()).filter(t=>!isNaN(t)).sort((a,b)=>a-b);
+      const diffs=[];for(let i=1;i<times.length;i++)diffs.push((times[i]-times[i-1])/60000);
+      const pos=diffs.filter(d=>d>0).sort((a,b)=>a-b);return pos.length?Math.max(1,Math.round(pos[Math.floor(pos.length/2)])):2}catch{return 2}
+  }
+  getSummary(){const s=this.stats;let t=`📊 전처리 결과 요약\n${'─'.repeat(40)}\n`;if(s.original_rows!==undefined)t+=`원본 데이터: ${s.original_rows.toLocaleString()}행\n`;if(s.filtered_rows!==undefined)t+=`필터링 후: ${s.filtered_rows.toLocaleString()}행 (-${(s.filter_removed||0).toLocaleString()})\n`;if(s.pre_removed)t+=`선제거: ${s.pre_removed.toLocaleString()}개\n`;if(s.outliers_removed!==undefined)t+=`이상값 처리: ${s.outliers_removed.toLocaleString()}개\n`;if(s.rows_after_outlier!==undefined)t+=`최종 데이터: ${s.rows_after_outlier.toLocaleString()}행`;return t}
+  toCSV(){if(!this.processedData||!this.processedData.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.join(',')];for(const row of this.processedData){const vals=cols.map(c=>{let v=row[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';v=String(v);if(v.includes(',')||v.includes('"')||v.includes('\n'))v='"'+v.replace(/"/g,'""')+'"';return v});lines.push(vals.join(','))}return lines.join('\n')}
+  dataToCSV(data){if(!data||!data.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.join(',')];for(const row of data){const vals=cols.map(c=>{let v=row[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';v=String(v);if(v.includes(',')||v.includes('"')||v.includes('\n'))v='"'+v.replace(/"/g,'""')+'"';return v});lines.push(vals.join(','))}return lines.join('\n')}
+}
+
+/* ===== PRESET MANAGER ===== */
+class PresetManager{
+  constructor(k='dp_presets'){this.key=k}
+  _getAll(){try{return JSON.parse(localStorage.getItem(this.key)||'[]')}catch{return[]}}
+  _saveAll(a){localStorage.setItem(this.key,JSON.stringify(a))}
+  save(name,settings,description=''){const all=this._getAll().filter(p=>p.name!==name);all.unshift({name,description,settings,created:new Date().toISOString(),version:'web_v3.1'});this._saveAll(all);return true}
+  list(){return this._getAll()}
+  load(name){return this._getAll().find(p=>p.name===name)||null}
+  remove(name){this._saveAll(this._getAll().filter(p=>p.name!==name))}
+  export(name){return this.load(name)}
+  import(preset){if(!preset||typeof preset!=='object')throw new Error('잘못된 프리셋 형식입니다');const name=String(preset.name||'가져온 프리셋').trim();if(!name)throw new Error('프리셋 이름이 없습니다');this.save(name,preset.settings||{},String(preset.description||''));return name}
+}
+
+/* ===== APP CONTROLLER ===== */
+const app={
+  dp:new DataPreprocessor(),pm:new PresetManager(),filterIdx:0,
+  currentPage:0,pageSize:25,searchTerm:'',
+  _chart:null,_distChart:null,_chartMode:'processed', // 'processed'|'original'|'validation'
+  _hasProcessed:false,_activeDistCol:null,_valData:null,_valProcessed:null,
+  _sortCol:null,_sortDir:1,_sourceFileName:'',_sourceBaseName:'processed_data',_pendingPresetName:null,_preservePendingOnNextFileDialog:false,
+
+  init(){
+    const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
+    const presetImport=document.getElementById('presetImportInput');
+    dz.addEventListener('click',()=>{if(this._preservePendingOnNextFileDialog){this._preservePendingOnNextFileDialog=false}else{this._pendingPresetName=null}fi.click()});
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(!this._pendingPresetName)this._pendingPresetName=null;if(e.dataTransfer.files[0])this.handleFile(e.dataTransfer.files[0])});
+    fi.addEventListener('change',e=>{if(e.target.files[0])this.handleFile(e.target.files[0])});
+    presetImport.addEventListener('change',e=>this.importPresetFile(e));
+    const now=new Date();const p=n=>String(n).padStart(2,'0');
+    document.getElementById('startTime').value=`${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:00`;
+    // Delegated sort for table headers
+    document.getElementById('previewHead').addEventListener('click',e=>{
+      const th=e.target.closest('th');if(th&&th.dataset.col)this.sortTable(th.dataset.col);
+    });
+  },
+
+  _stripExt(name=''){const i=name.lastIndexOf('.');return i>0?name.slice(0,i):name},
+  _timestamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`},
+  _downloadNames(){const base=this._sourceBaseName||'processed_data';return{processed:`${base}_processed_${this._timestamp()}`,prepro:`${base}_prepro`,combined:`${base}_prepro_with_valid`,valid:`${base}_valid`}},
+  _updateDownloadGuidance(){
+    const names=this._downloadNames();
+    const valDesc=document.getElementById('valDlDesc');
+    valDesc.innerHTML=`자동 저장 파일명: <b>${names.combined}.xlsx</b><br>의미: 전처리 완료 데이터 + 정상 Validation 20%가 합쳐진 최종 전처리데이터<br>※ Validation은 순수 정상 데이터만 포함하며, 실행 시 자동 저장됩니다.`;
+    const simDesc=document.getElementById('simulationDlDesc');
+    simDesc.innerHTML=`저장 파일명: <b>Simulation_Data_${this._timestamp()}.xlsx</b><br>시트명: <b>Simulation</b><br>구조: 정상 → 전환 → 이상 (비율 합계 100, 총 120~180분 권장)<br>※ 이상 데이터는 이 Simulation에서만 생성합니다. 브라우저 기본 다운로드 위치로 저장됩니다.`;
+  },
+
+  handleFile(file){
+    if(typeof XLSX==='undefined'){this.toast('Excel 라이브러리를 불러오지 못했습니다. 서버 배포 파일과 assets/vendor 폴더를 확인하세요.',true);return}
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(!['xlsx','xls'].includes(ext)){this.toast('XLSX, XLS 파일만 지원합니다',true);return}
+    const reader=new FileReader();
+    reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const csv=XLSX.utils.sheet_to_csv(ws);let info;try{info=this.dp.loadData(csv)}catch(err){this.toast('파일 로드 실패: '+err.message,true);return}this._onFileLoaded(file,info)}catch(err){this.toast('Excel 로드 실패: '+err.message,true)}};
+    reader.readAsArrayBuffer(file);
+  },
+
+  _onFileLoaded(file,info){
+    document.getElementById('landingView').style.display='none';
+    document.getElementById('dashboardView').style.display='block';
+    document.getElementById('dashFileName').textContent=file.name;
+    document.getElementById('sbFileName').textContent=file.name;
+    this._sourceFileName=file.name;
+    this._sourceBaseName=this._stripExt(file.name)||'processed_data';
+    document.getElementById('sbRows').textContent=info.rows.toLocaleString();
+    document.getElementById('sbCols').textContent=info.cols;
+    document.getElementById('processBtn').disabled=false;
+    this._hasProcessed=false;this._chartMode='processed';this._valData=null;this._valProcessed=null;
+    this._sortCol=null;this._sortDir=1;
+    this.currentPage=0;this.updateTable();
+    this._initCharts();this._initSimulationCols();this._initOutlierCols();
+    this._updateDownloadGuidance();
+    if(this._pendingPresetName){
+      const pending=this._pendingPresetName;this._pendingPresetName=null;
+      const preset=this.pm.load(pending);
+      if(preset){
+        this.applySettings(preset.settings);
+        this.log(`📂 프리셋 적용: ${pending}`);
+        this.toast(`프리셋 "${pending}" 적용 후 자동 전처리를 시작합니다.`);
+        setTimeout(()=>this.runPreprocessing(),50);
+      }
+    }
+    this.log(`✅ 파일 로드 완료: ${info.rows.toLocaleString()}행, ${info.cols}열`);
+    this.log(`   숫자 컬럼 (${info.numCols.length}개): ${info.numCols.slice(0,8).join(', ')}${info.numCols.length>8?' ...':''}`);
+    // Large file warning
+    if(file.size>10*1024*1024||info.rows>100000){
+      this.toast(`⚠️ 대용량 파일 (${info.rows.toLocaleString()}행, ${(file.size/1024/1024).toFixed(1)}MB) — 처리 시 지연이 있을 수 있습니다`);
+      this.log(`⚠️ 대용량 파일 감지: ${info.rows.toLocaleString()}행 / ${(file.size/1024/1024).toFixed(1)}MB`);
+    }
+  },
+
+  resetAll(){
+    document.getElementById('landingView').style.display='';
+    document.getElementById('dashboardView').style.display='none';
+    ['statsRow','chartCard','compareCard'].forEach(id=>{document.getElementById(id).style.display='none'});
+    ['processBtn'].forEach(id=>{document.getElementById(id).disabled=true});
+    if(this._chart){this._chart.destroy();this._chart=null}
+    if(this._distChart){this._distChart.destroy();this._distChart=null}
+    this.dp=new DataPreprocessor();this._hasProcessed=false;this._chartMode='processed';this._valData=null;this._valProcessed=null;this._activeDistCol=null;
+    this._sortCol=null;this._sortDir=1;this._sourceFileName='';this._sourceBaseName='processed_data';this._pendingPresetName=null;this._preservePendingOnNextFileDialog=false;this.searchTerm='';this.currentPage=0;
+    document.getElementById('logOutput').textContent='σ 조기경보 시스템 모델링 데이터 전처리 도구 (Web v3.1)\n로그 출력 대기 중...\n';
+    document.getElementById('filterContainer').innerHTML='';
+    document.getElementById('valDlDesc').style.display='none';
+    document.getElementById('valDlDesc').innerHTML='';
+    document.getElementById('simulationDlDesc').style.display='none';
+    document.getElementById('simulationDlDesc').innerHTML='';
+    document.getElementById('valChartBtn').style.display='none';
+    document.getElementById('tableSearch').value='';
+    document.getElementById('fileInput').value='';
+    document.getElementById('presetImportInput').value='';
+  },
+
+  /* ===== CHARTS ===== */
+  _initCharts(){
+    const cols=this.dp.numericColumns;if(!cols.length)return;
+    const bar=document.getElementById('colChipBar');
+    const actions=bar.querySelector('.col-chip-actions');
+    bar.innerHTML='';
+    cols.forEach((col,i)=>{
+      const chip=document.createElement('span');
+      chip.className='col-chip active';chip.dataset.col=col;chip.dataset.ci=i;
+      chip.style.cssText=`background:${PALETTE[i%PALETTE.length]};border-color:${PALETTE[i%PALETTE.length]}`;
+      chip.textContent=col;
+      chip.addEventListener('click',()=>this.toggleChip(chip));
+      bar.appendChild(chip);
+    });
+    bar.appendChild(actions);
+    const distSel=document.getElementById('distColSel');
+    distSel.innerHTML=cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    this._activeDistCol=cols[0];
+    document.getElementById('chartCard').style.display='block';
+    document.getElementById('chartToggleBtn').textContent='원본 비교';
+    try{this.renderChart()}catch(e){console.error('renderChart:',e)}
+    try{this.renderDistribution()}catch(e){console.error('renderDistribution:',e)}
+  },
+
+  _initSimulationCols(){
+    const cols=this.dp.numericColumns;
+    document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+  },
+
+  _initOutlierCols(){
+    const cols=this.dp.numericColumns;
+    document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+  },
+
+  toggleChip(chip){chip.classList.toggle('active');const ci=parseInt(chip.dataset.ci);const c=PALETTE[ci%PALETTE.length];chip.style.cssText=chip.classList.contains('active')?`background:${c};border-color:${c}`:`background:white;border-color:#E5E7EB`;try{this.renderChart()}catch(e){}},
+  selectAllChips(on){document.querySelectorAll('.col-chip').forEach((chip,i)=>{chip.classList.toggle('active',on);const ci=parseInt(chip.dataset.ci);const c=PALETTE[ci%PALETTE.length];chip.style.cssText=on?`background:${c};border-color:${c}`:`background:white;border-color:#E5E7EB`});try{this.renderChart()}catch(e){}},
+  simSelectAll(on){document.querySelectorAll('.sim-col-check').forEach(c=>{c.checked=on})},
+  outlierSelectAll(on){document.querySelectorAll('.outlier-col-check').forEach(c=>{c.checked=on})},
+  getOutlierCols(){return[...document.querySelectorAll('.outlier-col-check:checked')].map(el=>el.value)},
+  getSimulationCols(){return[...document.querySelectorAll('.sim-col-check:checked')].map(el=>el.value)},
+  getCheckedCols(){return[...document.querySelectorAll('.col-chip.active')].map(c=>c.dataset.col)},
+
+  renderChart(){
+    if(!this.dp.originalData)return;
+    const checkedCols=this.getCheckedCols();if(!checkedCols.length){if(this._chart){this._chart.destroy();this._chart=null}return}
+    const sampleN=parseInt(document.getElementById('chartSample').value)||500;
+    const useNorm=document.getElementById('normalizeChart').checked;
+    const isValMode=this._chartMode==='validation';
+    const procData=this.dp.processedData||this.dp.originalData;
+    const trainData=isValMode&&this._valProcessed?this._valProcessed:procData;
+    const src=this._chartMode==='original'?this.dp.originalData:isValMode?[...trainData,...(this._valData||[])]:procData;
+    const processedLen=trainData.length;
+    const step=sampleN>0&&src.length>sampleN?Math.ceil(src.length/sampleN):1;
+    const sampled=src.filter((_,i)=>i%step===0);
+    const fmtTime=str=>{if(!str)return'';const d=new Date(str);if(isNaN(d))return str;const p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;};
+    const labels=sampled.map((r,i)=>this.dp.dateColumn&&r[this.dp.dateColumn]?fmtTime(r[this.dp.dateColumn]):String(i*step));
+    if(isValMode){
+      document.getElementById('chartMeta').textContent=`${sampled.length}pt | 전처리 ${processedLen}행 + Val ${(this._valData||[]).length}행`;
+    }else{
+      document.getElementById('chartMeta').textContent=`${sampled.length}pt / ${src.length}행`;
+    }
+    const allCols=this.dp.numericColumns;
+    const datasets=checkedCols.map(col=>{
+      const ci=allCols.indexOf(col);const color=PALETTE[ci%PALETTE.length];
+      const raw=sampled.map(r=>{const v=r[col];return(v===null||v===undefined||isNaN(Number(v)))?null:Number(v)});
+      const valid=raw.filter(v=>v!==null);
+      const mn=valid.length?valid.reduce((a,b)=>a<b?a:b,Infinity):0;
+      const mx=valid.length?valid.reduce((a,b)=>a>b?a:b,-Infinity):1;
+      const data=useNorm&&mx>mn?raw.map(v=>v===null?null:(v-mn)/(mx-mn)):raw;
+      return{label:col,data,_raw:raw,_mn:mn,_mx:mx,borderColor:color,backgroundColor:color+'18',borderWidth:1.2,pointRadius:0,tension:0.1,spanGaps:false,fill:false}
+    });
+    if(this._chart){this._chart.destroy();this._chart=null}
+    // Validation boundary plugin
+    const boundaryIdx=isValMode?Math.floor(processedLen/step):-1;
+    const valPlugin={
+      id:'valBoundary',
+      afterDraw(chart){
+        if(boundaryIdx<0)return;
+        const{ctx,chartArea:{top,bottom,left,right},scales:{x}}=chart;
+        const px=x.getPixelForValue(boundaryIdx);
+        if(px<=left||px>=right)return;
+        ctx.save();
+        ctx.fillStyle='rgba(245,158,11,0.06)';
+        ctx.fillRect(px,top,right-px,bottom-top);
+        ctx.strokeStyle='rgba(245,158,11,0.55)';ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();
+        ctx.setLineDash([]);ctx.fillStyle='rgba(245,158,11,0.9)';
+        ctx.font='bold 10px Inter,sans-serif';ctx.fillText('▶ Val',px+4,top+13);
+        ctx.restore();
+      }
+    };
+    this._chart=new Chart(document.getElementById('trendChart'),{
+      type:'line',data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,animation:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:checkedCols.length>1,position:'top',labels:{font:{size:9},boxWidth:10,padding:5,usePointStyle:true}},
+          tooltip:{callbacks:{label:ctx=>{const ds=ctx.dataset;const y=ctx.parsed.y;if(y===null)return null;if(useNorm&&ds._mn!==undefined&&ds._mx!==undefined){const orig=ds._mn+y*(ds._mx-ds._mn);return`${ds.label}: ${orig.toFixed(4)}`}return`${ds.label}: ${y.toFixed(4)}`}}}
+        },
+        scales:{
+          x:{ticks:{maxTicksLimit:8,font:{size:9},color:'#6B7280',maxRotation:0,callback:(val)=>{const[date,time]=String(val).split(' ');return time?[date,time]:[date]}},grid:{color:'#F3F4F6'}},
+          y:{ticks:{font:{size:9},color:'#6B7280'},grid:{color:'#F3F4F6'}}
+        }
+      },
+      plugins:[valPlugin]
+    });
+  },
+
+  toggleValChart(){
+    if(!this._valData||!this._valData.length){this.toast('먼저 Validation을 생성하세요',true);return}
+    this._chartMode=this._chartMode==='validation'?'processed':'validation';
+    const btn=document.getElementById('valChartBtn');
+    btn.textContent=this._chartMode==='validation'?'📊 Val 숨기기':'📊 Val 보기';
+    btn.style.borderColor=this._chartMode==='validation'?'#F59E0B':'';
+    btn.style.color=this._chartMode==='validation'?'#D97706':'';
+    try{this.renderChart()}catch(e){}
+  },
+
+  onDistColChange(){
+    this._activeDistCol=document.getElementById('distColSel').value;
+    try{this.renderDistribution()}catch(e){}
+    try{this.updateCompare()}catch(e){}
+  },
+
+  renderDistribution(){
+    const col=this._activeDistCol||this.dp.numericColumns[0];if(!col||!this.dp.originalData)return;
+    const bins=parseInt(document.getElementById('distBins').value)||30;
+    const getVals=data=>data.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));
+    const origVals=getVals(this.dp.originalData);
+    const procVals=this._hasProcessed?getVals(this.dp.processedData||this.dp.originalData):origVals;
+    if(!origVals.length)return;
+    const allVals=[...origVals,...procVals];
+    const gMin=allVals.reduce((a,b)=>a<b?a:b,Infinity),gMax=allVals.reduce((a,b)=>a>b?a:b,-Infinity);
+    const bw=(gMax-gMin)/bins||1;
+    const mkHist=vals=>{const h=new Array(bins).fill(0);vals.forEach(v=>{const i=Math.min(Math.floor((v-gMin)/bw),bins-1);if(i>=0)h[i]++});return h.map(c=>c/vals.length*100)};
+    const mkNorm=vals=>{const m=arrMean(vals),s=arrStd(vals);const pdf=(x,mu,si)=>si===0?0:Math.exp(-0.5*((x-mu)/si)**2)/(si*Math.sqrt(2*Math.PI));return Array.from({length:bins},(_,i)=>pdf(gMin+(i+0.5)*bw,m,s)*bw*100)};
+    const oH=mkHist(origVals),oN=mkNorm(origVals);
+    const pH=mkHist(procVals),pN=mkNorm(procVals);
+    const labels=Array.from({length:bins},(_,i)=>(gMin+(i+0.5)*bw).toFixed(2));
+    const oMean=arrMean(origVals),oStd=arrStd(origVals);
+    if(this._hasProcessed){
+      const pMean=arrMean(procVals),pStd=arrStd(procVals);
+      document.getElementById('distMeta').textContent=`전: μ=${oMean.toFixed(2)} σ=${oStd.toFixed(2)} | 후: μ=${pMean.toFixed(2)} σ=${pStd.toFixed(2)}`;
+    }else{
+      document.getElementById('distMeta').textContent=`μ=${oMean.toFixed(3)}  σ=${oStd.toFixed(3)}`;
+    }
+    const datasets=this._hasProcessed?[
+      {type:'bar',label:'전처리 전',data:oH,backgroundColor:'rgba(156,163,175,0.35)',borderColor:'rgba(156,163,175,0.7)',borderWidth:1,order:2},
+      {type:'bar',label:'전처리 후',data:pH,backgroundColor:'rgba(124,58,237,0.35)',borderColor:'rgba(124,58,237,0.7)',borderWidth:1,order:2},
+      {type:'line',label:'정규분포(전)',data:oN,borderColor:'rgba(156,163,175,1)',borderWidth:1.5,pointRadius:0,tension:0.4,fill:false,order:1},
+      {type:'line',label:'정규분포(후)',data:pN,borderColor:'#7C3AED',borderWidth:2,pointRadius:0,tension:0.4,fill:false,order:1}
+    ]:[
+      {type:'bar',label:'분포',data:oH,backgroundColor:'rgba(124,58,237,0.25)',borderColor:'rgba(124,58,237,0.6)',borderWidth:1,order:2},
+      {type:'line',label:'정규분포',data:oN,borderColor:'#7C3AED',borderWidth:2,pointRadius:0,tension:0.4,fill:false,order:1}
+    ];
+    if(this._distChart){this._distChart.destroy();this._distChart=null}
+    this._distChart=new Chart(document.getElementById('distChart'),{
+      type:'bar',data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:this._hasProcessed,position:'top',labels:{font:{size:9},boxWidth:10,padding:5}},tooltip:{callbacks:{title:([t])=>`~${t.label}`,label:ctx=>`${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}%`}}},
+        scales:{x:{ticks:{maxTicksLimit:5,font:{size:9},color:'#6B7280',maxRotation:0},grid:{color:'#F3F4F6'}},y:{ticks:{font:{size:9},color:'#6B7280'},grid:{color:'#F3F4F6'},title:{display:true,text:'%',font:{size:9},color:'#6B7280'}}}
+      }
+    });
+  },
+
+  toggleChartMode(){
+    if(!this._hasProcessed){this.toast('먼저 전처리를 실행하세요');return}
+    if(this._chartMode==='validation'){this._chartMode='processed';document.getElementById('valChartBtn').textContent='📊 Val 보기';document.getElementById('valChartBtn').style.cssText='width:auto;padding:4px 10px;font-size:11px'}
+    this._chartMode=this._chartMode==='original'?'processed':'original';
+    document.getElementById('chartToggleBtn').textContent=this._chartMode==='original'?'처리 후 보기':'원본 비교';
+    try{this.renderChart()}catch(e){}
+  },
+
+  updateCompare(){
+    const col=this._activeDistCol||this.dp.numericColumns[0];
+    if(!this._hasProcessed||!this.dp.processedData||!col)return;
+    const getSt=data=>{const v=data.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));if(!v.length)return null;const m=arrMean(v),s=arrStd(v);return{n:v.length,min:v.reduce((a,b)=>a<b?a:b,Infinity),max:v.reduce((a,b)=>a>b?a:b,-Infinity),mean:m,std:s}};
+    const o=getSt(this.dp.originalData),p=getSt(this.dp.processedData);if(!o||!p)return;
+    const fmt=n=>{if(n===null||isNaN(n))return'-';return Math.abs(n)>=10000||Math.abs(n)<0.001&&n!==0?n.toExponential(2):n.toFixed(4)};
+    const pctD=(a,b)=>{if(a===0)return`<span class="delta-neu">-</span>`;const d=(b-a)/Math.abs(a)*100;return`<span class="${Math.abs(d)<0.01?'delta-neu':d>0?'delta-pos':'delta-neg'}">${d>=0?'+':''}${d.toFixed(2)}%</span>`};
+    document.getElementById('compareColLabel').textContent=col;
+    const rows=[['행 수',o.n.toLocaleString(),p.n.toLocaleString(),`<span class="${p.n<o.n?'delta-neg':''}">${(p.n-o.n).toLocaleString()} (${((p.n/o.n-1)*100).toFixed(2)}%)</span>`],['최솟값',fmt(o.min),fmt(p.min),pctD(o.min,p.min)],['최댓값',fmt(o.max),fmt(p.max),pctD(o.max,p.max)],['평균 (μ)',fmt(o.mean),fmt(p.mean),pctD(o.mean,p.mean)],['표준편차 (σ)',fmt(o.std),fmt(p.std),pctD(o.std,p.std)]];
+    document.getElementById('compareBody').innerHTML=rows.map(([lb,ov,pv,dv])=>`<tr><td>${lb}</td><td>${ov}</td><td>${pv}</td><td>${dv}</td></tr>`).join('');
+    document.getElementById('compareCard').style.display='block';
+  },
+
+  /* ===== FILTERS ===== */
+  getColStats(col){
+    const data=this.dp.originalData;if(!data)return null;
+    const vals=data.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));if(!vals.length)return null;
+    const sorted=[...vals].sort((a,b)=>a-b);
+    const q=p=>{const i=(sorted.length-1)*p;const lo=Math.floor(i),hi=Math.ceil(i);return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo)};
+    const mean=arrMean(vals),std=arrStd(vals);
+    return{min:sorted[0],max:sorted[sorted.length-1],mean,std,median:q(0.5)}
+  },
+  onFilterColChange(id){
+    const col=document.getElementById('fcol-'+id)?.value;
+    const el=document.getElementById('finfo-'+id);if(!el)return;
+    if(!col||!this.dp.originalData){el.innerHTML='';return}
+    const s=this.getColStats(col);if(!s){el.innerHTML='';return}
+    const f=n=>Math.abs(n)>=1000||Math.abs(n)<0.01&&n!==0?n.toExponential(2):n.toFixed(3);
+    el.innerHTML=`<div class="filter-stat-line"><span class="filter-stat-badge">min: ${f(s.min)}</span><span class="filter-stat-badge">max: ${f(s.max)}</span><span class="filter-stat-badge">avg: ${f(s.mean)}</span><span class="filter-stat-badge">중앙: ${f(s.median)}</span></div>
+    <div class="filter-stat-line"><span class="filter-stat-focus">-3σ: ${f(s.mean-3*s.std)}</span><span class="filter-stat-focus">+3σ: ${f(s.mean+3*s.std)}</span><button type="button" class="filter-auto-btn" onclick="app.autoFillSigma(${id})">±3σ 자동</button></div>`;
+  },
+  autoFillSigma(id){
+    const col=document.getElementById('fcol-'+id)?.value;if(!col)return;
+    const s=this.getColStats(col);if(!s)return;
+    document.getElementById('fop-'+id).value='range';this.onFilterOpChange(id);
+    const lo=document.getElementById('fmin-'+id),hi=document.getElementById('fmax-'+id);
+    if(lo)lo.value=(s.mean-3*s.std).toFixed(6);
+    if(hi)hi.value=(s.mean+3*s.std).toFixed(6);
+  },
+  addFilter(){
+    const cols=this.dp.numericColumns;if(!cols.length){this.toast('먼저 파일을 로드하세요',true);return}
+    const id=this.filterIdx++;const div=document.createElement('div');div.className='filter-row';div.id='filter-'+id;
+    const colOpts=cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    div.innerHTML=`<div class="filter-inputs">
+      <select id="fcol-${id}" onchange="app.onFilterColChange(${id})" style="flex:2;min-width:0">${colOpts}</select>
+      <select id="fop-${id}" onchange="app.onFilterOpChange(${id})" style="flex:0 0 62px;min-width:0">
+        <option value="range">range</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option>
+        <option value=">">&gt;</option><option value="<">&lt;</option><option value="=">=</option>
+      </select>
+      <span id="frange-${id}" style="display:flex;gap:2px;flex:2;min-width:0">
+        <input type="number" id="fmin-${id}" placeholder="최소" step="any" style="min-width:0">
+        <input type="number" id="fmax-${id}" placeholder="최대" step="any" style="min-width:0">
+      </span>
+      <span id="fval-${id}" style="display:none;flex:2;min-width:0">
+        <input type="number" id="fv-${id}" placeholder="값" step="any">
+      </span>
+      <button type="button" class="del-btn" onclick="app.removeFilter(${id})">✕</button>
+    </div>
+    <div class="filter-stats-row" id="finfo-${id}"></div>`;
+    document.getElementById('filterContainer').appendChild(div);
+    this.onFilterColChange(id);
+  },
+  onFilterOpChange(id){const op=document.getElementById('fop-'+id).value;document.getElementById('frange-'+id).style.display=op==='range'?'flex':'none';document.getElementById('fval-'+id).style.display=op==='range'?'none':'flex'},
+  removeFilter(id){const el=document.getElementById('filter-'+id);if(el)el.remove()},
+  getFilters(){
+    const filters=[];document.querySelectorAll('.filter-row').forEach(row=>{const id=row.id.split('-')[1];
+      const col=document.getElementById('fcol-'+id)?.value;const op=document.getElementById('fop-'+id)?.value;if(!col)return;
+      if(op==='range'){const mn=document.getElementById('fmin-'+id)?.value;const mx=document.getElementById('fmax-'+id)?.value;filters.push({column:col,operator:'range',min:mn!==''?Number(mn):-Infinity,max:mx!==''?Number(mx):Infinity})}
+      else{const v=document.getElementById('fv-'+id)?.value;if(v!=='')filters.push({column:col,operator:op,value:Number(v)})}});return filters
+  },
+
+  /* ===== TABLE ===== */
+  sortTable(col){
+    if(this._sortCol===col)this._sortDir*=-1;else{this._sortCol=col;this._sortDir=1}
+    this.currentPage=0;this.updateTable();
+  },
+  _getDisplayData(){
+    let data=this.dp.processedData||this.dp.originalData;if(!data)return[];
+    if(this.searchTerm)data=data.filter(row=>Object.values(row).some(v=>String(v).toLowerCase().includes(this.searchTerm)));
+    if(this._sortCol){
+      const col=this._sortCol,dir=this._sortDir;
+      data=[...data].sort((a,b)=>{const va=a[col],vb=b[col];if(typeof va==='number'&&typeof vb==='number')return(va-vb)*dir;return String(va??'').localeCompare(String(vb??''))*dir});
+    }
+    return data;
+  },
+  updateTable(){
+    const data=this._getDisplayData();if(!data.length)return;
+    const cols=this.dp.columns.slice(0,30);const total=data.length;const pages=Math.ceil(total/this.pageSize);
+    if(this.currentPage>=pages)this.currentPage=Math.max(0,pages-1);
+    const start=this.currentPage*this.pageSize;const rows=data.slice(start,start+this.pageSize);
+    document.getElementById('previewHead').innerHTML='<tr>'+cols.map(c=>{
+      const arrow=this._sortCol===c?(this._sortDir>0?' ↑':' ↓'):'';
+      const esc=c.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      return`<th data-col="${esc}">${c}${arrow}</th>`;
+    }).join('')+'</tr>';
+    document.getElementById('previewBody').innerHTML=rows.map(r=>'<tr>'+cols.map(c=>{let v=r[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))v='';return`<td title="${String(v)}">${String(v).slice(0,20)}</td>`}).join('')+'</tr>').join('');
+    document.getElementById('tableMeta').textContent=`총 ${total.toLocaleString()}행`;
+    document.getElementById('pageInfo').textContent=`${start+1}-${Math.min(start+this.pageSize,total)} / ${total.toLocaleString()}`;
+    document.getElementById('pageNum').textContent=`${this.currentPage+1} / ${pages}`;
+    document.getElementById('prevPage').disabled=this.currentPage===0;
+    document.getElementById('nextPage').disabled=this.currentPage>=pages-1;
+  },
+  changePageSize(){this.pageSize=parseInt(document.getElementById('pageSizeSel').value)||25;this.currentPage=0;this.updateTable()},
+  prevPage(){if(this.currentPage>0){this.currentPage--;this.updateTable()}},
+  nextPage(){this.currentPage++;this.updateTable()},
+  filterTable(){this.searchTerm=document.getElementById('tableSearch').value.toLowerCase().trim();this.currentPage=0;this.updateTable()},
+
+  /* ===== PROCESSING ===== */
+  runPreprocessing(){
+    if(!this.dp.originalData){this.toast('먼저 파일을 로드하세요',true);return}
+    const t0=performance.now();this.log('\n'+'='.repeat(50));
+    this.log(`🔄 전처리 시작... (총 ${this.dp.originalData.length.toLocaleString()}행)`);
+    this.dp.resetState();this.progress(10,'필터링 중...');
+    setTimeout(()=>{
+      const fr=this.dp.applyFilters(this.getFilters());this.log(fr.msg);this.progress(28,'선제거 확인 중...');
+      setTimeout(()=>{
+        const preMode=document.getElementById('preRemovalMode').value;
+        if(document.getElementById('applyOutlier').checked&&preMode!=='none'){
+          const cols=this.getOutlierCols();
+          this.log(this.dp.preRemoveOutliers(preMode,cols).msg);
+        }
+        this.progress(48,'이상값 처리 중...');
+        setTimeout(()=>{
+        if(document.getElementById('applyOutlier').checked){
+          const m=document.querySelector('input[name=outlierMethod]:checked').value;
+          const cols=this.getOutlierCols();
+          this.log(this.dp.removeOutliers(m,cols).msg);
+        }
+        this.progress(70,'시간 처리 중...');
+        setTimeout(()=>{
+          const iv=parseInt(document.getElementById('interval').value)||2;
+          if(document.getElementById('applyTimeNorm').checked)this.log(this.dp.normalizeTimestamps(iv).msg);
+          if(document.getElementById('applyTimeRealign').checked){const st=document.getElementById('startTime').value;this.log(this.dp.realignTimestamps(st,iv).msg)}
+          const el=((performance.now()-t0)/1000).toFixed(2);this.progress(100,'✅ 전처리 완료!');
+          this.log('');this.log(this.dp.getSummary());this.log(`⏱ 총 소요 시간: ${el}초`);
+            this._hasProcessed=true;this._chartMode='processed';this._valData=null;
+            document.getElementById('chartToggleBtn').textContent='원본 비교';
+            document.getElementById('valDlDesc').style.display='none';
+            document.getElementById('simulationDlDesc').style.display='block';
+            document.getElementById('valChartBtn').style.display='none';
+            this.currentPage=0;this.updateTable();this.updateStats();
+            this._updateDownloadGuidance();
+            try{this.renderChart()}catch(e){console.error(e)}
+          try{this.renderDistribution()}catch(e){console.error(e)}
+          try{this.updateCompare()}catch(e){console.error(e)}
+            const valResult=this.generateValidation({auto:true,silent:true});
+            if(valResult.success){
+              const combined=[...this._valProcessed,...this._valData];
+              const combinedName=this._downloadNames().combined;
+              this._xlsxDownload(combined,combinedName,'Sheet');
+              this.log(`💾 자동 저장: ${combinedName}.xlsx (${combined.length.toLocaleString()}행)`);
+            }
+            const simResult=this.generateSimulationData({auto:true,silent:true});
+            if(!simResult.success)this.log(`⚠️ Simulation 자동 저장 생략: ${simResult.msg}`);
+            this.toast(simResult.success?'전처리데이터 + Simulation Data 자동 저장 완료!':'전처리데이터 자동 저장 완료!');
+          },10)},10)},10)},10)
+  },
+
+  updateStats(){
+    const s=this.dp.stats;document.getElementById('statsRow').style.display='grid';
+    document.getElementById('statOrig').textContent=(s.original_rows||0).toLocaleString();
+    const removed=(s.filter_removed||0)+(s.pre_removed||0)+(s.outliers_removed||0);
+    document.getElementById('statRemoved').textContent='-'+removed.toLocaleString();
+    document.getElementById('statFinal').textContent=(s.rows_after_outlier||0).toLocaleString();
+  },
+
+  /* ===== VALIDATION / SIMULATION ===== */
+  normSimSegs(changedIdx){
+    const ids=['simSeg0','simSeg1','simSeg2'];
+    const vals=ids.map(id=>Math.max(0,parseFloat(document.getElementById(id).value)||0));
+    const changed=vals[changedIdx];
+    if(changed>=100){ids.forEach((id,i)=>{if(i!==changedIdx)document.getElementById(id).value=0});return}
+    const others=ids.map((_,i)=>i).filter(i=>i!==changedIdx);
+    const otherSum=others.reduce((s,i)=>s+vals[i],0);
+    const target=100-changed;
+    if(otherSum===0){const each=Math.floor(target/others.length);others.forEach((i,j)=>{document.getElementById(ids[i]).value=j===0?target-each*(others.length-1):each});return}
+    const scale=target/otherSum;
+    const newVals=others.map(i=>vals[i]*scale);
+    const floors=newVals.map(Math.floor);
+    let rem=Math.round(target)-floors.reduce((s,x)=>s+x,0);
+    const fracs=newVals.map((v,i)=>({i,f:v-floors[i]})).sort((a,b)=>b.f-a.f);
+    for(let j=0;j<rem&&j<fracs.length;j++)floors[fracs[j].i]++;
+    others.forEach((idx,j)=>{document.getElementById(ids[idx]).value=Math.max(0,floors[j])});
+  },
+
+  generateValidation(options={}){
+    const{auto=false,silent=false}=options;
+    if(!this._hasProcessed||!this.dp.processedData){if(!silent)this.toast('먼저 전처리를 실행하세요',true);return{success:false,msg:'전처리 데이터 없음'}}
+    const ratio=20;
+    const src=this.dp.processedData;
+    const validRows=Math.max(1,Math.round(src.length*ratio/100));
+    const trainRows=src.length-validRows;
+    if(trainRows<1){if(!silent)this.toast('Validation 비율이 너무 큽니다. 학습 데이터가 1행 이상 남아야 합니다.',true);return{success:false,msg:'학습 데이터 부족'}}
+    const train=src.slice(0,trainRows).map(r=>({...r}));
+    const valid=src.slice(trainRows).map(r=>({...r}));
+    this._valData=valid;this._valProcessed=train;
+    document.getElementById('valDlDesc').style.display='block';
+    this._updateDownloadGuidance();
+    document.getElementById('valChartBtn').style.display='';
+    document.getElementById('valChartBtn').textContent='📊 Val 보기';
+    this.log(`\n🧪 Validation 생성 완료: 학습 ${train.length}행 / 검증 ${valid.length}행 (정상 데이터만)`);
+    if(!silent&&!auto)this.toast('정상 Validation 데이터 분리 완료! 차트에서 "Val 보기"로 확인하세요.');
+    return{success:true,msg:'정상 Validation 생성 완료',trainRows:train.length,validRows:valid.length};
+  },
+
+  generateSimulationData(options={}){
+    const{auto=false,silent=false}=options;
+    if(!this._hasProcessed||!this.dp.processedData){if(!silent)this.toast('먼저 전처리를 실행하세요',true);return{success:false,msg:'전처리 데이터 없음'}}
+    if(!this.dp.removedRows||!this.dp.removedRows.length){if(!silent)this.toast('제거된 이상값이 없습니다. 필터링/이상값 처리를 먼저 실행하세요.',true);return{success:false,msg:'제거된 이상값 없음'}}
+    const targetCols=this.getSimulationCols();
+    if(!targetCols.length){if(!silent)this.toast('Simulation 대상 태그를 1개 이상 선택하세요',true);return{success:false,msg:'Simulation 대상 태그 없음'}}
+    const interval=parseInt(document.getElementById('interval').value)||this.dp.inferInterval();
+    const totalMinutes=parseInt(document.getElementById('simTotalMinutes').value)||180;
+    if(totalMinutes<120||totalMinutes>180){if(!silent)this.toast('Simulation 총 길이는 120~180분으로 맞춰주세요.',true);return{success:false,msg:'총 길이 범위 오류'}}
+    const ratios=[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0);
+    const ratioSum=ratios.reduce((s,x)=>s+x,0);
+    if(Math.abs(ratioSum-100)>1){if(!silent)this.toast(`시뮬레이션 구간 비율 합계가 ${ratioSum.toFixed(0)}%입니다. 100%가 되어야 합니다.`,true);return{success:false,msg:'시뮬레이션 비율 합계 오류'}}
+    const totalRows=Math.max(6,Math.round(totalMinutes/interval));
+    const [normalRows,transitionRows,abnormalRows]=allocateSegments(totalRows,ratios);
+    if(totalRows<=0){if(!silent)this.toast('Simulation 길이가 0행입니다. 시간 설정을 확인하세요.',true);return{success:false,msg:'Simulation 길이 0'}}
+    const intensity=parseFloat(document.getElementById('simIntensity').value)||1.0;
+
+    const src=this.dp.processedData;
+    let base=src.length<totalRows?[...src]:src.slice(-totalRows);
+    if(!base.length){if(!silent)this.toast('시뮬레이션에 사용할 전처리 데이터가 없습니다',true);return{success:false,msg:'시뮬레이션 원본 데이터 없음'}}
+    while(base.length<totalRows)base=[...base,...base];
+    const sim=base.slice(0,totalRows).map(r=>({...r}));
+    const removed=this.dp.removedRows.map(r=>Object.fromEntries(Object.entries(r).filter(([k])=>!k.startsWith('_'))));
+    if(!removed.length){if(!silent)this.toast('시뮬레이션에 사용할 이상값 데이터가 없습니다',true);return{success:false,msg:'이상값 원본 없음'}}
+
+    for(const col of targetCols){
+      const sourceVals=removed.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));
+      if(!sourceVals.length)continue;
+      const normalSlice=sim.slice(0,Math.max(1,normalRows)).map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));
+      if(!normalSlice.length)continue;
+      const normalMean=arrMean(normalSlice),abnormalMean=arrMean(sourceVals);
+      const sorted=[...sourceVals].sort((a,b)=>abnormalMean>normalMean?a-b:b-a);
+      while(sorted.length<Math.max(1,abnormalRows))sorted.push(...sorted.slice(0,Math.max(0,Math.min(sorted.length,abnormalRows-sorted.length))));
+      const outlierVals=sorted.slice(0,abnormalRows||sorted.length);
+      const lastNormalIdx=Math.max(0,Math.min(sim.length-1,Math.max(0,normalRows-1)));
+      const lastNormalVal=Number(sim[lastNormalIdx][col]);
+      const adjustedVals=outlierVals.map(v=>lastNormalVal+intensity*(v-lastNormalVal));
+      const firstAbnormalVal=adjustedVals.length?adjustedVals[0]:lastNormalVal;
+      for(let i=0;i<transitionRows;i++){
+        const ratio=(i+1)/(transitionRows+1);
+        sim[normalRows+i][col]=lastNormalVal+(firstAbnormalVal-lastNormalVal)*ratio;
+      }
+      for(let i=0;i<abnormalRows;i++){
+        const rowIdx=normalRows+transitionRows+i;
+        if(rowIdx<sim.length&&adjustedVals[i]!==undefined)sim[rowIdx][col]=adjustedVals[i];
+      }
+    }
+
+    if(this.dp.dateColumn&&this.dp.dateColumn in sim[0]){
+      const now=new Date();
+      const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),Math.floor(now.getMinutes()/2)*2,0,0);
+      for(let i=0;i<sim.length;i++)sim[i][this.dp.dateColumn]=this.dp._fmtDate(new Date(start.getTime()+i*interval*60000));
+    }
+
+    const name=`Simulation_Data_${this._timestamp()}`;
+    this._xlsxDownload(sim,name,'Simulation');
+    this.log(`\n🎯 Simulation 데이터 생성 완료: ${name}.xlsx`);
+    this.log(`   대상 태그: ${targetCols.join(', ')}`);
+    this.log(`   정상/전환/이상 비율: ${ratios.map(v=>v.toFixed(0)).join(' / ')} | 강도: ${intensity}`);
+    this.log(`   정상: ${normalRows}행 / 전환: ${transitionRows}행 / 이상: ${abnormalRows}행 | 총 ${totalMinutes}분`);
+    if(!silent&&!auto)this.toast(`${name}.xlsx 저장 완료!`);
+    return{success:true,msg:'Simulation 저장 완료',filename:name};
+  },
+
+  _xlsxDownload(data,filename,sheetName='Sheet'){
+    const cols=this.dp.columns.filter(c=>!c.startsWith('_'));
+    const dcIdx=this.dp.dateColumn?cols.indexOf(this.dp.dateColumn):-1;
+    const wsData=[cols,...data.map(row=>cols.map((c,ci)=>{
+      const v=row[c];
+      if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';
+      if(ci===dcIdx&&typeof v==='string'){const d=new Date(v);return isNaN(d)?v:d}
+      return v;
+    }))];
+    const ws=XLSX.utils.aoa_to_sheet(wsData,{cellDates:true});
+    if(dcIdx>=0){
+      const range=XLSX.utils.decode_range(ws['!ref']);
+      for(let r=1;r<=range.e.r;r++){const addr=XLSX.utils.encode_cell({r,c:dcIdx});if(ws[addr])ws[addr].z='YYYY-MM-DD HH:MM:SS'}
+    }
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);
+    XLSX.writeFile(wb,`${filename}.xlsx`);
+  },
+
+  downloadVal(type){
+    if(!this._valData){this.toast('먼저 Validation을 생성하세요',true);return}
+    const names=this._downloadNames();
+    let data,name;
+    if(type==='prepro'){data=this._valProcessed;name=names.prepro}
+    else if(type==='combined'){data=[...this._valProcessed,...this._valData];name=names.combined}
+    else{data=this._valData;name=names.valid}
+    this._xlsxDownload(data,name,'Sheet');
+    this.log(`💾 다운로드: ${name}.xlsx (${data.length.toLocaleString()}행)`);
+    this.toast(`${name}.xlsx 저장 완료!`);
+  },
+
+  /* ===== SAVE ===== */
+  saveFile(fmt='xlsx'){},
+
+  /* ===== PRESETS ===== */
+  getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
+  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
+  showPresetSaveModal(){document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';document.getElementById('presetSaveModal').classList.add('show');document.getElementById('presetNameInput').focus()},
+  showPresetLoadModal(){
+    const list=this.pm.list();const el=document.getElementById('presetList');
+    if(!list.length){el.innerHTML='<div style="color:var(--gray400);padding:16px;text-align:center">저장된 프리셋이 없습니다</div>'}
+    else{
+      el.innerHTML='';
+      list.forEach(p=>{
+        const item=document.createElement('div');item.className='preset-item';
+        const safeName=p.name.replace(/</g,'&lt;');
+        const desc=p.description?`<div style="font-size:11px;color:var(--gray400);margin-top:2px">${String(p.description).replace(/</g,'&lt;')}</div>`:'';
+        item.innerHTML=`<div><span class="name">${safeName}</span>${desc}</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="date">${p.created?new Date(p.created).toLocaleDateString():''}</span><button type="button" class="chip-action-btn load-btn">적용</button><button type="button" class="chip-action-btn combo-btn">파일+프리셋</button><button type="button" class="chip-action-btn export-btn">내보내기</button><button type="button" class="del-btn" data-name="${p.name.replace(/"/g,'&quot;')}">✕</button></div>`;
+        item.querySelector('.load-btn').addEventListener('click',e=>{e.stopPropagation();this.loadPreset(p.name)});
+        item.querySelector('.combo-btn').addEventListener('click',e=>{e.stopPropagation();this.openFileWithPreset(p.name)});
+        item.querySelector('.export-btn').addEventListener('click',e=>{e.stopPropagation();this.exportPreset(p.name)});
+        item.querySelector('.del-btn').addEventListener('click',e=>{e.stopPropagation();this.deletePreset(p.name)});
+        el.appendChild(item);
+      });
+    }
+    document.getElementById('presetLoadModal').classList.add('show');
+  },
+  closeModal(id){document.getElementById(id).classList.remove('show')},
+  savePreset(){const name=document.getElementById('presetNameInput').value.trim();if(!name){this.toast('이름을 입력하세요',true);return}const description=document.getElementById('presetDescInput').value.trim();this.pm.save(name,this.getCurrentSettings(),description);this.closeModal('presetSaveModal');document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';this.toast(`프리셋 "${name}" 저장 완료!`);this.log(`💾 프리셋 저장: ${name}${description?` — ${description}`:''}`)},
+  loadPreset(name){const p=this.pm.load(name);if(p){this.applySettings(p.settings);this.closeModal('presetLoadModal');this.log(`📂 프리셋 로드 완료: ${name}`);this.toast(`프리셋 "${name}" 로드 완료!`)}},
+  deletePreset(name){if(!window.confirm(`프리셋 "${name}"을(를) 삭제하시겠습니까?`))return;this.pm.remove(name);this.showPresetLoadModal();this.toast(`프리셋 "${name}" 삭제됨`)},
+  exportPreset(name){const preset=this.pm.export(name);if(!preset){this.toast('프리셋 내보내기에 실패했습니다',true);return}const safe=''.concat(name).replace(/[^\w\-가-힣 ]+/g,'_').trim()||'preset';const blob=new Blob([JSON.stringify(preset,null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.download=`${safe}.json`;a.href=URL.createObjectURL(blob);a.click();URL.revokeObjectURL(a.href);this.toast(`프리셋 "${name}" 내보내기 완료!`);this.log(`📤 프리셋 내보내기: ${safe}.json`)},
+  triggerPresetImport(){document.getElementById('presetImportInput').click()},
+  importPresetFile(e){const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const preset=JSON.parse(reader.result);const name=this.pm.import(preset);this.toast(`프리셋 "${name}" 가져오기 완료!`);this.log(`📥 프리셋 가져오기: ${name}`);if(document.getElementById('presetLoadModal').classList.contains('show'))this.showPresetLoadModal()}catch(err){this.toast(`프리셋 가져오기 실패: ${err.message}`,true)}finally{e.target.value=''}};reader.readAsText(file,'utf-8')},
+  openFileWithPreset(name){this._pendingPresetName=name;this._preservePendingOnNextFileDialog=true;this.closeModal('presetLoadModal');document.getElementById('fileInput').click();},
+
+  /* ===== UI ===== */
+  progress(val,text){document.getElementById('progressWrap').classList.toggle('show',val>0&&val<100);document.getElementById('progressFill').style.width=val+'%';document.getElementById('progressText').textContent=text;if(val>=100)setTimeout(()=>document.getElementById('progressWrap').classList.remove('show'),2000)},
+  log(msg){const el=document.getElementById('logOutput');el.textContent+=msg+'\n';el.scrollTop=el.scrollHeight},
+  toast(msg,isErr=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(isErr?'err':'ok');clearTimeout(this._tt);this._tt=setTimeout(()=>el.classList.remove('show'),3200)}
+};
+
+document.addEventListener('DOMContentLoaded',()=>app.init());
+</script>
+</body>
+</html>
