@@ -3,772 +3,391 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>σ 조기경보 시계열 데이터 전처리프로그램 사용자 매뉴얼</title>
+  <title>Data Preprocessing Control Room 사용자 매뉴얼 | 조기경보 모델링 데이터 전처리 시스템</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #f4f7fb;
-      --panel: #ffffff;
-      --text: #1f2937;
-      --muted: #596579;
-      --line: #d9e2ec;
-      --primary: #165dff;
-      --primary-soft: #eef4ff;
-      --ok: #18794e;
-      --ok-soft: #edfdf3;
-      --warn: #ad4e00;
-      --warn-soft: #fff7e8;
-      --danger: #c5221f;
-      --danger-soft: #fff1f0;
-      --shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    :root{
+      --font-body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;
+      --font-display:'Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang',serif;
+      --bg:#edf2fb;--panel:#ffffff;--panel-soft:#f7f9fd;--text:#14233c;--muted:#62748d;--line:rgba(110,130,160,.24);
+      --line-strong:rgba(110,130,160,.38);--accent:#7657ff;--accent-strong:#5434ec;--accent-soft:#eee9ff;--accent-cyan:#44d3ff;
+      --dark:#07111f;--dark-2:#0d1b32;--ok:#179c73;--ok-soft:#dff8ef;--warn:#c97a12;--warn-soft:#fff1da;--danger:#d85a66;--danger-soft:#ffe7eb;
+      --shadow:0 18px 50px rgba(10,22,41,.08);--shadow-lg:0 28px 70px rgba(6,15,30,.18);
+      --radius-xl:32px;--radius-lg:26px;--radius:20px;--radius-sm:14px;
+      --shell-width:min(1200px,calc(100% - 40px));
+      --shell-pad:clamp(18px,1.8vw,28px);
+      --layout-width:min(100%,1200px);
+      --section-space:clamp(16px,1.5vw,24px);
     }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      margin: 0;
-      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
-      background: linear-gradient(180deg, #eaf1ff 0, var(--bg) 260px);
-      color: var(--text);
-      line-height: 1.72;
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:var(--font-body);color:var(--text);background:radial-gradient(circle at top left,rgba(118,87,255,.16),transparent 24%),radial-gradient(circle at top right,rgba(68,211,255,.12),transparent 18%),var(--bg);line-height:1.64;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+    img{display:block;max-width:100%}
+    a{color:inherit}
+    .site-nav{position:sticky;top:20px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:clamp(18px,1.8vw,28px);width:var(--shell-width);margin:clamp(18px,1.8vw,24px) auto var(--section-space);padding:clamp(15px,1.3vw,18px) var(--shell-pad);border-radius:24px;background:rgba(7,17,31,.82);border:1px solid rgba(255,255,255,.08);box-shadow:0 28px 60px rgba(6,15,30,.28);backdrop-filter:blur(18px)}
+    .nav-brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff}
+    .nav-mark{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent-cyan));color:#fff;font-size:24px;font-weight:800;box-shadow:0 14px 30px rgba(118,87,255,.35);flex-shrink:0}
+    .nav-copy{display:flex;flex-direction:column;gap:2px}
+    .nav-copy strong{font-size:15px;font-weight:700}
+    .nav-copy span{font-size:12px;color:rgba(255,255,255,.66)}
+    .nav-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .nav-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+    .nav-link:hover,.nav-link.active{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.42);color:#fff}
+    .wrap{width:var(--shell-width);margin:0 auto;padding:0 0 clamp(42px,3.6vw,60px)}
+    .layout{display:grid;grid-template-columns:clamp(200px,22vw,236px) minmax(0,1fr);gap:clamp(14px,1.2vw,20px);align-items:start;max-width:var(--layout-width);margin:0 auto}
+    .side-nav{position:sticky;top:clamp(98px,8vw,118px);padding:clamp(15px,1.2vw,18px);border-radius:22px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+    .side-nav h2{font-family:var(--font-display);font-size:18px;font-weight:700;letter-spacing:-.01em;margin:0 0 8px}
+    .side-nav-list{display:grid;gap:6px}
+    .side-nav-list a{display:block;padding:8px 10px;border-radius:12px;background:var(--panel-soft);border:1px solid rgba(110,130,160,.12);text-decoration:none}
+    .side-nav-list strong{display:block;font-size:13px;color:var(--text);margin-bottom:1px}
+    .side-nav-list span{display:block;font-size:11px;color:var(--muted);line-height:1.45}
+    .content{min-width:0}
+    .hero{padding:clamp(20px,2vw,28px);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--dark) 0%,var(--dark-2) 58%,#121f46 100%);box-shadow:var(--shadow-lg);color:#f7fbff;position:relative;overflow:hidden;margin-bottom:var(--section-space)}
+    .hero::after{content:'';position:absolute;right:-90px;bottom:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(68,211,255,.2),rgba(68,211,255,0));pointer-events:none}
+    .hero > *{position:relative;z-index:1}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(118,87,255,.16);border:1px solid rgba(118,87,255,.28);color:#e6e0ff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+    h1,h2,h3{margin:0;line-height:1.24}
+    h1{font-family:var(--font-display);font-size:clamp(28px,3.3vw,38px);font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+    h2{font-family:var(--font-display);font-size:clamp(28px,2.4vw,34px);font-weight:700;letter-spacing:-.02em;color:var(--text);margin-bottom:10px}
+    h3{font-size:19px;line-height:1.3;color:var(--text);margin-bottom:6px}
+    .lead{font-size:clamp(13px,1vw,15px);color:rgba(237,244,255,.8);max-width:min(50ch,100%);margin:0 0 14px}
+    .hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:clamp(8px,1vw,12px);margin-bottom:14px}
+    .hero-chip{padding:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+    .hero-chip span{display:block;font-size:11px;font-weight:700;color:rgba(209,223,243,.68);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+    .hero-chip strong{font-size:14px;color:#fff}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#fff;box-shadow:0 16px 30px rgba(118,87,255,.28)}
+    .btn.secondary{background:#fff;color:var(--dark)}
+    .btn.ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);color:#fff}
+    .section{padding:clamp(22px,2vw,28px);border-radius:var(--radius-lg);background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:var(--section-space)}
+    .section p{margin:0;color:var(--muted);font-size:14px;line-height:1.65}
+    .section-intro{margin-bottom:16px}
+    .section > p,.section-intro p,.card p,.mini-card p,.warn-card p,.step-list p,.checklist p{max-width:60ch}
+    .step-list,.checklist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+    .step-list li{display:grid;grid-template-columns:42px 1fr;gap:12px;padding:13px;border-radius:18px;background:var(--panel-soft);border:1px solid rgba(110,130,160,.14)}
+    .step-no{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent-strong);font-size:13px;font-weight:800}
+    .step-list strong,.checklist strong{display:block;color:var(--text);margin-bottom:3px}
+    .step-list p,.checklist p{font-size:13px;color:var(--muted);margin:0;line-height:1.58}
+    .grid-two,.grid-three,.grid-four,.media-grid{display:grid;gap:clamp(12px,1.2vw,18px)}
+    .grid-two{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+    .grid-three{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+    .grid-four{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+    .media-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:14px}
+    .card,.mini-card,.warn-card{padding:16px;border-radius:20px;background:var(--panel-soft);border:1px solid rgba(110,130,160,.14)}
+    .card p,.mini-card p,.warn-card p{font-size:13px;color:var(--muted);line-height:1.6}
+    .label{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+    .callout,.warn,.danger,.success{padding:14px 16px;border-radius:18px;margin-top:14px}
+    .callout{background:#eef6ff;border:1px solid #cfe3ff}
+    .warn{background:var(--warn-soft);border:1px solid #ffd9a1}
+    .danger{background:var(--danger-soft);border:1px solid #ffc5cc}
+    .success{background:var(--ok-soft);border:1px solid #b6ead9}
+    .callout strong,.warn strong,.danger strong,.success strong{display:block;margin-bottom:4px}
+    figure.manual-shot{margin:16px 0 0;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#f6f9ff;box-shadow:var(--shadow)}
+    .manual-shot img{width:100%;height:auto;background:#edf3ff}
+    .manual-shot figcaption{padding:11px 13px;font-size:13px;line-height:1.58;color:var(--muted);background:#fff;border-top:1px solid var(--line)}
+    .file-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+    .file-table th,.file-table td{padding:11px 12px;border:1px solid var(--line);text-align:left;vertical-align:top}
+    .file-table th{width:28%;background:var(--panel-soft)}
+    .checklist li{display:flex;gap:12px;align-items:flex-start;padding:13px;border-radius:18px;background:var(--panel-soft);border:1px solid rgba(110,130,160,.14)}
+    .checkmark{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--ok-soft);color:var(--ok);font-size:13px;font-weight:800;flex-shrink:0}
+    .footer-note{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+    @media(max-width:1440px){
+      .site-nav,.wrap{width:min(1200px,calc(100% - 40px))}
+      .layout{grid-template-columns:1fr;max-width:min(100%,1120px)}
+      .side-nav{position:static}
     }
-
-    .wrap {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 28px 20px 56px;
+    @media(max-width:1040px){
+      .layout,.grid-two,.grid-three,.grid-four,.media-grid,.hero-grid{grid-template-columns:1fr}
+      .side-nav{position:static}
     }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 240px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .sidebar {
-      position: sticky;
-      top: 20px;
-    }
-
-    .hero, .toc, .section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-      padding: 24px;
-      margin-bottom: 18px;
-    }
-
-    .eyebrow {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--primary-soft);
-      color: var(--primary);
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    h1, h2, h3 { line-height: 1.3; }
-    h1 { margin: 0 0 12px; font-size: 33px; }
-    h2 { margin: 0 0 14px; font-size: 25px; }
-    h3 { margin: 0 0 10px; font-size: 19px; }
-    p { margin: 0 0 12px; }
-    ul, ol { margin: 10px 0 0 20px; padding: 0; }
-    li { margin-bottom: 8px; }
-
-    code {
-      background: #eff3f8;
-      border-radius: 6px;
-      padding: 2px 7px;
-      font-family: Consolas, monospace;
-      font-size: .94em;
-    }
-
-    .muted { color: var(--muted); }
-
-    .grid {
-      display: grid;
-      gap: 14px;
-    }
-
-    .grid.two {
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px;
-      background: #fbfdff;
-    }
-
-    .toc-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .toc-grid a {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fafcff;
-      padding: 13px 14px;
-    }
-
-    .toc-grid a strong {
-      display: block;
-      color: var(--primary);
-      margin-bottom: 3px;
-    }
-
-    .side-nav {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      padding: 18px;
-    }
-
-    .side-nav h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
-    }
-
-    .side-nav-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .side-nav-list a {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 11px 12px;
-      background: #fafcff;
-    }
-
-    .side-nav-list a strong {
-      display: block;
-      color: var(--primary);
-      font-size: 14px;
-      margin-bottom: 2px;
-    }
-
-    .side-nav-list a span {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .content {
-      min-width: 0;
-    }
-
-    .callout, .warn, .danger, .success {
-      border-radius: 16px;
-      padding: 16px 18px;
-      margin-top: 14px;
-    }
-
-    .callout {
-      background: var(--primary-soft);
-      border: 1px solid #cfe0ff;
-    }
-
-    .warn {
-      background: var(--warn-soft);
-      border: 1px solid #ffd591;
-      color: var(--warn);
-    }
-
-    .danger {
-      background: var(--danger-soft);
-      border: 1px solid #ffccc7;
-      color: var(--danger);
-    }
-
-    .success {
-      background: var(--ok-soft);
-      border: 1px solid #b7ebc6;
-      color: var(--ok);
-    }
-
-    .checklist {
-      list-style: none;
-      margin: 12px 0 0;
-      padding: 0;
-    }
-
-    .checklist li {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #fcfdff;
-      margin-bottom: 10px;
-    }
-
-    .check {
-      flex: 0 0 auto;
-      width: 22px;
-      height: 22px;
-      border-radius: 7px;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      margin-top: 1px;
-      background: var(--ok-soft);
-      border: 1px solid #8ee0a8;
-      color: var(--ok);
-    }
-
-    .step {
-      counter-reset: item;
-      list-style: none;
-      margin: 14px 0 0;
-      padding: 0;
-      display: grid;
-      gap: 12px;
-    }
-
-    .step li {
-      display: grid;
-      grid-template-columns: 38px 1fr;
-      gap: 12px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      background: #fbfdff;
-    }
-
-    .step li::before {
-      counter-increment: item;
-      content: counter(item);
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 700;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
-
-    th, td {
-      border: 1px solid var(--line);
-      padding: 12px;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      width: 28%;
-      background: #f6f9fc;
-    }
-
-    .footer {
-      color: var(--muted);
-      text-align: center;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-
-    figure.manual-shot {
-      margin: 16px 0 0;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #f9fbff;
-      overflow: hidden;
-    }
-
-    .manual-shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-      background: #edf2f8;
-    }
-
-    .manual-shot figcaption {
-      padding: 12px 14px;
-      font-size: 14px;
-      color: var(--muted);
-      border-top: 1px solid var(--line);
-      background: #ffffff;
-    }
-
-    @media (max-width: 720px) {
-      .wrap { padding: 20px 14px 40px; }
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { position: static; }
-      .hero, .toc, .section { padding: 18px; border-radius: 18px; }
-      h1 { font-size: 28px; }
-      h2 { font-size: 22px; }
-      .step li { grid-template-columns: 32px 1fr; }
-      .step li::before { width: 32px; height: 32px; }
+    @media(max-width:768px){
+      .site-nav{position:static;width:calc(100% - 28px);padding:16px;flex-direction:column;align-items:flex-start;margin:14px auto 18px}
+      .nav-links,.hero-actions{width:100%}
+      .nav-link,.btn{flex:1}
+      .wrap{width:calc(100% - 28px);padding:0 0 40px}
+      .hero,.section{padding:22px}
+      h1{font-size:34px}
+      h2{font-size:28px}
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <header class="site-nav">
+    <a class="nav-brand" href="Preprocessing.html">
+      <span class="nav-mark">σ</span>
+      <span class="nav-copy">
+        <strong>Data Preprocessing Control Room</strong>
+        <span>조기경보 모델링 데이터 전처리 시스템</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="주요 이동">
+      <a class="nav-link" href="Preprocessing.html">메인</a>
+      <a class="nav-link" href="program_intro.html">프로그램 소개</a>
+      <a class="nav-link active" href="MANUAL.html">사용자 매뉴얼</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
     <div class="layout">
-      <aside class="sidebar">
-        <nav class="side-nav" aria-label="매뉴얼 섹션 이동">
-          <h2>좌측 탭 이동</h2>
-          <div class="side-nav-list">
-            <a href="#who"><strong>1. 대상 사용자</strong><span>누가 이 문서를 보면 되는지</span></a>
-            <a href="#quick"><strong>2. 5분 따라하기</strong><span>가장 빠른 첫 성공</span></a>
-            <a href="#screen"><strong>3. 화면 읽는 법</strong><span>버튼과 영역 구분</span></a>
-            <a href="#basic"><strong>4. 기본 전처리</strong><span>실제 작업 순서</span></a>
-            <a href="#timing"><strong>5. 시간 처리</strong><span>시간 정규화와 재정렬 차이</span></a>
-            <a href="#files"><strong>6. 저장 파일</strong><span>파일별 용도 이해</span></a>
-            <a href="#advanced"><strong>7. 고급 기능</strong><span>Validation, 시뮬레이션, 프리셋</span></a>
-            <a href="#mistakes"><strong>8. 자주 막히는 상황</strong><span>실수와 해결 방법</span></a>
-            <a href="#check"><strong>9. 최종 점검표</strong><span>마무리 확인</span></a>
-          </div>
-        </nav>
+      <aside class="side-nav">
+        <h2>빠른 이동</h2>
+        <div class="side-nav-list">
+          <a href="#quick"><strong>1. 5분 빠른 시작</strong><span>첫 실행 최소 절차</span></a>
+          <a href="#screen"><strong>2. 화면 구조</strong><span>주요 영역 요약</span></a>
+          <a href="#flow"><strong>3. 실제 작업 흐름</strong><span>업로드 → 검토 → 저장</span></a>
+          <a href="#time"><strong>4. 시간 처리</strong><span>정규화 / 재정렬 차이</span></a>
+          <a href="#outputs"><strong>5. 저장 결과와 차트</strong><span>결과 파일과 확인 포인트</span></a>
+          <a href="#warnings"><strong>6. 자주 막히는 상황</strong><span>먼저 볼 항목</span></a>
+          <a href="#check"><strong>7. 최종 점검표</strong><span>종료 전 확인</span></a>
+        </div>
       </aside>
 
-      <main class="content">
+      <div class="content">
         <section class="hero">
-          <div class="eyebrow">Version 1.7.0 · 초보 발전운영팀원용 안내</div>
-          <h1>σ 조기경보 시계열 데이터 전처리프로그램 사용자 매뉴얼</h1>
-          <p>이 문서는 발전소 운전원이나 처음 데이터 전처리 업무를 맡은 <strong>발전운영팀원</strong>이 <strong>파일 불러오기 → 전처리 실행 → 결과 저장</strong>까지 실수 없이 따라갈 수 있도록 순서대로 정리한 매뉴얼입니다.</p>
-          <div class="callout">
-            <strong>먼저 기억할 작업 순서</strong>
-            <p><code>파일 불러오기 → 필터/이상값/시간 옵션 설정 → 전처리 실행 → Validation 또는 시뮬레이션 생성(필요 시) → 결과 저장</code></p>
-          </div>
-          <div class="danger">
-            <strong>가장 많이 하는 실수</strong>
-            <p><code>Validation 데이터 생성</code> 버튼을 바로 누르는 경우입니다. 이 기능은 <strong>전처리를 먼저 실행</strong>했고, 그 과정에서 <strong>실제로 제거된 행이 있을 때만</strong> 정상 동작합니다.</p>
-          </div>
-        </section>
+          <span class="eyebrow">Operational Manual</span>
+          <h1>업로드부터 결과 확인까지</h1>
+          <p class="lead">이 매뉴얼은 현재 웹 화면 기준입니다. 핵심은 <strong>업로드 직후 바로 실행하지 말고 먼저 원본 추세를 본 뒤 기준을 정하는 것</strong>입니다.</p>
 
-        <section class="toc">
-          <h2>목차</h2>
-          <div class="toc-grid">
-            <a href="#who"><strong>1. 이 문서가 필요한 사람</strong><span>누가 이 문서를 보면 되는지</span></a>
-            <a href="#quick"><strong>2. 5분 따라하기</strong><span>가장 빠른 첫 성공</span></a>
-            <a href="#screen"><strong>3. 화면 읽는 법</strong><span>버튼과 영역 구분</span></a>
-            <a href="#basic"><strong>4. 기본 전처리 작업</strong><span>실제 작업 순서</span></a>
-            <a href="#timing"><strong>5. 시간 처리 이해</strong><span>시간 정규화와 재정렬 차이</span></a>
-            <a href="#files"><strong>6. 저장 파일 이해</strong><span>어떤 파일을 언제 쓰는지</span></a>
-            <a href="#advanced"><strong>7. 고급 기능</strong><span>Validation, 시뮬레이션, 프리셋, 차트</span></a>
-            <a href="#mistakes"><strong>8. 자주 막히는 상황</strong><span>실수와 해결 방법</span></a>
-            <a href="#check"><strong>9. 최종 점검표</strong><span>작업 마무리 확인</span></a>
+          <div class="hero-grid">
+            <div class="hero-chip"><span>먼저 할 일</span><strong>업로드 후 파일 정보와 원본 추세 확인</strong></div>
+            <div class="hero-chip"><span>성공 기준</span><strong>전처리 1회 실행 후 저장 결과와 로그 확인</strong></div>
+            <div class="hero-chip"><span>화면 원칙</span><strong>좌측에서 기준 설정, 우측에서 차트·테이블 검토</strong></div>
+          </div>
+
+          <div class="hero-actions">
+          <a class="btn primary" href="Preprocessing.html">도구로 이동</a>
+            <a class="btn secondary" href="program_intro.html">배경 설명 보기</a>
+            <a class="btn ghost" href="#quick">빠른 시작부터 보기</a>
           </div>
         </section>
 
-    <section class="section" id="who">
-      <h2>1. 이 문서가 필요한 사람</h2>
-      <div class="grid two">
-        <div class="card">
-          <h3>이 문서를 보면 좋은 사람</h3>
-          <ul>
-            <li>처음 이 프로그램을 사용하는 발전소 운전원</li>
-            <li>데이터 전처리 업무를 처음 맡은 발전운영팀원</li>
-            <li>파일을 받아서 정리하고 저장까지 해야 하는 담당자</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>이 프로그램으로 하는 일</h3>
-          <ul>
-            <li>Excel/CSV 파일 불러오기</li>
-            <li>필요한 조건만 남기도록 필터링</li>
-            <li>이상값 제거</li>
-            <li>시간 보정 및 시간 재정렬</li>
-            <li>Validation 데이터 / 시뮬레이션 데이터 생성</li>
-            <li>정리된 결과 파일 저장</li>
-          </ul>
-        </div>
-      </div>
-      <div class="success">
-        <strong>이 문서의 목표</strong>
-        <p>이 문서를 끝까지 보면 최소한 <strong>전처리 1회 실행</strong>과 <strong>결과 저장</strong>은 혼자 할 수 있어야 합니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/about_dialog.png" alt="프로그램 정보 화면 예시">
-        <figcaption>프로그램 정보 화면 예시입니다. 프로그램 이름, 버전, 주요 기능을 한 번에 확인할 수 있어 처음 사용하는 발전운영팀원이 현재 도구가 무엇을 하는지 빠르게 파악하는 데 도움이 됩니다.</figcaption>
-      </figure>
-    </section>
-
-    <section class="section" id="quick">
-      <h2>2. 5분 따라하기</h2>
-      <p class="muted">처음에는 모든 기능을 한 번에 배우지 말고, 아래 순서대로 한 번 성공해보는 것이 가장 빠릅니다.</p>
-      <ol class="step">
-        <li><div><strong>프로그램을 실행합니다.</strong><br>Windows는 실행 파일 또는 <code>python gui_app.py</code>, macOS는 <code>python gui_app_mac.py</code>를 사용합니다.</div></li>
-        <li><div><strong><code>파일 불러오기</code>를 누릅니다.</strong><br>파일명, 행/열 수, 미리보기 표가 보이는지 먼저 확인합니다.</div></li>
-        <li><div><strong>필터가 필요하면 1개만 먼저 넣습니다.</strong><br>예: <code>AMBIENT_TEMP &gt;= 15</code></div></li>
-        <li><div><strong>이상값 처리 방식은 기본값 <code>2.5σ</code>로 둡니다.</strong><br>처음에는 기본값으로 시작해도 됩니다.</div></li>
-        <li><div><strong><code>🚀 전처리 실행</code>을 누릅니다.</strong><br>하단 로그에 완료 메시지가 보일 때까지 기다립니다.</div></li>
-        <li><div><strong><code>💾 결과 저장</code>으로 파일을 저장합니다.</strong><br>이 단계까지 끝나면 기본 사용은 성공입니다.</div></li>
-      </ol>
-      <div class="warn">
-        <strong>처음 사용 시 권장</strong>
-        <p>Validation, 시뮬레이션, 프리셋은 첫 저장까지 해본 뒤에 사용하는 것이 좋습니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/main_overview.png" alt="빠른 시작용 메인 화면 예시">
-        <figcaption>빠른 시작 기준 화면입니다. 처음에는 이 메인 화면에서 <code>파일 불러오기 → 전처리 실행 → 결과 저장</code> 흐름만 먼저 익히면 됩니다.</figcaption>
-      </figure>
-    </section>
+        <section class="section" id="quick">
+          <div class="section-intro">
+            <h2>1. 5분 빠른 시작</h2>
+            <p>처음에는 모든 옵션을 익히기보다 아래 순서대로 한 번 성공하는 것이 가장 빠릅니다.</p>
+          </div>
+          <ol class="step-list">
+            <li>
+              <span class="step-no">1</span>
+              <div>
+                <strong>메인에서 파일 업로드</strong>
+                <p><code>XLSX</code> 또는 <code>XLS</code> 파일을 드래그하거나 <code>파일 선택</code>으로 불러옵니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-no">2</span>
+              <div>
+                <strong>파일 정보와 원본 추세 확인</strong>
+                <p>파일명, 행/열 수가 맞는지 확인하고 우측 차트에서 전체 흐름과 튀는 구간을 읽습니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-no">3</span>
+              <div>
+                <strong>기본값으로 1회 실행</strong>
+                <p>이상값 처리 <code>2.5σ</code>, 선제거 <code>1회 선제거 · MAD 기반</code>, Validation 20% 고정값으로 먼저 시작하면 됩니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-no">4</span>
+              <div>
+                <strong><code>전처리 실행 · 자동 저장</code></strong>
+                <p>진행률이 끝날 때까지 기다리고, 로그에 완료 메시지가 나오는지 확인합니다.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-no">5</span>
+              <div>
+                <strong>저장 결과와 차트 확인</strong>
+                <p>전처리데이터와 Simulation Data 생성 여부, Validation 분리 여부, 통계 비교와 로그를 확인하면 첫 실행은 성공입니다.</p>
+              </div>
+            </li>
+          </ol>
+          <div class="warn">
+            <strong>처음 사용할 때 가장 안전한 방법</strong>
+            <p>처음부터 필터를 많이 넣기보다 기본값으로 한 번 실행해 보고, 그다음 필요한 기준만 하나씩 조정하세요.</p>
+          </div>
+        </section>
 
         <section class="section" id="screen">
-          <h2>3. 화면 읽는 법</h2>
-      <div class="grid two">
-        <div class="card">
-          <h3>메인 화면 영역</h3>
-          <ul>
-            <li><strong>파일 선택</strong>: 파일 열기, 파일명 확인, 행/열 수 확인</li>
-            <li><strong>미리보기 표</strong>: 실제 데이터가 어떻게 들어왔는지 확인</li>
-            <li><strong>필터 조건</strong>: 남길 구간을 정하는 곳</li>
-            <li><strong>이상값 처리</strong>: 튀는 값을 제거하는 기준 선택</li>
-            <li><strong>시간 처리</strong>: 시간 보정 또는 새 시간축 부여</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>자주 쓰는 버튼</h3>
-          <ul>
-            <li><code>파일 불러오기</code>: 작업 시작</li>
-            <li><code>🚀 전처리 실행</code>: 현재 설정으로 처리 시작</li>
-            <li><code>🧪 Validation 데이터 생성</code>: 전처리 후 검증용 파일 생성</li>
-            <li><code>💾 결과 저장</code>: 전처리 결과 저장</li>
-            <li><code>⏹ 취소</code>: 처리 중 작업 중단</li>
-          </ul>
-        </div>
-      </div>
-          <div class="callout">
-            <strong>화면 아래 로그의 의미</strong>
-            <p><code>✅</code>는 정상 완료, <code>⚠️</code>는 경고, <code>❌</code>는 실패입니다. 실제 작업 결과는 아래 로그를 먼저 보면 됩니다.</p>
+          <div class="section-intro">
+            <h2>2. 화면 구조</h2>
+            <p>이 도구는 좌측에서 규칙을 정하고 우측에서 결과를 확인하는 구조입니다. 어디를 먼저 보면 되는지만 알면 훨씬 빠르게 적응할 수 있습니다.</p>
+          </div>
+          <div class="grid-four">
+            <div class="card">
+              <span class="label">좌측 상단</span>
+              <h3>파일 정보</h3>
+              <p>파일명, 행 수, 열 수를 보고 현재 불러온 데이터가 맞는지 가장 먼저 확인합니다.</p>
+            </div>
+            <div class="card">
+              <span class="label">좌측 중단</span>
+              <h3>기준 설정</h3>
+              <p>이상값 처리, 필터, 시간 처리, Validation / Simulation 조건을 같은 순서로 정합니다.</p>
+            </div>
+            <div class="card">
+              <span class="label">우측 상단</span>
+              <h3>데이터 분석</h3>
+              <p>원본/전처리 후 추세, 분포, Validation 경계를 확인하는 핵심 검토 영역입니다.</p>
+            </div>
+            <div class="card">
+              <span class="label">우측 하단</span>
+              <h3>테이블과 로그</h3>
+              <p>실제 값 미리보기와 처리 결과 메시지를 보고 실행이 제대로 끝났는지 확인합니다.</p>
+            </div>
           </div>
           <figure class="manual-shot">
-            <img src="manual_assets/screenshots/main_overview.png" alt="프로그램 메인 화면 예시">
-            <figcaption>실제 프로그램 화면 예시입니다. 이 화면에서 파일 선택, 미리보기, 필터 조건, 이상값 처리, 시간 처리, 실행 버튼 위치를 한 번에 확인할 수 있습니다. 매뉴얼용으로 회색 기본 테마에 맞춰 정리한 예시 화면입니다.</figcaption>
+            <img src="manual_assets/screenshots/main_overview.png" alt="메인 대시보드 전체 화면 예시">
+            <figcaption>파일 업로드 직후의 전체 화면 예시입니다. 좌측은 설정 영역, 우측은 분석 카드와 데이터 테이블, 하단은 처리 로그로 구성됩니다.</figcaption>
           </figure>
         </section>
 
-    <section class="section" id="basic">
-      <h2>4. 기본 전처리 작업</h2>
+        <section class="section" id="flow">
+          <div class="section-intro">
+            <h2>3. 실제 작업 흐름</h2>
+            <p>실무에서는 아래 네 단계만 기억하면 됩니다. 핵심은 설정 전에 먼저 원본을 보는 순서입니다.</p>
+          </div>
+          <div class="grid-two">
+            <div class="mini-card">
+              <span class="label">Step 1</span>
+              <h3>기본 상태 확인</h3>
+              <p>파일명, 행/열 수, 날짜 컬럼 인식 상태, 숫자 컬럼 목록이 예상과 맞는지 확인합니다.</p>
+            </div>
+            <div class="mini-card">
+              <span class="label">Step 2</span>
+              <h3>원본 추세 확인</h3>
+              <p>차트에서 튀는 구간, 급격한 변화, 분포 왜곡이 있는지 먼저 보고 이상값 처리 강도를 정합니다.</p>
+            </div>
+            <div class="mini-card">
+              <span class="label">Step 3</span>
+              <h3>필요한 기준 설정</h3>
+              <p>필터가 필요하면 최소한으로 넣고, 시간 처리는 데이터 특성상 정말 필요한 경우에만 켭니다.</p>
+            </div>
+            <div class="mini-card">
+              <span class="label">Step 4</span>
+              <h3>로그와 저장 결과 확인</h3>
+              <p>제거된 행 수, 최종 데이터 수, Validation 자동 구성, Simulation 저장 여부를 순서대로 검토합니다.</p>
+            </div>
+          </div>
+          <figure class="manual-shot">
+            <img src="manual_assets/screenshots/preprocessing_done.png" alt="전처리 완료 후 통계와 로그 화면 예시">
+            <figcaption>전처리 완료 후 예시 화면입니다. 상단 비교 카드, 분석 영역, 하단 로그를 함께 보며 설정이 적절했는지 확인하면 됩니다.</figcaption>
+          </figure>
+        </section>
 
-      <div class="card">
-        <h3>4-1. 파일 불러오기 후 가장 먼저 확인할 것</h3>
-        <ul>
-          <li>파일명이 맞는지</li>
-          <li>행 수와 열 수가 예상과 맞는지</li>
-          <li>날짜 컬럼이 제대로 들어왔는지</li>
-          <li>숫자 컬럼이 정상적으로 보이는지</li>
-        </ul>
-        <p>CSV는 <code>UTF-8 → CP949 → EUC-KR</code> 순서로 자동 읽기를 시도합니다. <code>Unnamed</code>로 시작하는 빈 컬럼은 자동 제거됩니다.</p>
-      </div>
+        <section class="section" id="time">
+          <div class="section-intro">
+            <h2>4. 시간 처리</h2>
+            <p>가장 자주 헷갈리는 부분입니다. 두 기능은 비슷해 보여도 목적이 다릅니다.</p>
+          </div>
+          <div class="grid-two">
+            <div class="card">
+              <span class="label">시간 정규화</span>
+              <h3>가까운 간격으로 보정</h3>
+              <p>예: <code>00:01:00 → 00:02:00</code>. 원래 시간의 흐름은 유지하면서 엑셀 자동채우기 오차 같은 작은 틀어짐을 고칩니다.</p>
+            </div>
+            <div class="card">
+              <span class="label">시간 재정렬</span>
+              <h3>새 시간축 다시 부여</h3>
+              <p>필터 후 남은 데이터에 일정 간격의 새 시간표를 붙이는 기능입니다. 원래 수집 시각이 중요하면 신중히 사용해야 합니다.</p>
+            </div>
+          </div>
+          <div class="danger">
+            <strong>쉽게 구분하는 법</strong>
+            <p><strong>시간 정규화</strong>는 “틀어진 시간을 바로잡는 것”, <strong>시간 재정렬</strong>은 “시간표 자체를 새로 만드는 것”입니다.</p>
+          </div>
+          <figure class="manual-shot">
+            <img src="manual_assets/screenshots/time_processing.png" alt="시간 처리 설정 영역 예시">
+            <figcaption>시간 처리 영역 예시입니다. 위의 체크박스 두 개는 목적이 다르며, 둘 다 아래의 <code>간격(분)</code> 입력값을 함께 사용합니다.</figcaption>
+          </figure>
+        </section>
 
-      <div class="card">
-        <h3>4-2. 필터는 언제 쓰는가</h3>
-        <p>필터는 <strong>남길 데이터만 고르는 단계</strong>입니다. 여러 조건을 넣으면 모두 AND로 묶입니다.</p>
-        <table>
-          <tr><th>예시</th><td><code>AMBIENT_TEMP &gt;= 15</code><br><code>FAN_CURRENT range 30 ~ 50</code></td></tr>
-          <tr><th>의미</th><td>운전 조건이 맞는 구간만 남기고 나머지를 제외합니다.</td></tr>
-          <tr><th>주의</th><td>숫자형 컬럼만 필터에 사용할 수 있습니다.</td></tr>
-        </table>
-      </div>
+        <section class="section" id="outputs">
+          <div class="section-intro">
+            <h2>5. 저장 결과와 차트</h2>
+            <p>전처리 실행이 끝나면 파일 저장뿐 아니라 Validation 분리와 차트 검토까지 확인해야 작업이 완결됩니다.</p>
+          </div>
 
-      <div class="card">
-        <h3>4-3. 이상값 처리는 어떻게 고르는가</h3>
-        <table>
-          <tr><th>기본 추천</th><td><code>2.5σ</code></td></tr>
-          <tr><th>더 엄격하게</th><td><code>2σ</code></td></tr>
-          <tr><th>더 느슨하게</th><td><code>3σ</code></td></tr>
-          <tr><th>분포가 고르지 않을 때</th><td><code>IQR</code></td></tr>
-          <tr><th>실제 동작</th><td>이상값이 포함된 행은 <strong>행 전체 삭제</strong>입니다.</td></tr>
-        </table>
-        <div class="warn">
-          <strong>중요</strong>
-          <p>여기서 제거된 행이 있어야 나중에 Validation이나 시뮬레이션 생성에 활용할 수 있습니다.</p>
-        </div>
-      </div>
+          <table class="file-table">
+            <tr>
+              <th><code>원본이름_prepro_with_valid.xlsx</code></th>
+              <td>전처리 완료 데이터와 뒤쪽 20% 정상 Validation 구간이 함께 들어가는 프리비전 업로드용 기본 결과 파일입니다.</td>
+            </tr>
+            <tr>
+              <th><code>Simulation_Data_YYYYMMDD_HHMMSS.xlsx</code></th>
+              <td>정상 → 전환 → 이상 구간으로 만든 점검용 시뮬레이션 파일입니다. 제거된 이상값이 없으면 생성이 생략될 수 있습니다.</td>
+            </tr>
+          </table>
 
-      <div class="card">
-        <h3>4-4. 전처리 실행 후 확인할 것</h3>
-        <ul>
-          <li>필터링 전/후 행 수가 어떻게 바뀌었는지</li>
-          <li>이상값이 몇 행 제거됐는지</li>
-          <li>시간 처리가 정상 완료됐는지</li>
-          <li>맨 마지막에 <code>✅ 전처리 완료</code>가 나왔는지</li>
-        </ul>
-        <div class="callout">
-          <strong>진행률 / 취소 버튼은 이렇게 봅니다</strong>
-          <p>진행률 바는 현재 처리 단계가 어디까지 왔는지 보여주고, 상태 문구는 지금 무엇을 하고 있는지 알려줍니다. 처리 시간이 길어질 때는 먼저 상태 문구와 로그를 보고, 잘못된 파일이나 설정으로 실행한 것이 확실할 때만 <code>⏹ 취소</code>를 누르는 것이 좋습니다.</p>
-        </div>
-        <figure class="manual-shot">
-          <img src="manual_assets/screenshots/preprocessing_done.png" alt="전처리 완료 후 로그 화면 예시">
-          <figcaption>전처리 완료 후 예시 화면입니다. 하단 로그에서 필터링 결과, 이상값 제거 결과, 최종 완료 여부를 순서대로 확인하면 됩니다.</figcaption>
-        </figure>
-      </div>
-    </section>
+          <div class="callout">
+            <strong>차트에서 꼭 봐야 하는 것</strong>
+            <p>원본 비교 버튼으로 전처리 전/후 차이를 보고, <code>📊 Val 보기</code>로 정상 Validation 경계가 예상과 맞는지 확인하세요.</p>
+          </div>
 
-    <section class="section" id="timing">
-      <h2>5. 시간 처리 이해</h2>
-      <p>초보 사용자가 가장 헷갈리는 부분이라 따로 설명합니다.</p>
-      <div class="grid two">
-        <div class="card">
-          <h3>시간 정규화</h3>
-          <p><strong>원래 시간을 최대한 유지하면서</strong> 가까운 간격으로 보정합니다.</p>
-          <ul>
-            <li>예: <code>00:02:01 → 00:02:00</code></li>
-            <li>엑셀 자동채우기로 시간이 조금씩 밀린 경우에 사용</li>
-            <li>체크박스에는 2분이라고 써 있어도 실제 기준은 아래 <code>간격(분)</code> 입력값입니다</li>
+          <div class="media-grid">
+            <figure class="manual-shot">
+              <img src="manual_assets/screenshots/validation_dialog.png" alt="Validation과 Simulation 설정 영역 예시">
+              <figcaption>Validation / Simulation 설정 영역입니다. Validation은 20% 정상 holdout으로 자동 반영되고, 같은 섹션 아래에서 Simulation 길이·강도·비율을 설정합니다.</figcaption>
+            </figure>
+            <figure class="manual-shot">
+              <img src="manual_assets/screenshots/trend_chart.png" alt="트렌드 차트와 분포 차트 화면 예시">
+              <figcaption>전처리 후 데이터 분석 영역입니다. 컬럼 chip, 원본 비교, Validation 보기, 분포 차트를 함께 보며 결과가 과하지 않은지 검토합니다.</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section class="section" id="warnings">
+          <div class="section-intro">
+            <h2>6. 자주 막히는 상황</h2>
+            <p>대부분은 설정 오류보다 확인 순서를 놓쳐서 생깁니다. 아래 항목부터 보면 빠르게 해결됩니다.</p>
+          </div>
+          <div class="grid-two">
+            <div class="warn-card">
+              <h3>파일이 안 열릴 때</h3>
+              <p><code>.xlsx</code>, <code>.xls</code> 형식인지 확인하고, 보안 문서라면 해제 후 다시 시도하세요.</p>
+            </div>
+            <div class="warn-card">
+              <h3>필터 컬럼이 안 보일 때</h3>
+              <p>필터는 숫자형 컬럼 중심으로 표시됩니다. 문자 컬럼과 날짜 컬럼은 직접 필터 대상으로 쓰기 어렵습니다.</p>
+            </div>
+            <div class="warn-card">
+              <h3>Simulation이 생성되지 않을 때</h3>
+              <p>전처리 과정에서 실제로 제거된 이상값이 있어야 합니다. 대상 태그 선택과 비율 합계 100도 함께 확인하세요.</p>
+            </div>
+            <div class="warn-card">
+              <h3>시간 결과가 예상과 다를 때</h3>
+              <p>정규화와 재정렬을 혼동한 경우가 많습니다. 어떤 기능을 켰는지와 <code>간격(분)</code> 값을 먼저 확인하세요.</p>
+            </div>
+          </div>
+          <div class="warn">
+            <strong>가장 많이 하는 실수</strong>
+            <p>원본 추세를 보기 전에 바로 실행하는 것입니다. 먼저 전체 흐름과 분포를 보고 기준을 정해야 과도한 제거를 피할 수 있습니다.</p>
+          </div>
+        </section>
+
+        <section class="section" id="check">
+          <div class="section-intro">
+            <h2>7. 최종 점검표</h2>
+            <p>아래 항목이 모두 맞으면 기본 전처리 작업은 정상적으로 마무리된 것입니다.</p>
+          </div>
+          <ul class="checklist">
+            <li><span class="checkmark">1</span><div><strong>파일 정보가 맞다</strong><p>파일명, 행/열 수, 기본 인식 상태를 확인했다.</p></div></li>
+            <li><span class="checkmark">2</span><div><strong>원본 추세를 먼저 봤다</strong><p>설정 전에 차트와 분포를 확인했다.</p></div></li>
+            <li><span class="checkmark">3</span><div><strong>필요한 기준만 넣었다</strong><p>필터, 이상값 처리, 시간 처리를 과도하게 사용하지 않았다.</p></div></li>
+            <li><span class="checkmark">4</span><div><strong>전처리 완료 로그를 확인했다</strong><p>제거된 행 수, 최종 데이터 수, 완료 메시지를 확인했다.</p></div></li>
+            <li><span class="checkmark">5</span><div><strong>Validation / Simulation 결과를 확인했다</strong><p>Validation 자동 구성과 Simulation 저장 여부를 로그와 화면에서 확인했다.</p></div></li>
+            <li><span class="checkmark">6</span><div><strong>자동 저장 파일명을 확인했다</strong><p><code>_prepro_with_valid.xlsx</code>와 Simulation 파일이 기대대로 생성됐는지 확인했다.</p></div></li>
           </ul>
-        </div>
-        <div class="card">
-          <h3>시간 재정렬</h3>
-          <p><strong>기존 시간을 새로 바꿔서</strong> 시작 시간부터 다시 배열합니다.</p>
-          <ul>
-            <li>예: 시작 시간을 <code>2025-01-01 00:00:00</code>로 주면 첫 행부터 다시 배치</li>
-            <li>필터 후 남은 데이터에 새 시간축을 붙이고 싶을 때 사용</li>
-            <li>기존 시간이 중요한 원본이면 신중하게 사용</li>
-          </ul>
-        </div>
-      </div>
-      <div class="danger">
-        <strong>쉽게 구분하는 방법</strong>
-        <p><strong>시간 정규화</strong>는 “조금 틀어진 시간을 바로잡는 것”, <strong>시간 재정렬</strong>은 “시간표 자체를 새로 만드는 것”입니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/time_processing.png" alt="시간 처리 영역 예시">
-        <figcaption>시간 처리 영역 예시입니다. 위의 <code>시간 정규화</code>와 아래의 <code>시간 재정렬</code>은 목적이 다르며, 두 기능 모두 아래 <code>간격(분)</code> 입력값을 함께 사용합니다.</figcaption>
-      </figure>
-    </section>
+          <div class="success">
+            <strong>여기까지 끝났다면</strong>
+            <p>기본 전처리 작업은 혼자 처리할 수 있는 수준입니다. 반복 작업이 많아질 때 프리셋 저장/불러오기를 쓰면 됩니다.</p>
+          </div>
+        </section>
 
-    <section class="section" id="files">
-      <h2>6. 저장 파일 이해</h2>
-      <div class="card">
-        <h3>6-1. 일반 결과 저장</h3>
-        <ul>
-          <li><code>💾 결과 저장</code> 버튼을 누르면 전처리 결과를 1개 파일로 저장합니다.</li>
-          <li>기본 파일명은 <code>원본이름_processed_YYYYMMDD_HHMMSS</code> 입니다.</li>
-          <li>CSV는 <code>utf-8-sig</code>로 저장되고, 날짜는 <code>YYYY-MM-DD HH:MM:SS</code> 형식입니다.</li>
-        </ul>
+        <p class="footer-note">GitHub: https://github.com/lee-minki/data-preprocessing-tool · Issues: https://github.com/lee-minki/data-preprocessing-tool/issues</p>
       </div>
-
-      <div class="card">
-        <h3>6-2. Validation 생성 시 나오는 3개 파일</h3>
-        <table>
-          <tr><th><code>원본이름_prepro.xlsx</code></th><td>전처리 결과만 들어있는 파일</td></tr>
-          <tr><th><code>원본이름_prepro_with_valid.xlsx</code></th><td>전처리 결과 뒤에 Validation 구간을 붙인 파일</td></tr>
-          <tr><th><code>원본이름_valid.xlsx</code></th><td>Validation 구간만 따로 저장한 파일</td></tr>
-        </table>
-        <div class="callout">
-          <strong>실무에서 보통 이렇게 봅니다</strong>
-          <p><code>_prepro.xlsx</code>는 정리된 기준 데이터, <code>_prepro_with_valid.xlsx</code>는 검증 포함본, <code>_valid.xlsx</code>는 Validation만 따로 볼 때 사용합니다.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>6-3. 시뮬레이션 파일</h3>
-        <p>시뮬레이션 생성 시 기본 파일명은 <code>Simulation_Data_YYYYMMDD_HHMMSS.xlsx</code> 입니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/validation_dialog.png" alt="저장 파일 경로 예시">
-        <figcaption>Validation 데이터 생성 화면 아래에는 자동 저장될 파일 경로가 표시됩니다. 저장 파일 이해가 어려울 때는 이 위치에서 생성 파일 이름과 경로를 먼저 확인하면 됩니다.</figcaption>
-      </figure>
-    </section>
-
-    <section class="section" id="advanced">
-      <h2>7. 고급 기능</h2>
-
-      <div class="card">
-        <h3>7-1. Validation 데이터 생성</h3>
-        <ol>
-          <li>먼저 전처리를 실행합니다.</li>
-          <li>전처리 과정에서 실제로 제거된 행이 있어야 합니다.</li>
-          <li><code>🧪 Validation 데이터 생성</code> 버튼을 누릅니다.</li>
-          <li>대상 컬럼, Validation 비율, 내부 비율 4개, Sigma 범위를 입력합니다.</li>
-          <li>자동 생성되는 3개 파일을 확인합니다.</li>
-        </ol>
-        <div class="danger">
-          <strong>생성되지 않는 경우</strong>
-          <ul>
-            <li>전처리를 먼저 하지 않은 경우</li>
-            <li>제거된 행이 없는 경우</li>
-            <li>대상 컬럼을 선택하지 않은 경우</li>
-            <li>내부 비율 4개 합계가 100이 아닌 경우</li>
-          </ul>
-        </div>
-        <figure class="manual-shot">
-          <img src="manual_assets/screenshots/validation_dialog.png" alt="Validation 데이터 생성 다이얼로그 예시">
-          <figcaption>Validation 데이터 생성 화면 예시입니다. 대상 컬럼 선택, Validation 비율, 내부 비율 4개, Sigma 범위, 자동 저장 파일 3개 경로를 한 화면에서 확인할 수 있습니다. 초보 사용자는 이 화면에서 <strong>대상 컬럼 선택</strong>과 <strong>비율 합계 100%</strong>를 먼저 확인하면 됩니다.</figcaption>
-        </figure>
-      </div>
-
-      <div class="card">
-        <h3>7-2. 시뮬레이션 데이터 생성</h3>
-        <p>시뮬레이션 데이터 생성 로직은 프로젝트에 포함되어 있으며, 제거된 이상값을 재료로 사용해 <strong>정상 → 전환 → 비정상</strong> 흐름의 테스트용 데이터를 만들 수 있습니다.</p>
-        <ul>
-          <li>전처리를 먼저 실행해야 합니다.</li>
-          <li>제거된 이상값 행이 있어야 합니다.</li>
-          <li>출력 파일명은 <code>Simulation_Data_YYYYMMDD_HHMMSS.xlsx</code> 형식입니다.</li>
-        </ul>
-        <div class="warn">
-          <strong>현재 GUI 기준 주의</strong>
-          <p>현재 데스크톱 메인 화면에서는 시뮬레이션 전용 버튼이나 별도 실행 화면이 명확하게 분리되어 있지 않습니다. 따라서 이 매뉴얼은 <strong>현재 직접 보이는 GUI 흐름</strong>을 기준으로 설명하고, 시뮬레이션은 내부 기능이 존재한다는 수준으로만 안내합니다.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>7-3. 프리셋</h3>
-        <ul>
-          <li><code>프리셋 저장</code>: 현재 설정을 저장</li>
-          <li><code>프리셋 불러오기</code>: 저장한 설정을 다시 적용</li>
-          <li><code>프리셋 관리</code>: 저장 목록 확인/삭제</li>
-          <li><code>프리셋 내보내기/가져오기</code>: JSON 파일로 공유</li>
-          <li><code>파일+프리셋 한번에 열기</code>: 반복 작업 자동화</li>
-        </ul>
-        <div class="warn">
-          <strong>처음 사용자 주의</strong>
-          <p><code>불러온 후 자동으로 전처리 실행</code>, <code>전처리 후 자동 저장</code> 옵션은 편리하지만 처음에는 수동으로 한 번 익힌 뒤 사용하는 것이 안전합니다.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>7-4. 트렌드 차트</h3>
-        <ul>
-          <li>메뉴: <code>분석 → 📊 트렌드 차트...</code></li>
-          <li>전처리를 먼저 실행해야 합니다.</li>
-          <li>최대 5개 컬럼까지 동시에 비교할 수 있습니다.</li>
-          <li>평균선과 통계 정보를 같이 볼 수 있습니다.</li>
-        </ul>
-        <table>
-          <tr><th>컬럼 선택</th><td><code>Ctrl+클릭</code>으로 여러 컬럼을 동시에 선택할 수 있습니다. 처음에는 2~3개만 비교하는 것이 읽기 쉽습니다.</td></tr>
-          <tr><th>자동 스케일</th><td>그래프 위아래에 여유 20%를 두고 축을 잡아 줍니다. 값 차이가 큰 컬럼을 볼 때 유용합니다.</td></tr>
-          <tr><th>평균선 표시</th><td>각 컬럼의 평균 위치를 점선으로 보여 줍니다. 평균 대비 상승/하강을 보기 좋습니다.</td></tr>
-          <tr><th>통계 정보</th><td>최소, 최대, 평균, 표준편차, 데이터 개수가 아래에 같이 표시됩니다.</td></tr>
-        </table>
-        <div class="callout">
-          <strong>언제 쓰는가</strong>
-          <p>전처리 후 결과가 정상적으로 정리됐는지 눈으로 확인하고 싶을 때, 어떤 태그가 같이 움직였는지 비교하고 싶을 때, 특정 태그가 평균에서 크게 벗어나는 구간을 찾고 싶을 때 사용합니다.</p>
-        </div>
-        <div class="warn">
-          <strong>읽는 방법</strong>
-          <p>여러 컬럼을 동시에 띄우고 자동 스케일, 평균선, 통계 정보를 같이 보면서 흐름을 읽는 방식이 가장 이해하기 쉽습니다. 옵션을 바꾼 뒤 <code>🔄 업데이트</code> 버튼으로 다시 보면 됩니다.</p>
-        </div>
-        <figure class="manual-shot">
-          <img src="manual_assets/screenshots/trend_chart.png" alt="트렌드 차트 화면 예시">
-          <figcaption>트렌드 차트 화면 예시입니다. 왼쪽에서 비교할 컬럼을 고르고, 오른쪽 옵션에서 자동 스케일과 평균선 표시를 조정한 뒤 <code>🔄 차트 업데이트</code>로 다시 확인합니다. 아래 통계 영역에는 각 컬럼의 최소, 최대, 평균, 표준편차가 함께 표시됩니다.</figcaption>
-        </figure>
-      </div>
-
-      <div class="card">
-        <h3>7-5. 도움말 메뉴</h3>
-        <table>
-          <tr><th>사용자 매뉴얼</th><td>지금 보고 있는 HTML 문서를 엽니다. 단축키는 <code>F1</code></td></tr>
-          <tr><th>용어 설명</th><td>2σ, 2.5σ, 3σ, IQR 같은 이상값 처리 용어를 간단히 확인합니다.</td></tr>
-          <tr><th>프로그램 정보</th><td>버전, 주요 기능, 개발자 정보를 확인합니다.</td></tr>
-          <tr><th>패치노트 보기</th><td>변경 이력을 확인합니다.</td></tr>
-        </table>
-        <figure class="manual-shot">
-          <img src="manual_assets/screenshots/about_dialog.png" alt="도움말 메뉴의 프로그램 정보 화면 예시">
-          <figcaption>도움말 메뉴에서 열 수 있는 프로그램 정보 화면입니다. 버전과 주요 기능을 확인하거나 패치노트로 이동할 때 참고하면 됩니다.</figcaption>
-        </figure>
-      </div>
-
-      <div class="card">
-        <h3>7-6. 자주 쓰는 단축키</h3>
-        <table>
-          <tr><th><code>Ctrl+O</code></th><td>파일 열기</td></tr>
-          <tr><th><code>Ctrl+S</code></th><td>결과 저장</td></tr>
-          <tr><th><code>Ctrl+P</code></th><td>프리셋 저장</td></tr>
-          <tr><th><code>Ctrl+T</code></th><td>트렌드 차트 열기</td></tr>
-          <tr><th><code>F1</code></th><td>사용자 매뉴얼 열기</td></tr>
-        </table>
-        <p>처음에는 버튼으로 익히고, 반복 작업이 익숙해지면 단축키를 사용하는 것이 편합니다.</p>
-      </div>
-    </section>
-
-    <section class="section" id="mistakes">
-      <h2>8. 자주 막히는 상황</h2>
-      <div class="grid two">
-        <div class="card">
-          <h3>파일이 안 열릴 때</h3>
-          <ul>
-            <li>확장자가 <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code>인지 확인</li>
-            <li>CSV 인코딩이 깨진 경우 UTF-8/CP949/EUC-KR 여부 확인</li>
-            <li>문서보안(AIP/DRM) 파일이면 해제 후 사용</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>필터 컬럼이 안 보일 때</h3>
-          <ul>
-            <li>숫자형 컬럼인지 확인</li>
-            <li>문자 컬럼과 날짜 컬럼은 직접 필터 대상으로 잘 보이지 않을 수 있음</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Validation이 안 될 때</h3>
-          <ul>
-            <li>전처리를 먼저 했는지 확인</li>
-            <li>실제로 제거된 행이 있는지 확인</li>
-            <li>컬럼을 하나 이상 선택했는지 확인</li>
-            <li>내부 비율 4개 합이 100인지 확인</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>시간 처리 결과가 예상과 다를 때</h3>
-          <ul>
-            <li>시간 정규화인지, 시간 재정렬인지 다시 확인</li>
-            <li><code>간격(분)</code> 값을 확인</li>
-            <li>재정렬은 기존 시간을 새로 바꾸는 기능이라는 점을 다시 확인</li>
-          </ul>
-        </div>
-      </div>
-      <div class="warn">
-        <strong>대용량 데이터</strong>
-        <p>행 수가 많으면 시간이 오래 걸릴 수 있습니다. 이때는 아래 로그와 진행률 표시를 먼저 보고, 중간에 여러 번 버튼을 누르지 않는 것이 좋습니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/time_processing.png" alt="문제 확인용 시간 처리 영역 예시">
-        <figcaption>문제가 생겼을 때는 해당 기능이 어디 있는지부터 다시 확인하는 것이 좋습니다. 시간 처리 관련 문제는 이 영역에서 체크 상태와 입력값을 먼저 보면 됩니다.</figcaption>
-      </figure>
-    </section>
-
-    <section class="section" id="check">
-      <h2>9. 최종 점검표</h2>
-      <ul class="checklist">
-        <li><span class="check">1</span><div>파일을 불러오고 미리보기까지 확인했다.</div></li>
-        <li><span class="check">2</span><div>필터와 이상값 처리 기준을 확인했다.</div></li>
-        <li><span class="check">3</span><div>필요할 때만 시간 처리를 켰다.</div></li>
-        <li><span class="check">4</span><div>전처리 실행 후 로그에서 완료를 확인했다.</div></li>
-        <li><span class="check">5</span><div>Validation이나 시뮬레이션은 선행조건을 확인한 뒤 실행했다.</div></li>
-        <li><span class="check">6</span><div>결과 파일 이름과 용도를 확인하고 저장했다.</div></li>
-      </ul>
-      <div class="success">
-        <strong>여기까지 끝났다면</strong>
-        <p>기본 전처리 작업은 혼자 처리할 수 있는 수준입니다. 반복 작업이 많아지면 그때 프리셋 기능을 익히면 됩니다.</p>
-      </div>
-      <figure class="manual-shot">
-        <img src="manual_assets/screenshots/preprocessing_done.png" alt="최종 점검용 전처리 완료 화면 예시">
-        <figcaption>최종 점검 기준 화면입니다. 전처리 완료 로그와 저장 전 상태를 이와 비슷하게 확인하면 기본 작업이 정상적으로 끝난 것입니다.</figcaption>
-      </figure>
-    </section>
-
-        <p class="footer">GitHub: https://github.com/lee-minki/data-preprocessing-tool · Issues: https://github.com/lee-minki/data-preprocessing-tool/issues</p>
-      </main>
     </div>
-  </div>
+  </main>
 </body>
 </html>
