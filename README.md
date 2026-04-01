@@ -1,6 +1,6 @@
 # 시계열 데이터 전처리 프로그램
 
-Excel/CSV 형식의 시계열 데이터를 필터링, 이상값 처리, 시간 보정, Validation 데이터 생성까지 한 번에 수행하는 데스크톱 GUI 도구입니다.
+Excel 형식의 시계열 데이터를 필터링, 이상값 처리, 시간 보정, Validation 데이터 생성까지 한 번에 수행하는 데스크톱 GUI 도구입니다.
 
 기본 실행 파일은 Windows용 `gui_app.py`(tkinter)이고, macOS에서는 `gui_app_mac.py`(PyQt5)를 사용합니다.
 
