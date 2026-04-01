@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Preprocessing Control Room 소개 | 조기경보 모델링 데이터 전처리 시스템</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --font-body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;
+      --font-display:'Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang',serif;
+      --bg:#edf2fb;--panel:#ffffff;--panel-soft:#f7f9fd;--text:#14233c;--muted:#62748d;--line:rgba(110,130,160,.24);
+      --line-strong:rgba(110,130,160,.38);--accent:#7657ff;--accent-strong:#5434ec;--accent-soft:#eee9ff;--accent-cyan:#44d3ff;
+      --dark:#07111f;--dark-2:#0d1b32;--shadow:0 18px 50px rgba(10,22,41,.08);--shadow-lg:0 28px 70px rgba(6,15,30,.18);
+      --radius-xl:32px;--radius-lg:26px;--radius:20px;--radius-sm:14px;
+      --shell-width:min(1200px,calc(100% - 40px));
+      --shell-pad:clamp(18px,1.8vw,28px);
+      --hero-width:min(100%,1200px);
+      --section-width:min(100%,1200px);
+      --section-space:clamp(16px,1.5vw,24px);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:var(--font-body);color:var(--text);background:radial-gradient(circle at top left,rgba(118,87,255,.16),transparent 24%),radial-gradient(circle at top right,rgba(68,211,255,.12),transparent 18%),var(--bg);line-height:1.64;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+    img,video{display:block;max-width:100%}
+    a{color:inherit}
+    .site-nav{position:sticky;top:20px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:clamp(18px,1.8vw,28px);width:var(--shell-width);margin:clamp(18px,1.8vw,24px) auto var(--section-space);padding:clamp(15px,1.3vw,18px) var(--shell-pad);border-radius:24px;background:rgba(7,17,31,.82);border:1px solid rgba(255,255,255,.08);box-shadow:0 28px 60px rgba(6,15,30,.28);backdrop-filter:blur(18px)}
+    .nav-brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff}
+    .nav-mark{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent-cyan));color:#fff;font-size:24px;font-weight:800;box-shadow:0 14px 30px rgba(118,87,255,.35);flex-shrink:0}
+    .nav-copy{display:flex;flex-direction:column;gap:2px}
+    .nav-copy strong{font-size:15px;font-weight:700}
+    .nav-copy span{font-size:12px;color:rgba(255,255,255,.66)}
+    .nav-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .nav-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+    .nav-link:hover,.nav-link.active{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.42);color:#fff}
+    .wrap{width:var(--shell-width);margin:0 auto;padding:0 0 clamp(42px,3.6vw,60px);display:flex;flex-direction:column;gap:var(--section-space)}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.74fr);gap:clamp(16px,1.5vw,22px);padding:clamp(22px,2.2vw,30px);border-radius:var(--radius-xl);background:linear-gradient(135deg,var(--dark) 0%,var(--dark-2) 58%,#121f46 100%);box-shadow:var(--shadow-lg);color:#f7fbff;position:relative;overflow:hidden;max-width:var(--hero-width);width:100%;margin:0 auto}
+    .hero::after{content:'';position:absolute;right:-90px;bottom:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(68,211,255,.2),rgba(68,211,255,0));pointer-events:none}
+    .hero-copy,.hero-visual{position:relative;z-index:1}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(118,87,255,.16);border:1px solid rgba(118,87,255,.28);color:#e6e0ff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+    h1,h2,h3{margin:0;line-height:1.24}
+    h1{font-family:var(--font-display);font-size:clamp(31px,3.4vw,45px);font-weight:700;letter-spacing:-.025em;margin-bottom:12px}
+    h2{font-family:var(--font-display);font-size:clamp(30px,2.7vw,36px);font-weight:700;letter-spacing:-.022em;margin-bottom:12px;color:var(--text)}
+    h3{font-size:20px;line-height:1.3;margin-bottom:7px;color:var(--text)}
+    .lead{max-width:min(52ch,100%);font-size:clamp(15px,1.08vw,17px);color:rgba(237,244,255,.82);margin:0 0 16px;word-break:keep-all;overflow-wrap:break-word}
+    .hero-list{display:grid;gap:8px;list-style:none;margin:0 0 16px;padding:0}
+    .hero-list li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+    .hero-list li::before{content:'•';font-size:20px;line-height:1;color:var(--accent-cyan);margin-top:-2px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#fff;box-shadow:0 16px 30px rgba(118,87,255,.28)}
+    .btn.secondary{background:#fff;color:var(--dark)}
+    .btn.ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);color:#fff}
+    .hero-card,.section,.metric{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+    .hero-card{padding:12px;border-radius:24px;background:linear-gradient(180deg,#13213a,#0d1830);border-color:rgba(255,255,255,.08)}
+    .hero-card img,.hero-card video{border-radius:20px}
+    .hero-note{margin-top:10px;padding:12px;border-radius:18px;background:rgba(255,255,255,.95);color:var(--text)}
+    .hero-note strong{display:block;font-size:14px;margin-bottom:6px}
+    .hero-note p{margin:0;font-size:13px;line-height:1.6;color:var(--muted);word-break:keep-all;overflow-wrap:break-word}
+    .section{padding:clamp(22px,2vw,28px);border-radius:var(--radius-lg);max-width:var(--section-width);width:100%;margin:0 auto}
+    .section p{margin:0;color:var(--muted);font-size:15px;line-height:1.68;word-break:keep-all;overflow-wrap:break-word}
+    .section > p,.section-intro p,.card p,.flow-step p,.metric p{max-width:60ch}
+    .problem-grid,.why-grid,.workflow,.effects{display:grid;gap:clamp(12px,1.2vw,18px);margin-top:clamp(16px,1.4vw,22px)}
+    .problem-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+    .why-grid{grid-template-columns:minmax(0,1fr) minmax(260px,.72fr);align-items:stretch}
+    .workflow{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+    .effects{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+    .card,.flow-step,.metric{padding:clamp(18px,1.6vw,22px);border-radius:22px;background:var(--panel-soft);border:1px solid rgba(110,130,160,.16)}
+    .card p,.flow-step p,.metric p{font-size:14px;color:var(--muted);line-height:1.64;word-break:keep-all;overflow-wrap:break-word}
+    .card strong,.metric strong{display:block;font-size:15px;color:var(--text);margin-bottom:6px}
+    .card strong + p + strong{margin-top:16px}
+    .number{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent-strong);font-size:13px;font-weight:800;margin-bottom:10px}
+    .metric-k{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .metric-v{font-family:var(--font-display);font-size:30px;color:var(--text);margin:7px 0 10px}
+    .support-visual{padding:clamp(16px,1.5vw,20px);border-radius:24px;background:linear-gradient(180deg,#111d35,#0b1528);box-shadow:var(--shadow);overflow:hidden}
+    .support-visual img,.support-visual video{border-radius:18px}
+    .media-video{width:100%;height:auto;object-fit:cover;background:#060f1d;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+    .hero-card .media-video{aspect-ratio:4 / 3}
+    .support-visual .media-video{aspect-ratio:16 / 10}
+    .footer-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+    @media(max-width:1440px){
+      .site-nav,.wrap{width:min(1200px,calc(100% - 40px))}
+      .hero{grid-template-columns:1fr;max-width:var(--hero-width)}
+      .section{max-width:var(--section-width)}
+      .why-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:980px){
+      .hero,.why-grid,.problem-grid,.workflow,.effects{grid-template-columns:1fr}
+    }
+    @media(max-width:768px){
+      .site-nav{position:static;width:calc(100% - 28px);padding:16px;flex-direction:column;align-items:flex-start;margin:14px auto 18px}
+      .nav-links,.hero-actions,.footer-actions{width:100%}
+      .nav-link,.btn{flex:1}
+      .wrap{width:calc(100% - 28px);padding:0 0 40px}
+      .hero,.section{padding:22px}
+      h1{font-size:34px}
+      h2{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <header class="site-nav">
+    <a class="nav-brand" href="Preprocessing.html">
+      <span class="nav-mark">σ</span>
+      <span class="nav-copy">
+        <strong>Data Preprocessing Control Room</strong>
+        <span>조기경보 모델링 데이터 전처리 시스템</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="주요 이동">
+      <a class="nav-link" href="Preprocessing.html">메인</a>
+      <a class="nav-link active" href="program_intro.html">프로그램 소개</a>
+      <a class="nav-link" href="MANUAL.html">사용자 매뉴얼</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">System Narrative</span>
+        <h1>같은 기준으로 전처리 결과를 만드는 시스템</h1>
+        <p class="lead">왜 전처리 표준화가 필요한지, 왜 모델링용 산출물을 같은 규칙으로 묶어야 하는지 핵심만 정리했습니다.</p>
+        <ul class="hero-list">
+          <li>같은 파일도 사람마다 필터 기준과 이상값 처리 강도가 달라지기 쉽습니다.</li>
+          <li>그 차이는 결과 파일 품질과 검증구간 구성까지 흔듭니다.</li>
+          <li>이 시스템은 원본 확인 → 기준 설정 → 자동 저장의 공통 흐름으로 그 편차를 줄입니다.</li>
+        </ul>
+        <div class="hero-actions">
+          <a class="btn primary" href="Preprocessing.html">시스템 바로가기</a>
+          <a class="btn secondary" href="MANUAL.html">실무 매뉴얼 보기</a>
+          <a class="btn ghost" href="#workflow">업무 흐름 보기</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-card">
+          <video class="media-video" autoplay muted playsinline preload="auto" aria-label="조기경보 모델링 데이터 전처리 시스템 메인 화면 소개 영상">
+            <source src="assets/intro-overview-540.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div class="hero-note">
+          <strong>기억해야 할 한 줄</strong>
+          <p>핵심은 기능 추가보다 누가 작업해도 같은 방향의 전처리 결과를 만들게 하는 운영 장치라는 점입니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="problem">
+      <h2>1. 흩어진 전처리 기준</h2>
+      <p>모델링 데이터 준비는 반복되지만 기준은 문서, 경험, 개인 판단에 흩어져 있는 경우가 많습니다. 그래서 같은 원본도 제거 강도와 검증구간 준비 방식이 달라집니다.</p>
+      <div class="problem-grid">
+        <div class="card">
+          <strong>사람마다 다른 정리 방식</strong>
+          <p>필터 조건, 이상값 처리 강도, 시간 보정 여부가 개인 경험에 따라 달라질 수 있습니다.</p>
+        </div>
+        <div class="card">
+          <strong>설명하기 어려운 결과 파일</strong>
+          <p>왜 이 파일이 이렇게 만들어졌는지 사후 설명이 길어지고, 검토자 입장에서 재현도 어렵습니다.</p>
+        </div>
+        <div class="card">
+          <strong>검증과 점검까지 연결되지 않음</strong>
+          <p>전처리와 Validation 분리, Simulation 생성이 끊겨 있으면 프리비전 연계 준비 시간이 늘어납니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="standardization">
+      <h2>2. 흐름을 고정하는 표준화</h2>
+      <div class="why-grid">
+        <div class="card">
+          <strong>같은 순서로 판단하게 만듭니다</strong>
+          <p>이 시스템은 먼저 원본 추세를 보고, 다음에 기준을 정하고, 마지막에 결과를 검토하도록 흐름을 고정합니다. 순서가 고정되면 설정 실수와 해석 편차도 함께 줄어듭니다.</p>
+          <strong>산출물의 의미를 통일합니다</strong>
+          <p>전처리데이터, 정상 Validation 20%, Simulation Data를 같은 규칙 아래 묶어두면 파일명보다 파일의 역할이 일관되게 유지됩니다.</p>
+        </div>
+        <div class="support-visual">
+          <video class="media-video" autoplay muted playsinline preload="auto" aria-label="조기경보 모델링 데이터 전처리 시스템 작업 흐름 소개 영상">
+            <source src="assets/intro-workflow-540.mp4" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <h2>3. 네 단계 작업 흐름</h2>
+      <p>도구의 목적은 복잡한 메뉴를 늘리는 것이 아니라, 실제 준비 업무를 짧고 반복 가능한 네 단계로 압축하는 데 있습니다.</p>
+      <div class="workflow">
+        <div class="flow-step">
+          <span class="number">01</span>
+          <h3>파일 업로드</h3>
+          <p>XLSX / XLS 파일을 불러오고 기본 구조를 확인합니다.</p>
+        </div>
+        <div class="flow-step">
+          <span class="number">02</span>
+          <h3>원본 추세 확인</h3>
+          <p>우측 차트와 표에서 튀는 구간과 시간 흐름을 먼저 읽습니다.</p>
+        </div>
+        <div class="flow-step">
+          <span class="number">03</span>
+          <h3>기준 설정</h3>
+          <p>이상값 처리, 필터, 시간 보정, Validation / Simulation 조건을 정합니다.</p>
+        </div>
+        <div class="flow-step">
+          <span class="number">04</span>
+          <h3>실행과 검토</h3>
+          <p>자동 저장된 결과와 로그, 비교 차트로 설정이 적절했는지 다시 확인합니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="effect">
+      <h2>4. 재현성과 설명 가능성</h2>
+      <p>반복 작업을 빠르게 만드는 것도 이점이지만, 더 중요한 효과는 누가 해도 같은 흐름으로 같은 성격의 파일을 만든다는 점입니다. 그래야 결과를 검토하고 설명하고 개선하기 쉬워집니다.</p>
+      <div class="effects">
+        <div class="metric">
+          <div class="metric-k">Operational Effect</div>
+          <div class="metric-v">반복 시간 단축</div>
+          <p>업로드부터 저장까지 별도 수작업 단계를 줄여 실제 준비 시간을 압축합니다.</p>
+        </div>
+        <div class="metric">
+          <div class="metric-k">Quality Effect</div>
+          <div class="metric-v">기준 일관화</div>
+          <p>같은 화면에서 같은 순서로 판단하기 때문에 설정 편차를 줄일 수 있습니다.</p>
+        </div>
+        <div class="metric">
+          <div class="metric-k">Governance Effect</div>
+          <div class="metric-v">설명 가능성 확보</div>
+          <p>검토자와 관리자도 어떤 기준으로 파일이 만들어졌는지 흐름 기준으로 이해할 수 있습니다.</p>
+        </div>
+        <div class="metric">
+          <div class="metric-k">Prevision Effect</div>
+          <div class="metric-v">연계 준비 단순화</div>
+          <p>Validation 분리와 Simulation 생성이 한 흐름에 묶여 프리비전 업로드 준비가 수월해집니다.</p>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <a class="btn primary" href="Preprocessing.html">지금 바로 시작</a>
+        <a class="btn secondary" href="MANUAL.html">실무 절차 확인</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const videos = [...document.querySelectorAll('.media-video')];
+      if (!videos.length) return;
+
+      const visibleMap = new WeakMap();
+      const replayTimers = new WeakMap();
+
+      const clearReplayTimer = (video) => {
+        const timer = replayTimers.get(video);
+        if (timer) {
+          clearTimeout(timer);
+          replayTimers.delete(video);
+        }
+      };
+
+      const scheduleReplay = (video) => {
+        clearReplayTimer(video);
+        const timer = setTimeout(() => {
+          replayTimers.delete(video);
+          if (!visibleMap.get(video)) return;
+          video.currentTime = 0;
+          const playAttempt = video.play();
+          if (playAttempt && typeof playAttempt.catch === 'function') playAttempt.catch(() => {});
+        }, 5000);
+        replayTimers.set(video, timer);
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const video = entry.target;
+          visibleMap.set(video, entry.isIntersecting && entry.intersectionRatio >= 0.55);
+          if ((entry.isIntersecting && entry.intersectionRatio >= 0.55) && video.ended) {
+            scheduleReplay(video);
+          }
+        }
+      }, { threshold: [0, 0.55, 0.85] });
+
+      for (const video of videos) {
+        visibleMap.set(video, true);
+        observer.observe(video);
+        video.loop = false;
+        video.addEventListener('ended', () => scheduleReplay(video));
+        video.addEventListener('play', () => clearReplayTimer(video));
+      }
+    })();
+  </script>
+</body>
+</html>
