@@ -575,3 +575,23 @@ python3 -m preprocessing_portal.opc_adapter \
 ```
 
 이 명령은 저장소 내부 tag index에서 `utagid`를 찾고 `ns=<namespace>;i=<utagid>` NodeId로 현재값을 조회한다.
+
+### 13.4 현재 UI 연결 상태
+
+`Preprocessing.html`에는 현재 아래 흐름이 연결되어 있다.
+
+```text
+XLSX 업로드
+  -> OPC 보조 태그 패널
+  -> 발전소/prefix 검색
+  -> 태그 선택
+  -> /api/opc/helper-values 호출
+  -> __helper__ 컬럼을 원본 데이터 우측에 부착
+  -> 필터 dropdown/table sort에서 helper 컬럼 사용
+  -> XLSX/CSV export 시 __helper__ 컬럼 제외
+```
+
+주의:
+
+- 현재 즐겨찾기는 브라우저 `localStorage` 기반 임시 구현이다. 포털 다중 사용자용 개인/공용 즐겨찾기 저장 API는 다음 단계에서 서버 저장소로 이전한다.
+- 현재 전처리 계산은 브라우저에서 수행된다. 포털 서버가 파일을 직접 처리해야 하는 요구가 확정되면 `/api/sessions` 기반 서버 처리로 확장한다.

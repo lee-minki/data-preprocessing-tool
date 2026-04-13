@@ -14,7 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from preprocessing_portal.opc_adapter import OpcReadConfig, OpcUaReadAdapter
+from preprocessing_portal.opc_adapter import OpcReadConfig, OpcUaReadAdapter, hold_sample, parse_kst
 from preprocessing_portal.tag_index import TagIndexEntry, search_tags
 
 PLANT_PREFIXES = {
@@ -73,6 +73,27 @@ class PortalHandler(SimpleHTTPRequestHandler):
             self._handle_opc_current(parse_qs(parsed.query))
             return
         super().do_GET()
+
+    def do_POST(self) -> None:  # noqa: N802 - stdlib override
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/opc/helper-values":
+            self._handle_opc_helper_values(self._read_json_body())
+            return
+        self._json(
+            {"ok": False, "error": "지원하지 않는 API 경로입니다"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+
+    def _read_json_body(self) -> dict[str, object]:
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"JSON 본문을 파싱할 수 없습니다: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("JSON 본문은 객체여야 합니다")
+        return payload
 
     def _handle_tag_search(self, query: dict[str, list[str]]) -> None:
         prefixes = _resolve_prefixes(query)
@@ -151,6 +172,96 @@ class PortalHandler(SimpleHTTPRequestHandler):
             )
             return
         self._json({"ok": True, "values": values})
+
+    def _handle_opc_helper_values(self, payload: dict[str, object]) -> None:
+        try:
+            tags = [str(tag).strip() for tag in payload.get("tags", []) if str(tag).strip()]
+            timestamps = [
+                str(timestamp).strip()
+                for timestamp in payload.get("timestamps", [])
+            ]
+        except TypeError:
+            self._json(
+                {"ok": False, "error": "tags/timestamps는 배열이어야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if not tags:
+            self._json(
+                {"ok": False, "error": "helper 태그를 1개 이상 지정하세요"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if len(tags) > 10:
+            self._json(
+                {"ok": False, "error": "한 번에 최대 10개 helper 태그만 조회할 수 있습니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if len(timestamps) < 2:
+            self._json(
+                {"ok": False, "error": "시간축 timestamp가 2개 이상 필요합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if any(not timestamp for timestamp in timestamps):
+            self._json(
+                {"ok": False, "error": "빈 timestamp가 포함되어 있습니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        endpoint = str(payload.get("endpoint") or OpcReadConfig().endpoint)
+        namespace = int(payload.get("namespace") or OpcReadConfig().namespace)
+        chunk_minutes = int(payload.get("chunk_minutes") or OpcReadConfig().chunk_minutes)
+        helpers: list[dict[str, object]] = []
+        try:
+            parsed_timestamps = [parse_kst(timestamp) for timestamp in timestamps]
+            start = min(parsed_timestamps)
+            end = max(parsed_timestamps)
+            entries = []
+            for tag in tags:
+                prefix = tag.split(".", 1)[0].upper()
+                matches = [
+                    entry
+                    for entry in search_tags(self.index_dir, [prefix], tag, limit=1)
+                    if entry.fulltagname == tag
+                ]
+                if not matches:
+                    raise KeyError(tag)
+                entries.append(matches[0])
+            adapter = OpcUaReadAdapter(
+                OpcReadConfig(
+                    endpoint=endpoint,
+                    namespace=namespace,
+                    chunk_minutes=chunk_minutes,
+                )
+            )
+            adapter.connect()
+            try:
+                for index, entry in enumerate(entries, start=1):
+                    raw_rows = adapter.read_raw_history(entry, start, end)
+                    values = hold_sample(raw_rows, parsed_timestamps)
+                    helpers.append(
+                        {
+                            "id": f"helper_opc_{index:03d}",
+                            "column": f"__helper__opc_{index:03d}",
+                            "fulltagname": entry.fulltagname,
+                            "display_name": entry.description or entry.tagname or entry.fulltagname,
+                            "units": entry.units,
+                            "non_null_count": sum(value is not None for value in values),
+                            "values": values,
+                        }
+                    )
+            finally:
+                adapter.disconnect()
+        except Exception as exc:  # pragma: no cover - VDI diagnostic path
+            self._json(
+                {"ok": False, "error": f"OPC helper 값 조회 실패: {type(exc).__name__}: {exc}"},
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+            return
+        self._json({"ok": True, "helpers": helpers})
 
     def _json(self, payload: dict[str, object], *, status: HTTPStatus = HTTPStatus.OK) -> None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

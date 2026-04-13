@@ -35,7 +35,28 @@ def parse_kst(value: str | datetime) -> datetime:
     if isinstance(value, datetime):
         dt_value = value
     else:
-        dt_value = datetime.fromisoformat(value.strip())
+        raw = value.strip().replace("Z", "+00:00")
+        try:
+            dt_value = datetime.fromisoformat(raw)
+        except ValueError:
+            dt_value = None
+            for fmt in (
+                "%Y-%m-%d %H:%M:%S",
+                "%Y/%m/%d %H:%M:%S",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M",
+                "%m/%d/%y %H:%M",
+                "%m/%d/%Y %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d",
+            ):
+                try:
+                    dt_value = datetime.strptime(raw, fmt)
+                    break
+                except ValueError:
+                    continue
+            if dt_value is None:
+                raise ValueError(f"지원하지 않는 시간 형식입니다: {value}")
     if dt_value.tzinfo is None:
         return dt_value.replace(tzinfo=KST)
     return dt_value.astimezone(KST)

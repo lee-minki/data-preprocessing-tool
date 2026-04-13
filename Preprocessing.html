@@ -617,6 +617,53 @@ tr:hover td{background:var(--blue-light)}
         </div>
       </div>
 
+      <!-- OPC helper tags -->
+      <div class="sb-section">
+        <div class="sb-head" onclick="toggleSection(this)">
+          <span>🏷️</span> OPC 보조 태그
+          <i class="tip" data-tip="OPC 태그를 임시 helper 컬럼으로 붙여 조건/소팅에만 사용합니다.&#10;최종 저장 파일에는 helper 컬럼이 포함되지 않습니다.&#10;태그를 추가하지 않아도 원본 컬럼 조건만으로 전처리할 수 있습니다.">i</i>
+          <span class="sb-toggle">▼</span>
+        </div>
+        <div class="sb-body">
+          <div class="val-dl-desc" style="display:block;padding-top:0">
+            선택한 OPC 태그는 데이터 우측에 <b>임시 helper 컬럼</b>으로 붙고, 최종 저장 시 자동 제외됩니다.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <div class="sb-label">발전소</div>
+              <select id="opcPlant" onchange="app.onOpcPlantChange()" style="font-size:11px">
+                <option value="paju">파주 (PJ1/PJ2)</option>
+                <option value="ky">광양 (KY)</option>
+                <option value="hn">하남 (HN)</option>
+                <option value="wr">위례 (WR)</option>
+                <option value="yj">여주 (YJ)</option>
+              </select>
+            </div>
+            <div style="width:82px">
+              <div class="sb-label">prefix</div>
+              <select id="opcPrefix" style="font-size:11px">
+                <option value="PJ1">PJ1</option>
+                <option value="PJ2">PJ2</option>
+              </select>
+            </div>
+          </div>
+          <div class="sb-label">태그 검색</div>
+          <div style="display:flex;gap:4px;margin-bottom:6px">
+            <input id="opcQuery" type="text" placeholder="CE901 / LOAD / description" onkeydown="if(event.key==='Enter')app.searchOpcTags()" style="font-size:11px;flex:1">
+            <button type="button" class="chip-action-btn" onclick="app.searchOpcTags()">검색</button>
+          </div>
+          <div id="opcSearchResults" class="val-dl-desc" style="display:block;max-height:130px;overflow:auto;padding-top:4px">검색어를 입력하고 검색하세요.</div>
+          <div class="sb-label" style="margin-top:8px">선택된 helper 태그</div>
+          <div id="opcSelectedTags" class="val-dl-desc" style="display:block;max-height:100px;overflow:auto;padding-top:4px">선택된 태그 없음</div>
+          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+            <button type="button" class="chip-action-btn" onclick="app.attachSelectedOpcTags()">helper 컬럼 붙이기</button>
+            <button type="button" class="chip-action-btn" onclick="app.saveOpcFavorite()">즐겨찾기 저장</button>
+            <button type="button" class="chip-action-btn" onclick="app.loadOpcFavorite()">즐겨찾기 불러오기</button>
+          </div>
+          <div id="opcHelperStatus" style="font-size:10px;color:var(--gray400);margin-top:6px"></div>
+        </div>
+      </div>
+
       <!-- 필터 -->
       <div class="sb-section">
         <div class="sb-head" onclick="toggleSection(this)">
@@ -914,7 +961,7 @@ function arrStd(v){const m=arrMean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**
 
 /* ===== DATA PREPROCESSOR ===== */
 class DataPreprocessor{
-  constructor(){this.originalData=null;this.processedData=null;this.columns=[];this.numericColumns=[];this.dateColumn=null;this.stats={};this.removedRows=[]}
+  constructor(){this.originalData=null;this.processedData=null;this.columns=[];this.numericColumns=[];this.dateColumn=null;this.stats={};this.removedRows=[];this.helperColumns=[]}
   parseCSV(text){
     const lines=text.split(/\r?\n/).filter(l=>l.trim()!=='');
     if(lines.length<2)throw new Error('데이터가 부족합니다 (최소 헤더+1행)');
@@ -927,7 +974,7 @@ class DataPreprocessor{
     const{headers,rows}=this.parseCSV(text);
     const clean=headers.filter(h=>!h.startsWith('Unnamed'));this.columns=clean;
     this.originalData=rows.map(r=>{const o={};clean.forEach(h=>{o[h]=r[h]});return o});
-    this.processedData=this.originalData.map(r=>({...r}));this.removedRows=[];
+    this.processedData=this.originalData.map(r=>({...r}));this.removedRows=[];this.helperColumns=[];
     this._detectDateColumn();this._detectNumericColumns();
     this.stats.original_rows=this.originalData.length;this.stats.columns=this.columns.length;
     return{rows:this.originalData.length,cols:this.columns.length,numCols:this.numericColumns}
@@ -939,6 +986,25 @@ class DataPreprocessor{
       for(let i=0;i<s;i++){const v=this.originalData[i][col];if(v!==''&&v!==null&&v!==undefined&&!isNaN(Number(v)))n++}
       if(n>s*0.5){this.numericColumns.push(col);if(this.numericColumns.length>=30)break}}
     for(const d of[this.originalData,this.processedData])for(const row of d)for(const col of this.numericColumns){const v=row[col];row[col]=(v===''||v===null||v===undefined)?NaN:Number(v)}
+  }
+  isHelperColumn(col){return this.helperColumns.some(h=>h.column===col) || String(col).startsWith('__helper__')}
+  originalNumericColumns(){return this.numericColumns.filter(c=>!this.isHelperColumn(c))}
+  addHelperColumn(helper){
+    if(!this.originalData||!this.originalData.length)throw new Error('먼저 파일을 로드하세요');
+    const column=helper.column||`__helper__opc_${this.helperColumns.length+1}`;
+    const values=helper.values||[];
+    if(values.length!==this.originalData.length)throw new Error(`helper 값 길이가 원본 행 수와 다릅니다: ${values.length} != ${this.originalData.length}`);
+    if(!this.columns.includes(column))this.columns.push(column);
+    if(!this.numericColumns.includes(column))this.numericColumns.push(column);
+    this.helperColumns=this.helperColumns.filter(h=>h.column!==column);
+    this.helperColumns.push({...helper,column,output:false,role:'filter_sort_only'});
+    for(let i=0;i<this.originalData.length;i++){
+      const raw=values[i];
+      const value=(raw===null||raw===undefined||raw==='')?NaN:Number(raw);
+      this.originalData[i][column]=value;
+    }
+    this.processedData=this.originalData.map(r=>({...r}));
+    return column;
   }
   resetState(){this.removedRows=[];this.processedData=this.originalData.map(r=>({...r}));this.stats.original_rows=this.originalData.length;this.stats.filtered_rows=this.originalData.length;this.stats.filter_removed=0;this.stats.pre_removed=0;this.stats.outliers_removed=0;this.stats.rows_after_outlier=this.originalData.length}
   _mean(a){const v=a.filter(x=>!isNaN(x));return v.length?v.reduce((s,x)=>s+x,0)/v.length:0}
@@ -1091,6 +1157,15 @@ const portalApi = {
     const res = await fetch(`${PORTAL_API_BASE}/api/opc/current?${params.toString()}`);
     if (!res.ok) throw new Error(`OPC 현재값 조회 실패: HTTP ${res.status}`);
     return res.json();
+  },
+  async fetchHelperValues({tags = [], timestamps = [], endpoint = '', namespace = '', chunk_minutes = 60} = {}) {
+    const res = await fetch(`${PORTAL_API_BASE}/api/opc/helper-values`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tags, timestamps, endpoint, namespace, chunk_minutes})
+    });
+    if (!res.ok) throw new Error(`OPC helper 값 조회 실패: HTTP ${res.status}`);
+    return res.json();
   }
 };
 
@@ -1101,6 +1176,7 @@ const app={
   _chart:null,_distChart:null,_chartMode:'processed', // 'processed'|'original'|'validation'
   _hasProcessed:false,_activeDistCol:null,_valData:null,_valProcessed:null,
   _sortCol:null,_sortDir:1,_sourceFileName:'',_sourceBaseName:'processed_data',_pendingPresetName:null,_preservePendingOnNextFileDialog:false,
+  _opcSearchResults:[],_opcSelectedTags:[],
 
   init(){
     const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
@@ -1192,6 +1268,75 @@ const app={
     document.getElementById('tableSearch').value='';
     document.getElementById('fileInput').value='';
     document.getElementById('presetImportInput').value='';
+    this._opcSearchResults=[];this._opcSelectedTags=[];
+    if(document.getElementById('opcSearchResults'))document.getElementById('opcSearchResults').textContent='검색어를 입력하고 검색하세요.';
+    if(document.getElementById('opcSelectedTags'))document.getElementById('opcSelectedTags').textContent='선택된 태그 없음';
+    if(document.getElementById('opcHelperStatus'))document.getElementById('opcHelperStatus').textContent='';
+  },
+
+  /* ===== OPC HELPER TAGS ===== */
+  onOpcPlantChange(){
+    const map={paju:['PJ1','PJ2'],ky:['KY'],hn:['HN'],wr:['WR'],yj:['YJ']};
+    const plant=document.getElementById('opcPlant').value;
+    const prefixes=map[plant]||[];
+    document.getElementById('opcPrefix').innerHTML=prefixes.map(p=>`<option value="${p}">${p}</option>`).join('');
+  },
+  async searchOpcTags(){
+    const plant=document.getElementById('opcPlant').value;
+    const prefix=document.getElementById('opcPrefix').value;
+    const query=document.getElementById('opcQuery').value.trim();
+    const target=document.getElementById('opcSearchResults');
+    target.textContent='검색 중...';
+    try{
+      const result=await portalApi.searchTags({plant,prefix,query,limit:80});
+      if(!result.ok)throw new Error(result.error||'태그 검색 실패');
+      this._opcSearchResults=result.tags||[];
+      if(!this._opcSearchResults.length){target.textContent='검색 결과 없음';return}
+      target.innerHTML=this._opcSearchResults.map((tag,i)=>`<div style="display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0"><button type="button" class="chip-action-btn" onclick="app.selectOpcTag(${i})">추가</button><div style="min-width:0"><div style="font-weight:600;color:var(--gray700);word-break:break-all">${tag.fulltagname}</div><div style="color:var(--gray500)">${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}</div></div></div>`).join('');
+    }catch(err){target.textContent=err.message;this.toast(err.message,true)}
+  },
+  selectOpcTag(index){
+    const tag=this._opcSearchResults[index];if(!tag)return;
+    if(!this._opcSelectedTags.some(item=>item.fulltagname===tag.fulltagname))this._opcSelectedTags.push(tag);
+    this.renderOpcSelectedTags();
+  },
+  removeOpcSelectedTag(index){this._opcSelectedTags.splice(index,1);this.renderOpcSelectedTags()},
+  renderOpcSelectedTags(){
+    const el=document.getElementById('opcSelectedTags');
+    if(!this._opcSelectedTags.length){el.textContent='선택된 태그 없음';return}
+    el.innerHTML=this._opcSelectedTags.map((tag,i)=>`<div style="display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0"><button type="button" class="del-btn" onclick="app.removeOpcSelectedTag(${i})">✕</button><div style="min-width:0"><div style="font-weight:600;color:var(--gray700);word-break:break-all">${tag.fulltagname}</div><div style="color:var(--gray500)">${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}</div></div></div>`).join('');
+  },
+  async attachSelectedOpcTags(){
+    if(!this.dp.originalData||!this.dp.dateColumn){this.toast('먼저 시간 컬럼이 있는 XLSX 파일을 로드하세요',true);return}
+    if(!this._opcSelectedTags.length){this.toast('OPC helper 태그를 먼저 선택하세요',true);return}
+    const status=document.getElementById('opcHelperStatus');status.textContent='OPC helper 값 조회 중...';
+    const timestamps=this.dp.originalData.map(row=>row[this.dp.dateColumn]);
+    try{
+      const result=await portalApi.fetchHelperValues({tags:this._opcSelectedTags.map(t=>t.fulltagname),timestamps,chunk_minutes:60});
+      if(!result.ok)throw new Error(result.error||'OPC helper 조회 실패');
+      for(const helper of result.helpers||[])this.dp.addHelperColumn(helper);
+      this._initOutlierCols();this._initSimulationCols();this.currentPage=0;this.updateTable();
+      const summary=(result.helpers||[]).map(h=>`${h.display_name||h.fulltagname}: ${h.non_null_count}/${this.dp.originalData.length}`).join(' | ');
+      status.textContent=`helper 컬럼 추가 완료: ${summary}`;
+      this.log(`🏷️ OPC helper 컬럼 추가: ${summary}`);
+      this.toast('OPC helper 컬럼을 필터/소팅에 사용할 수 있습니다. 새 필터를 추가해 확인하세요.');
+    }catch(err){status.textContent=err.message;this.toast(err.message,true)}
+  },
+  saveOpcFavorite(){
+    if(!this._opcSelectedTags.length){this.toast('저장할 선택 태그가 없습니다',true);return}
+    const name=window.prompt('즐겨찾기 이름', 'OPC helper 태그 세트');if(!name)return;
+    const all=JSON.parse(localStorage.getItem('opc_tag_favorites')||'[]').filter(item=>item.name!==name);
+    all.unshift({name,tags:this._opcSelectedTags,created:new Date().toISOString()});
+    localStorage.setItem('opc_tag_favorites',JSON.stringify(all));
+    this.toast(`즐겨찾기 "${name}" 저장 완료`);
+  },
+  loadOpcFavorite(){
+    const all=JSON.parse(localStorage.getItem('opc_tag_favorites')||'[]');
+    if(!all.length){this.toast('저장된 OPC 즐겨찾기가 없습니다',true);return}
+    const name=window.prompt(`불러올 즐겨찾기 이름:
+${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
+    const fav=all.find(item=>item.name===name);if(!fav)return;
+    this._opcSelectedTags=fav.tags||[];this.renderOpcSelectedTags();this.toast(`즐겨찾기 "${fav.name}" 불러옴`);
   },
 
   /* ===== CHARTS ===== */
@@ -1219,12 +1364,12 @@ const app={
   },
 
   _initSimulationCols(){
-    const cols=this.dp.numericColumns;
+    const cols=this.dp.originalNumericColumns();
     document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
   },
 
   _initOutlierCols(){
-    const cols=this.dp.numericColumns;
+    const cols=this.dp.originalNumericColumns();
     document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
   },
 
@@ -1383,6 +1528,10 @@ const app={
   },
 
   /* ===== FILTERS ===== */
+  displayColumnName(col){
+    const helper=this.dp.helperColumns.find(h=>h.column===col);
+    return helper?`🏷️ ${helper.display_name||helper.fulltagname||col}`:col;
+  },
   getColStats(col){
     const data=this.dp.originalData;if(!data)return null;
     const vals=data.map(r=>r[col]).filter(v=>typeof v==='number'&&!isNaN(v));if(!vals.length)return null;
@@ -1411,7 +1560,7 @@ const app={
   addFilter(){
     const cols=this.dp.numericColumns;if(!cols.length){this.toast('먼저 파일을 로드하세요',true);return}
     const id=this.filterIdx++;const div=document.createElement('div');div.className='filter-row';div.id='filter-'+id;
-    const colOpts=cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    const colOpts=cols.map(c=>`<option value="${c}">${this.displayColumnName(c)}</option>`).join('');
     div.innerHTML=`<div class="filter-inputs">
       <select id="fcol-${id}" onchange="app.onFilterColChange(${id})" style="flex:2;min-width:0">${colOpts}</select>
       <select id="fop-${id}" onchange="app.onFilterOpChange(${id})" style="flex:0 0 62px;min-width:0">
@@ -1456,13 +1605,15 @@ const app={
   },
   updateTable(){
     const data=this._getDisplayData();if(!data.length)return;
-    const cols=this.dp.columns.slice(0,30);const total=data.length;const pages=Math.ceil(total/this.pageSize);
+    const baseCols=this.dp.columns.filter(c=>!this.dp.isHelperColumn(c)).slice(0,30);
+    const helperCols=this.dp.helperColumns.map(h=>h.column);
+    const cols=[...baseCols,...helperCols];const total=data.length;const pages=Math.ceil(total/this.pageSize);
     if(this.currentPage>=pages)this.currentPage=Math.max(0,pages-1);
     const start=this.currentPage*this.pageSize;const rows=data.slice(start,start+this.pageSize);
     document.getElementById('previewHead').innerHTML='<tr>'+cols.map(c=>{
       const arrow=this._sortCol===c?(this._sortDir>0?' ↑':' ↓'):'';
       const esc=c.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-      return`<th data-col="${esc}">${c}${arrow}</th>`;
+      return`<th data-col="${esc}">${this.displayColumnName(c)}${arrow}</th>`;
     }).join('')+'</tr>';
     document.getElementById('previewBody').innerHTML=rows.map(r=>'<tr>'+cols.map(c=>{let v=r[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))v='';return`<td title="${String(v)}">${String(v).slice(0,20)}</td>`}).join('')+'</tr>').join('');
     document.getElementById('tableMeta').textContent=`총 ${total.toLocaleString()}행`;
@@ -1672,8 +1823,8 @@ const app={
   saveFile(fmt='xlsx'){},
 
   /* ===== PRESETS ===== */
-  getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
-  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
+  getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),helper_tags:this._opcSelectedTags,validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
+  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
   showPresetSaveModal(){document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';document.getElementById('presetSaveModal').classList.add('show');document.getElementById('presetNameInput').focus()},
   showPresetLoadModal(){
     const list=this.pm.list();const el=document.getElementById('presetList');
