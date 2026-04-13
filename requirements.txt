@@ -1,5 +1,5 @@
 # 데이터 전처리 프로그램 의존성
-# Python 3.8 이상 필요
+# Python 3.11 권장 (GitHub Actions도 3.11 사용)
 
 pandas>=1.5.0
 numpy>=1.21.0

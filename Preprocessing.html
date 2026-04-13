@@ -358,10 +358,10 @@ tr:hover td{background:var(--blue-light)}
         </div>
         <div class="dropzone" id="dropzone">
           <div class="dz-icon">☁️</div>
-          <div class="dz-text">XLSX / XLS 파일을 드래그하거나 클릭해 불러오세요</div>
+          <div class="dz-text">XLSX 파일을 드래그하거나 클릭해 불러오세요</div>
           <button class="dz-btn" type="button">파일 선택</button>
           <div class="dz-format">브라우저 로컬 처리 · 서버 업로드 없음</div>
-          <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+          <input type="file" id="fileInput" accept=".xlsx" hidden>
         </div>
       </div>
 
@@ -439,7 +439,7 @@ tr:hover td{background:var(--blue-light)}
         <span class="route-tag">실행</span>
         <h3>업로드 카드로 복귀</h3>
         <p>어디까지 내려가도 상단 업로드 영역으로 돌아와 바로 파일을 올릴 수 있습니다.</p>
-        <span class="route-meta">XLSX / XLS 지원</span>
+        <span class="route-meta">XLSX 지원</span>
       </a>
       <a class="route-card" href="program_intro.html">
         <span class="route-tag">배경</span>
@@ -1109,7 +1109,7 @@ const app={
   handleFile(file){
     if(typeof XLSX==='undefined'){this.toast('Excel 라이브러리를 불러오지 못했습니다. 서버 배포 파일과 assets/vendor 폴더를 확인하세요.',true);return}
     const ext=file.name.split('.').pop().toLowerCase();
-    if(!['xlsx','xls'].includes(ext)){this.toast('XLSX, XLS 파일만 지원합니다',true);return}
+    if(ext!=='xlsx'){this.toast('XLSX 파일만 지원합니다',true);return}
     const reader=new FileReader();
     reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const csv=XLSX.utils.sheet_to_csv(ws);let info;try{info=this.dp.loadData(csv)}catch(err){this.toast('파일 로드 실패: '+err.message,true);return}this._onFileLoaded(file,info)}catch(err){this.toast('Excel 로드 실패: '+err.message,true)}};
     reader.readAsArrayBuffer(file);

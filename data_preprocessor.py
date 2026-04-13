@@ -93,8 +93,6 @@ class DataPreprocessor:
 
             if path.suffix.lower() == ".xlsx":
                 self.original_df = pd.read_excel(file_path, engine="openpyxl")
-            elif path.suffix.lower() == ".xls":
-                self.original_df = pd.read_excel(file_path, engine="xlrd")
             elif path.suffix.lower() == ".csv":
                 # 인코딩 자동 감지 시도
                 try:
@@ -160,7 +158,7 @@ class DataPreprocessor:
         signature = self._read_file_signature(path)
         message = error_message.lower()
 
-        # 보호되었거나 실제 xls/기타 형식인 경우 xlsx(zip) 시그니처가 아닐 수 있습니다.
+        # 보호되었거나 실제 형식이 다른 경우 xlsx(zip) 시그니처가 아닐 수 있습니다.
         if signature.startswith(self.OLE_SIGNATURE):
             return True
 
@@ -184,13 +182,6 @@ class DataPreprocessor:
                 "파일 로드 실패: 문서보안(AIP/DRM)이 적용되었거나 보안 해제가 끝나지 않은 Excel 파일로 보입니다.\n"
                 "파일 탐색기에서 대상 파일을 우클릭한 뒤 '문서보안 해제'를 완료한 후 다시 시도해주세요.\n"
                 "보안 해제 후에도 동일하면 파일 확장자(.xlsx)와 실제 파일 형식을 확인해주세요.\n"
-                f"원본 오류: {raw_message}"
-            )
-
-        if suffix == ".xls" and isinstance(error, ImportError):
-            return (
-                "파일 로드 실패: 구형 Excel(.xls) 파일을 열려면 xlrd 패키지가 필요합니다.\n"
-                "현재 실행 환경에서는 .xls 지원이 포함되지 않았을 수 있습니다. .xlsx로 변환 후 다시 시도해주세요.\n"
                 f"원본 오류: {raw_message}"
             )
 
@@ -508,7 +499,7 @@ class DataPreprocessor:
             except (ValueError, TypeError):
                 pass
 
-        if output_path.suffix.lower() in [".xlsx", ".xls"]:
+        if output_path.suffix.lower() == ".xlsx":
             from openpyxl.utils.dataframe import dataframe_to_rows
             from openpyxl import Workbook
 
@@ -1243,7 +1234,7 @@ class DataPreprocessor:
     def get_summary(self) -> str:
         """처리 결과 요약 문자열 반환"""
         lines = []
-        lines.append(f"📊 전처리 결과 요약")
+        lines.append("📊 전처리 결과 요약")
         lines.append(f"{'─' * 40}")
 
         if "original_rows" in self.stats:

@@ -5,11 +5,17 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QColor, QFont, QPalette
-from PyQt5.QtWidgets import QApplication, QDialog, QGroupBox, QListWidget, QStyleFactory
+from PyQt5.QtCore import QTimer  # noqa: E402
+from PyQt5.QtGui import QColor, QFont, QPalette  # noqa: E402
+from PyQt5.QtWidgets import (  # noqa: E402
+    QApplication,
+    QDialog,
+    QGroupBox,
+    QListWidget,
+    QStyleFactory,
+)
 
-from gui_app_mac import DataPreprocessorMac
+from gui_app_mac import DataPreprocessorMac  # noqa: E402
 
 
 OUT_DIR = Path(__file__).resolve().parent / "screenshots"

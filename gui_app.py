@@ -14,6 +14,9 @@ import threading
 import time
 from typing import List, Dict, Optional
 from datetime import datetime
+
+import pandas as pd
+
 from data_preprocessor import DataPreprocessor
 from preset_manager import PresetManager
 from version import __version__, APP_NAME
@@ -677,8 +680,8 @@ class DataPreprocessorApp:
         file_path = filedialog.askopenfilename(
             title="데이터 파일 선택",
             filetypes=[
-                ("Excel/CSV 파일", "*.xlsx *.xls *.csv"),
-                ("Excel 파일", "*.xlsx *.xls"),
+                ("Excel/CSV 파일", "*.xlsx *.csv"),
+                ("Excel 파일", "*.xlsx"),
                 ("CSV 파일", "*.csv"),
                 ("모든 파일", "*.*"),
             ],
@@ -826,14 +829,20 @@ class DataPreprocessorApp:
         if self.is_processing:
             return
 
+        settings = self._create_settings()
+        self._set_processing_state(True)
+
         # 백그라운드 스레드에서 실행
-        thread = threading.Thread(target=self._run_preprocessing, daemon=True)
+        thread = threading.Thread(
+            target=self._run_preprocessing, args=(settings,), daemon=True
+        )
         thread.start()
 
-    def _run_preprocessing(self):
+    def _run_preprocessing(self, settings: Optional[Dict] = None):
         """전처리 실행"""
-        self._set_processing_state(True)
         start_time = time.time()
+        settings = settings or self._create_settings()
+        time_settings = settings.get("time", {})
 
         try:
             total_rows = len(self.preprocessor.original_df)
@@ -848,11 +857,7 @@ class DataPreprocessorApp:
             if not self.is_processing:
                 return
 
-            filters = []
-            for ff in self.filter_frames:
-                f = ff.get_filter()
-                if f:
-                    filters.append(f)
+            filters = settings.get("filters", [])
 
             self._update_progress(10, "필터링 적용 중...", time.time() - start_time)
 
@@ -875,11 +880,12 @@ class DataPreprocessorApp:
                 return
 
             # 2. 이상값 처리 (60%)
-            if self.apply_outlier.get():
+            outlier_settings = settings.get("outlier", {})
+            if outlier_settings.get("apply", True):
                 self._update_progress(45, "이상값 분석 중...", time.time() - start_time)
 
                 success, msg = self.preprocessor.remove_outliers(
-                    method=self.outlier_method.get(), action="drop"
+                    method=outlier_settings.get("method", "2.5sigma"), action="drop"
                 )
                 self.root.after(
                     0, lambda m=msg, s=success: self._log(f"{'✅' if s else '❌'} {m}")
@@ -890,11 +896,11 @@ class DataPreprocessorApp:
             if not self.is_processing:
                 return
 
-            if self.apply_time_normalize.get():
+            if time_settings.get("normalize", False):
                 self._update_progress(80, "시간 정규화 중...", time.time() - start_time)
 
                 try:
-                    interval = int(self.interval_entry.get())
+                    interval = int(time_settings.get("interval") or 2)
                     success, msg = self.preprocessor.normalize_timestamps(interval)
                     self.root.after(
                         0,
@@ -907,12 +913,12 @@ class DataPreprocessorApp:
                         0, lambda e=e: self._log(f"⚠️ 시간 정규화 실패: {str(e)}")
                     )
 
-            if self.apply_time_realign.get():
+            if time_settings.get("realign", False):
                 self._update_progress(90, "시간 재정렬 중...", time.time() - start_time)
 
                 try:
-                    start_time_str = self.start_time_entry.get()
-                    interval = int(self.interval_entry.get())
+                    start_time_str = time_settings.get("start_time", "")
+                    interval = int(time_settings.get("interval") or 2)
 
                     success, msg = self.preprocessor.realign_timestamps(
                         start_time_str, interval
@@ -925,7 +931,7 @@ class DataPreprocessorApp:
                     )
                 except Exception as e:
                     self.root.after(
-                        0, lambda: self._log(f"⚠️ 시간 재정렬 실패: {str(e)}")
+                        0, lambda e=e: self._log(f"⚠️ 시간 재정렬 실패: {str(e)}")
                     )
 
             self._update_progress(90, "결과 정리 중...", time.time() - start_time)
@@ -950,10 +956,10 @@ class DataPreprocessorApp:
 
         except Exception as e:
             self._update_progress(0, f"오류 발생: {str(e)}")
-            self.root.after(0, lambda: self._log(f"❌ 오류: {str(e)}"))
+            self.root.after(0, lambda e=e: self._log(f"❌ 오류: {str(e)}"))
 
         finally:
-            self._set_processing_state(False)
+            self.root.after(0, lambda: self._set_processing_state(False))
 
     def _save_file(self):
         """결과 저장"""
@@ -1241,8 +1247,6 @@ class DataPreprocessorApp:
 
     def _manage_presets(self):
         """프리셋 관리 다이얼로그"""
-        presets = self.preset_manager.list_presets()
-
         dialog = tk.Toplevel(self.root)
         dialog.title("프리셋 관리")
         dialog.geometry("600x400")
@@ -1418,8 +1422,8 @@ class DataPreprocessorApp:
             file_path = filedialog.askopenfilename(
                 title="데이터 파일 선택",
                 filetypes=[
-                    ("Excel/CSV 파일", "*.xlsx *.xls *.csv"),
-                    ("Excel 파일", "*.xlsx *.xls"),
+                    ("Excel/CSV 파일", "*.xlsx *.csv"),
+                    ("Excel 파일", "*.xlsx"),
                     ("CSV 파일", "*.csv"),
                     ("모든 파일", "*.*"),
                 ],
@@ -1915,7 +1919,7 @@ class DataPreprocessorApp:
 
                 # 플롯
                 ax.plot(
-                    list(range(len(plot_data))),
+                    list(x_data[: len(plot_data)]),
                     plot_data.values,
                     color=color,
                     linewidth=0.8,
@@ -2008,14 +2012,9 @@ class DataPreprocessorApp:
             pady=10
         )
 
-
-# pandas import for preview
-import pandas as pd
-
-
 def main():
     root = tk.Tk()
-    app = DataPreprocessorApp(root)
+    _app = DataPreprocessorApp(root)
     root.mainloop()
 
 

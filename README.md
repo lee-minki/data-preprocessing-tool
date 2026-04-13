@@ -30,7 +30,7 @@ python gui_app_mac.py
 
 ## 주요 기능
 
-- **파일 로드**: Excel(`.xlsx`, `.xls`) / CSV(`.csv`) 지원
+- **파일 로드**: Excel(`.xlsx`) / CSV(`.csv`) 지원
 - **CSV 인코딩 자동 감지**: UTF-8, CP949, EUC-KR 순으로 시도
 - **다중 조건 필터링**: 숫자 컬럼 기준 AND 조건 결합
   - 연산자: `>=`, `<=`, `>`, `<`, `=`, `!=`, `range`
@@ -45,7 +45,7 @@ python gui_app_mac.py
   - `*_prepro.xlsx`
   - `*_prepro_with_valid.xlsx`
   - `*_valid.xlsx`
-- **시뮬레이션 데이터 생성**: 정상 → 전환 → 비정상 구간 데이터 생성
+- **시뮬레이션 생성 코어**: `data_preprocessor.py`에 관련 함수가 남아 있지만, 현재 데스크톱 GUI의 기본 사용자 흐름은 Validation 생성 중심입니다.
 - **도움말/단축키**: F1 매뉴얼, Ctrl+O/Ctrl+S/Ctrl+P/Ctrl+T 지원
 
 ## 권장 작업 흐름
@@ -74,9 +74,14 @@ python gui_app.py
 # macOS GUI
 python gui_app_mac.py
 
-# 시간 정규화 테스트
+# 시간 정규화 스모크 테스트
 python test_time_norm.py
+
+# 정적 점검
+python -m ruff check .
 ```
+
+`test_time_norm.py`는 pandas 초 단위 빈도 표기를 `61s`로 사용해 FutureWarning 없이 실행됩니다.
 
 ## 로컬 빌드
 
@@ -132,7 +137,10 @@ data-preprocessing-tool/
 ├── gui_app_mac.py                   # macOS GUI (PyQt5)
 ├── preset_manager.py                # 프리셋 저장/불러오기/내보내기
 ├── version.py                       # 버전/앱 정보
-├── MANUAL.md                        # 사용자 매뉴얼
+├── MANUAL.md                        # 데스크톱 GUI 사용자 매뉴얼
+├── MANUAL.html                      # 번들 도움말 HTML
+├── Preprocessing.html               # 최신 웹 UI 프로토타입
+├── web_app.html                     # 레거시 단일 HTML 웹 프로토타입
 ├── CHANGELOG.md                     # 변경 이력
 ├── requirements.txt                 # 런타임 의존성
 ├── build_requirements.txt           # 빌드 의존성
@@ -175,8 +183,12 @@ Date,AMBIENT_TEMP,FAN_CURRENT,GEARBOX_OIL_TEMP
 
 ## 관련 문서
 
-- 사용자 매뉴얼: `MANUAL.md`
+- 데스크톱 사용자 매뉴얼: `MANUAL.md`
+- 번들 도움말 HTML: `MANUAL.html`
 - 변경 이력: `CHANGELOG.md`
+- 웹 전환 메모: `WEB_PLAN.md`
+- OPC 보조 태그 조건 설계: `OPC_HELPER_TAG_DESIGN.md`
+- 웹 리디자인 플랜/현황: `WEB_REDESIGN_PLAN.md`
 
 ## 라이선스
 

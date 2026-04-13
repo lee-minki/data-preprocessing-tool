@@ -7,12 +7,12 @@
 
 import sys
 import os
-import threading
 import time
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
 
+import pandas as pd
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -34,14 +34,9 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QDialog,
-    QDialogButtonBox,
     QListWidget,
-    QMenuBar,
-    QMenu,
     QAction,
-    QScrollArea,
     QFrame,
-    QSplitter,
     QHeaderView,
     QSpinBox,
     QDoubleSpinBox,
@@ -170,9 +165,10 @@ class ProcessingThread(QThread):
     log_message = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
 
-    def __init__(self, app, parent=None):
+    def __init__(self, app, settings: Dict, parent=None):
         super().__init__(parent)
         self.app = app
+        self.settings = settings
         self.is_cancelled = False
 
     def run(self):
@@ -181,16 +177,13 @@ class ProcessingThread(QThread):
             start_time = time.time()
 
             self.log_message.emit("\n" + "=" * 50)
-            self.log_message.emit(f"🔄 전처리 시작...")
+            self.log_message.emit("🔄 전처리 시작...")
+            self.app.preprocessor.reset_processing_state()
 
             # 1. 필터링
             self.progress_updated.emit(10, "필터링 적용 중...")
 
-            filters = []
-            for fw in self.app.filter_widgets:
-                f = fw.get_filter()
-                if f:
-                    filters.append(f)
+            filters = self.settings.get("filters", [])
 
             if filters:
                 success, msg = self.app.preprocessor.apply_filters(filters)
@@ -202,33 +195,34 @@ class ProcessingThread(QThread):
                 self.log_message.emit("ℹ️ 필터 없음 - 전체 데이터 사용")
 
             if self.is_cancelled:
+                self.finished_signal.emit(False)
                 return
 
             # 2. 이상값 처리
             self.progress_updated.emit(40, "이상값 처리 중...")
 
-            if self.app.apply_outlier.isChecked():
-                method = self.app.outlier_method_group.checkedButton().property("value")
-                action = "drop" if self.app.outlier_drop.isChecked() else "nan"
-
+            outlier_settings = self.settings.get("outlier", {})
+            if outlier_settings.get("apply", True):
                 success, msg = self.app.preprocessor.remove_outliers(
-                    method=method, action=action
+                    method=outlier_settings.get("method", "2.5sigma"), action="drop"
                 )
                 self.log_message.emit(f"{'✅' if success else '❌'} {msg}")
 
             if self.is_cancelled:
+                self.finished_signal.emit(False)
                 return
 
             self.progress_updated.emit(75, "시간 처리 중...")
 
-            if self.app.apply_time_normalize.isChecked():
-                interval = int(self.app.interval_edit.text() or 2)
+            time_settings = self.settings.get("time", {})
+            if time_settings.get("normalize", False):
+                interval = int(time_settings.get("interval") or 2)
                 success, msg = self.app.preprocessor.normalize_timestamps(interval)
                 self.log_message.emit(f"{'✅' if success else '❌'} {msg}")
 
-            if self.app.apply_time_realign.isChecked():
-                start_time_str = self.app.start_time_edit.text()
-                interval = int(self.app.interval_edit.text() or 2)
+            if time_settings.get("realign", False):
+                start_time_str = time_settings.get("start_time", "")
+                interval = int(time_settings.get("interval") or 2)
                 success, msg = self.app.preprocessor.realign_timestamps(
                     start_time_str, interval
                 )
@@ -430,9 +424,7 @@ class DataPreprocessorMac(QMainWindow):
         action_layout.addWidget(QLabel("처리:"))
         self.outlier_drop = QRadioButton("행 전체 삭제")
         self.outlier_drop.setChecked(True)
-        self.outlier_nan = QRadioButton("해당 값만 NaN으로")
         action_layout.addWidget(self.outlier_drop)
-        action_layout.addWidget(self.outlier_nan)
         action_layout.addStretch()
         outlier_layout.addLayout(action_layout)
 
@@ -490,6 +482,10 @@ class DataPreprocessorMac(QMainWindow):
         self.process_btn.clicked.connect(self._run_preprocessing)
         btn_layout.addWidget(self.process_btn)
 
+        self.validation_btn = QPushButton("🧪 Validation 데이터 생성")
+        self.validation_btn.clicked.connect(self._show_simulation_dialog)
+        btn_layout.addWidget(self.validation_btn)
+
         self.save_btn = QPushButton("💾 결과 저장")
         self.save_btn.clicked.connect(self._save_file)
         btn_layout.addWidget(self.save_btn)
@@ -520,7 +516,7 @@ class DataPreprocessorMac(QMainWindow):
             self,
             "데이터 파일 선택",
             "",
-            "Excel/CSV 파일 (*.xlsx *.xls *.csv);;모든 파일 (*.*)",
+            "Excel/CSV 파일 (*.xlsx *.csv);;Excel 파일 (*.xlsx);;CSV 파일 (*.csv);;모든 파일 (*.*)",
         )
 
         if not file_path:
@@ -578,11 +574,7 @@ class DataPreprocessorMac(QMainWindow):
 
         for i, row in df.iterrows():
             for j, col in enumerate(columns):
-                val = (
-                    str(row[col])
-                    if not (hasattr(row[col], "__iter__") and str(row[col]) == "nan")
-                    else ""
-                )
+                val = "" if pd.isna(row[col]) else str(row[col])
                 self.preview_table.setItem(i, j, QTableWidgetItem(val[:20]))
 
         self.preview_table.horizontalHeader().setSectionResizeMode(
@@ -620,9 +612,11 @@ class DataPreprocessorMac(QMainWindow):
             return
 
         self.process_btn.setEnabled(False)
+        self.validation_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
 
-        self.processing_thread = ProcessingThread(self)
+        settings = self._create_settings()
+        self.processing_thread = ProcessingThread(self, settings)
         self.processing_thread.progress_updated.connect(self._on_progress)
         self.processing_thread.log_message.connect(self._log)
         self.processing_thread.finished_signal.connect(self._on_finished)
@@ -636,6 +630,7 @@ class DataPreprocessorMac(QMainWindow):
     def _on_finished(self, success):
         """처리 완료"""
         self.process_btn.setEnabled(True)
+        self.validation_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
         self._update_preview()
 
@@ -761,7 +756,7 @@ class DataPreprocessorMac(QMainWindow):
                 "method": self.outlier_method_group.checkedButton().property("value")
                 if self.outlier_method_group.checkedButton()
                 else "2.5sigma",
-                "action": "drop" if self.outlier_drop.isChecked() else "nan",
+                "action": "drop",
             },
             "time": {
                 "normalize": self.apply_time_normalize.isChecked(),
@@ -800,10 +795,7 @@ class DataPreprocessorMac(QMainWindow):
         # 이상값 처리 설정
         outlier = settings.get("outlier", {})
         self.apply_outlier.setChecked(outlier.get("apply", True))
-        if outlier.get("action") == "nan":
-            self.outlier_nan.setChecked(True)
-        else:
-            self.outlier_drop.setChecked(True)
+        self.outlier_drop.setChecked(True)
 
         # 이상값 방법 설정
         target_method = outlier.get("method", "2.5sigma")
