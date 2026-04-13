@@ -77,7 +77,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802 - stdlib override
         parsed = urlparse(self.path)
         if parsed.path == "/api/opc/helper-values":
-            self._handle_opc_helper_values(self._read_json_body())
+            try:
+                payload = self._read_json_body()
+            except ValueError as exc:
+                self._json(
+                    {"ok": False, "error": str(exc)},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            self._handle_opc_helper_values(payload)
             return
         self._json(
             {"ok": False, "error": "지원하지 않는 API 경로입니다"},
@@ -103,7 +111,14 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
-        limit = int((query.get("limit", ["100"])[0] or "100"))
+        try:
+            limit = int((query.get("limit", ["100"])[0] or "100"))
+        except ValueError:
+            self._json(
+                {"ok": False, "error": "limit은 숫자여야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
         search_query = query.get("q", [""])[0]
         try:
             results = search_tags(
@@ -142,7 +157,14 @@ class PortalHandler(SimpleHTTPRequestHandler):
             )
             return
         endpoint = query.get("endpoint", [OpcReadConfig().endpoint])[0]
-        namespace = int(query.get("namespace", [str(OpcReadConfig().namespace)])[0])
+        try:
+            namespace = int(query.get("namespace", [str(OpcReadConfig().namespace)])[0])
+        except ValueError:
+            self._json(
+                {"ok": False, "error": "namespace는 숫자여야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
         entries = []
         try:
             for tag in tags:
@@ -212,8 +234,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
             return
 
         endpoint = str(payload.get("endpoint") or OpcReadConfig().endpoint)
-        namespace = int(payload.get("namespace") or OpcReadConfig().namespace)
-        chunk_minutes = int(payload.get("chunk_minutes") or OpcReadConfig().chunk_minutes)
+        try:
+            namespace = int(payload.get("namespace") or OpcReadConfig().namespace)
+            chunk_minutes = int(payload.get("chunk_minutes") or OpcReadConfig().chunk_minutes)
+        except (TypeError, ValueError):
+            self._json(
+                {"ok": False, "error": "namespace/chunk_minutes는 숫자여야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
         helpers: list[dict[str, object]] = []
         try:
             parsed_timestamps = [parse_kst(timestamp) for timestamp in timestamps]
