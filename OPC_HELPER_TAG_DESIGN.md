@@ -511,3 +511,67 @@ GET /api/sessions/{session_id}/download
 - 공용 즐겨찾기는 여러 사용자가 읽을 수 있다.
 - 태그 검색은 발전소 prefix별로 제한된다.
 - 장구간 OPC 조회가 무제한 prefetch를 하지 않는다.
+
+---
+
+## 13. 현재 추가된 실행 골격
+
+이번 설계 기준에 맞춰 아래 독립 실행 골격을 추가했다.
+
+### 13.1 태그 인덱스 생성/검색
+
+```bash
+# RiMS tags.CSV에서 발전소 prefix별 JSONL 인덱스 생성
+python3 -m preprocessing_portal.tag_index build \
+  --tags-csv /path/to/tags.CSV \
+  --output-dir opc_assets/tag_index
+
+# 인덱스 검색 예시
+python3 -m preprocessing_portal.tag_index search \
+  --index-dir opc_assets/tag_index \
+  --prefix PJ2 \
+  --query CE901 \
+  --limit 5
+```
+
+현재 저장소에는 아래 인덱스가 생성되어 있다.
+
+```text
+opc_assets/tag_index/PJ1.jsonl
+opc_assets/tag_index/PJ2.jsonl
+opc_assets/tag_index/KY.jsonl
+opc_assets/tag_index/HN.jsonl
+opc_assets/tag_index/WR.jsonl
+opc_assets/tag_index/YJ.jsonl
+opc_assets/tag_index/manifest.json
+```
+
+### 13.2 로컬/포털 backend skeleton
+
+```bash
+python3 -m preprocessing_portal.server \
+  --host 127.0.0.1 \
+  --port 8765 \
+  --index-dir opc_assets/tag_index
+```
+
+확인 URL:
+
+```text
+http://127.0.0.1:8765/Preprocessing.html
+http://127.0.0.1:8765/api/health
+http://127.0.0.1:8765/api/tags?plant=paju&q=CE901&limit=5
+```
+
+### 13.3 VDI OPC 현재값 probe
+
+VDI에서 `opcua` 패키지가 설치되어 있고 OPC망 접근이 가능할 때:
+
+```bash
+python3 -m preprocessing_portal.opc_adapter \
+  --index-dir opc_assets/tag_index \
+  --current \
+  --tag "PJ2.2C.21MBY10CE901////XQ91"
+```
+
+이 명령은 저장소 내부 tag index에서 `utagid`를 찾고 `ns=<namespace>;i=<utagid>` NodeId로 현재값을 조회한다.

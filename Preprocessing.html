@@ -1070,6 +1070,30 @@ class PresetManager{
   import(preset){if(!preset||typeof preset!=='object')throw new Error('잘못된 프리셋 형식입니다');const name=String(preset.name||'가져온 프리셋').trim();if(!name)throw new Error('프리셋 이름이 없습니다');this.save(name,preset.settings||{},String(preset.description||''));return name}
 }
 
+/* ===== PORTAL BACKEND API HOOKS ===== */
+const PORTAL_API_BASE = window.PREPROCESSING_PORTAL_API_BASE || '';
+const portalApi = {
+  async searchTags({plant = '', prefix = '', query = '', limit = 100} = {}) {
+    const params = new URLSearchParams();
+    if (plant) params.set('plant', plant);
+    if (prefix) params.append('prefix', prefix);
+    if (query) params.set('q', query);
+    params.set('limit', String(limit));
+    const res = await fetch(`${PORTAL_API_BASE}/api/tags?${params.toString()}`);
+    if (!res.ok) throw new Error(`태그 검색 실패: HTTP ${res.status}`);
+    return res.json();
+  },
+  async readCurrentTags({tags = [], endpoint = '', namespace = ''} = {}) {
+    const params = new URLSearchParams();
+    for (const tag of tags) params.append('tag', tag);
+    if (endpoint) params.set('endpoint', endpoint);
+    if (namespace) params.set('namespace', String(namespace));
+    const res = await fetch(`${PORTAL_API_BASE}/api/opc/current?${params.toString()}`);
+    if (!res.ok) throw new Error(`OPC 현재값 조회 실패: HTTP ${res.status}`);
+    return res.json();
+  }
+};
+
 /* ===== APP CONTROLLER ===== */
 const app={
   dp:new DataPreprocessor(),pm:new PresetManager(),filterIdx:0,

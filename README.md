@@ -127,6 +127,28 @@ macOS 패키징용 spec 파일이 포함되어 있습니다.
 - `DataPreprocessor.spec`
 - `gui_app_mac.py`
 
+
+## 웹/포털 개발 미리보기
+
+OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같은 API 계약으로 가져가는 방향입니다. 현재 추가된 최소 backend skeleton은 아래처럼 실행할 수 있습니다.
+
+```bash
+# 태그 검색/정적 파일 확인용 로컬 backend
+python3 -m preprocessing_portal.server --host 127.0.0.1 --port 8765 --index-dir opc_assets/tag_index
+
+# 브라우저에서 열기
+# http://127.0.0.1:8765/Preprocessing.html
+
+# 태그 검색 API 예시
+# http://127.0.0.1:8765/api/tags?plant=paju&q=CE901&limit=5
+```
+
+VDI OPC 현재값 probe 예시:
+
+```bash
+python3 -m preprocessing_portal.opc_adapter --index-dir opc_assets/tag_index --current --tag "PJ2.2C.21MBY10CE901////XQ91"
+```
+
 ## 파일 구조
 
 ```text

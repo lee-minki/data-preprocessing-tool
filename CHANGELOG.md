@@ -15,6 +15,7 @@
 - 데스크톱 UI에서 별도 시뮬레이션 생성 메뉴가 노출되지 않는다는 현재 상태를 명시
 - `test_time_norm.py`의 pandas 초 단위 빈도 표기를 `61s`로 바꿔 FutureWarning 제거
 - 포털 서버형/로컬 패키징형을 모두 고려한 OPC helper tag 조건 설계 문서 추가
+- 독립 실행용 `preprocessing_portal` 태그 검색/backend 골격과 발전소 prefix별 OPC tag index 추가
 
 ## v1.7.0 (2026-03-12)
 ### 추가

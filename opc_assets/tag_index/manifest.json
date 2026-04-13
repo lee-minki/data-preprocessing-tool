@@ -1,0 +1,21 @@
+{
+  "source": "/Users/mk/worksapces/RiMSproj_SD_Monitoring_System/src/narae_rims_ax/data/tags.CSV",
+  "format": "jsonl",
+  "prefixes": {
+    "PJ1": 8667,
+    "PJ2": 7641,
+    "KY": 17432,
+    "HN": 30542,
+    "WR": 10869,
+    "YJ": 9656
+  },
+  "fields": [
+    "fulltagname",
+    "plant",
+    "sourcename",
+    "tagname",
+    "utagid",
+    "description",
+    "units"
+  ]
+}
