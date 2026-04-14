@@ -143,6 +143,15 @@ Finder로 프로젝트 전체를 압축하면 `.venv/bin/python*` 같은 macOS �
 
 OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같은 API 계약으로 가져가는 방향입니다. 현재 추가된 최소 backend skeleton은 아래처럼 실행할 수 있습니다.
 
+웹 UI 기준 주요 동작:
+
+- 필터는 조건에 맞는 행만 남깁니다. 예: `= 1`은 1인 행만 남기고, `!= 1`은 1이 아닌 행만 남깁니다.
+- OPC helper 태그는 업로드 XLSX의 좌측 첫 시간 컬럼에 맞춰 내부 helper 컬럼으로 붙고, 최종 다운로드에는 포함되지 않습니다.
+- 시간 재정렬 시작 시간은 2분 배수로 자동 보정됩니다. 예: `10:05:00` → `10:04:00`.
+- 헤더가 비어 있는 열은 로드 시 제외되어 Simulation/다운로드 파일에 빈 헤더 열이 따라붙지 않습니다.
+- 이상값 처리 대상 컬럼은 기본 해제 상태이며, 이상값 처리가 켜져 있으면 1개 이상 선택해야 전처리가 실행됩니다.
+- 이상값 처리 대상 컬럼을 선택하면 Simulation 대상도 자동으로 같은 컬럼이 체크됩니다. 이후 Simulation 대상은 사용자가 직접 수정할 수 있습니다.
+
 ```bash
 # 태그 검색/정적 파일 확인용 로컬 backend
 python3 -m preprocessing_portal.server --host 127.0.0.1 --port 8765 --index-dir opc_assets/tag_index

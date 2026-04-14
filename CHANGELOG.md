@@ -18,6 +18,7 @@
 - 독립 실행용 `preprocessing_portal` 태그 검색/backend 골격과 발전소 prefix별 OPC tag index 추가
 - `Preprocessing.html`에 OPC 보조 태그 검색/선택/helper 컬럼 부착 UI와 API hook 연결
 - OPC helper 조회 기준을 업로드 XLSX의 좌측 첫 시간 컬럼으로 고정하고 시간 정규화/재정렬 기본 체크 상태를 명시
+- 웹 필터 `!=`, 필터 도움말, 이상값 대상 기본 해제/Simulation 자동 동기화, 2분 배수 시작시간 보정, 빈 헤더 열 제거 동작을 문서화
 - Finder 전체 압축 대신 사용할 VDI 테스트용 zip 생성 스크립트 추가
 
 ## v1.7.0 (2026-03-12)

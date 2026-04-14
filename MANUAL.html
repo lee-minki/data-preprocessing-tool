@@ -295,7 +295,7 @@
           </div>
           <div class="danger">
             <strong>쉽게 구분하는 법</strong>
-            <p><strong>시간 정규화</strong>는 “틀어진 시간을 바로잡는 것”, <strong>시간 재정렬</strong>은 “시간표 자체를 새로 만드는 것”입니다.</p>
+            <p><strong>시간 정규화</strong>는 “틀어진 시간을 바로잡는 것”, <strong>시간 재정렬</strong>은 “시간표 자체를 새로 만드는 것”입니다. 웹 UI에서는 시작 시간이 홀수 분이면 직전 2분 배수로 자동 보정됩니다. 예: <code>10:05:00 → 10:04:00</code>.</p>
           </div>
           <figure class="manual-shot">
             <img src="manual_assets/screenshots/time_processing.png" alt="시간 처리 설정 영역 예시">
@@ -349,7 +349,7 @@
             </div>
             <div class="warn-card">
               <h3>필터 컬럼이 안 보일 때</h3>
-              <p>필터는 숫자형 컬럼 중심으로 표시됩니다. 문자 컬럼과 날짜 컬럼은 직접 필터 대상으로 쓰기 어렵습니다.</p>
+              <p>필터는 숫자형 컬럼 중심으로 표시됩니다. 문자 컬럼과 날짜 컬럼은 직접 필터 대상으로 쓰기 어렵습니다. 필터는 조건에 맞는 행만 남기며, 특정 값을 제외하려면 <code>!=</code> 조건을 사용합니다.</p>
             </div>
             <div class="warn-card">
               <h3>Simulation이 생성되지 않을 때</h3>
@@ -374,7 +374,7 @@
           <ul class="checklist">
             <li><span class="checkmark">1</span><div><strong>파일 정보가 맞다</strong><p>파일명, 행/열 수, 기본 인식 상태를 확인했다.</p></div></li>
             <li><span class="checkmark">2</span><div><strong>원본 추세를 먼저 봤다</strong><p>설정 전에 차트와 분포를 확인했다.</p></div></li>
-            <li><span class="checkmark">3</span><div><strong>필요한 기준만 넣었다</strong><p>필터, 이상값 처리, 시간 처리를 과도하게 사용하지 않았다.</p></div></li>
+            <li><span class="checkmark">3</span><div><strong>필요한 기준만 넣었다</strong><p>필터, 이상값 처리, 시간 처리를 과도하게 사용하지 않았다. 웹 UI에서는 이상값 대상 컬럼을 1개 이상 직접 선택해야 한다.</p></div></li>
             <li><span class="checkmark">4</span><div><strong>전처리 완료 로그를 확인했다</strong><p>제거된 행 수, 최종 데이터 수, 완료 메시지를 확인했다.</p></div></li>
             <li><span class="checkmark">5</span><div><strong>Validation / Simulation 결과를 확인했다</strong><p>Validation 자동 구성과 Simulation 저장 여부를 로그와 화면에서 확인했다.</p></div></li>
             <li><span class="checkmark">6</span><div><strong>자동 저장 파일명을 확인했다</strong><p><code>_prepro_with_valid.xlsx</code>와 Simulation 파일이 기대대로 생성됐는지 확인했다.</p></div></li>
