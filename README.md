@@ -128,6 +128,17 @@ macOS 패키징용 spec 파일이 포함되어 있습니다.
 - `gui_app_mac.py`
 
 
+
+### VDI 테스트용 zip 만들기
+
+Finder로 프로젝트 전체를 압축하면 `.venv/bin/python*` 같은 macOS 가상환경 symlink 때문에 `Operation not permitted`가 날 수 있습니다. 반복 테스트용으로는 아래 스크립트를 사용하세요.
+
+```bash
+./make_vdi_package.command
+```
+
+또는 Finder에서 `make_vdi_package.command`를 더블클릭해도 됩니다. 이 스크립트는 git에 커밋된 파일만 zip으로 묶기 때문에 `.venv`, `.git`, `build`, `dist`, `.playwright-mcp` 같은 로컬 산출물을 자동으로 제외합니다. 결과물은 `vdi_packages/` 아래에 생성됩니다.
+
 ## 웹/포털 개발 미리보기
 
 OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같은 API 계약으로 가져가는 방향입니다. 현재 추가된 최소 backend skeleton은 아래처럼 실행할 수 있습니다.
