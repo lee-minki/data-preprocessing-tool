@@ -684,13 +684,13 @@ tr:hover td{background:var(--blue-light)}
         </div>
         <div class="sb-body">
           <label style="margin-bottom:4px">
-            <input type="checkbox" id="applyTimeNorm"> 시간 정규화
+            <input type="checkbox" id="applyTimeNorm" checked> 시간 정규화
             <i class="tip" data-tip="밀린 시간을 가장 가까운 간격으로 보정합니다.&#10;장점: 엑셀 자동채우기 오류를 빠르게 고칠 수 있습니다.&#10;단점: 원래 시간 오차 정보는 사라집니다.">i</i>
           </label>
-          <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">템플릿 보존이 필요하면 체크하지 마세요. 00:01:00 → 00:02:00 같은 오차 보정</div>
+          <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">기본 적용됩니다. 템플릿 시간축을 그대로 유지해야 하는 경우에만 체크 해제하세요. 00:01:00 → 00:02:00 같은 오차 보정</div>
           <hr class="sb-divider">
           <label style="margin-bottom:4px">
-            <input type="checkbox" id="applyTimeRealign"> 시간 재정렬
+            <input type="checkbox" id="applyTimeRealign" checked> 시간 재정렬
             <i class="tip" data-tip="남은 행에 새 시간축을 다시 붙입니다.&#10;장점: 학습/검증 구간을 일정 간격으로 맞추기 쉽습니다.&#10;단점: 원래 수집 시간과는 달라질 수 있습니다.">i</i>
           </label>
           <div style="display:flex;gap:8px;margin-top:6px">
@@ -1850,7 +1850,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 
   /* ===== PRESETS ===== */
   getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),helper_tags:this._opcSelectedTags,validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
-  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??false;document.getElementById('applyTimeRealign').checked=s.time?.realign??false;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
+  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
   showPresetSaveModal(){document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';document.getElementById('presetSaveModal').classList.add('show');document.getElementById('presetNameInput').focus()},
   showPresetLoadModal(){
     const list=this.pm.list();const el=document.getElementById('presetList');
