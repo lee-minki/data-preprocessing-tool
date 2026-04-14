@@ -621,12 +621,12 @@ tr:hover td{background:var(--blue-light)}
       <div class="sb-section">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🏷️</span> OPC 보조 태그
-          <i class="tip" data-tip="OPC 태그를 임시 helper 컬럼으로 붙여 조건/소팅에만 사용합니다.&#10;최종 저장 파일에는 helper 컬럼이 포함되지 않습니다.&#10;태그를 추가하지 않아도 원본 컬럼 조건만으로 전처리할 수 있습니다.">i</i>
+          <i class="tip" data-tip="좌측 첫 시간 컬럼을 기준으로 OPC 태그 값을 맞춰 조건/소팅에만 사용합니다.&#10;최종 저장 파일에는 helper 컬럼이 포함되지 않습니다.&#10;태그를 추가하지 않아도 원본 컬럼 조건만으로 전처리할 수 있습니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
           <div class="val-dl-desc" style="display:block;padding-top:0">
-            선택한 OPC 태그는 데이터 우측에 <b>임시 helper 컬럼</b>으로 붙고, 최종 저장 시 자동 제외됩니다.
+            선택한 OPC 태그는 <b>좌측 첫 시간 컬럼</b>의 시계열에 맞춰 내부 helper 컬럼으로 붙고, 최종 저장 시 자동 제외됩니다.
           </div>
           <div style="display:flex;gap:6px;margin-bottom:6px">
             <div style="flex:1">
@@ -684,13 +684,13 @@ tr:hover td{background:var(--blue-light)}
         </div>
         <div class="sb-body">
           <label style="margin-bottom:4px">
-            <input type="checkbox" id="applyTimeNorm" checked> 시간 정규화
+            <input type="checkbox" id="applyTimeNorm"> 시간 정규화
             <i class="tip" data-tip="밀린 시간을 가장 가까운 간격으로 보정합니다.&#10;장점: 엑셀 자동채우기 오류를 빠르게 고칠 수 있습니다.&#10;단점: 원래 시간 오차 정보는 사라집니다.">i</i>
           </label>
-          <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">00:01:00 → 00:02:00 같은 오차 보정</div>
+          <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">템플릿 보존이 필요하면 체크하지 마세요. 00:01:00 → 00:02:00 같은 오차 보정</div>
           <hr class="sb-divider">
           <label style="margin-bottom:4px">
-            <input type="checkbox" id="applyTimeRealign" checked> 시간 재정렬
+            <input type="checkbox" id="applyTimeRealign"> 시간 재정렬
             <i class="tip" data-tip="남은 행에 새 시간축을 다시 붙입니다.&#10;장점: 학습/검증 구간을 일정 간격으로 맞추기 쉽습니다.&#10;단점: 원래 수집 시간과는 달라질 수 있습니다.">i</i>
           </label>
           <div style="display:flex;gap:8px;margin-top:6px">
@@ -961,7 +961,7 @@ function arrStd(v){const m=arrMean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**
 
 /* ===== DATA PREPROCESSOR ===== */
 class DataPreprocessor{
-  constructor(){this.originalData=null;this.processedData=null;this.columns=[];this.numericColumns=[];this.dateColumn=null;this.stats={};this.removedRows=[];this.helperColumns=[]}
+  constructor(){this.originalData=null;this.processedData=null;this.columns=[];this.numericColumns=[];this.dateColumn=null;this.templateTimeColumn=null;this.stats={};this.removedRows=[];this.helperColumns=[]}
   parseCSV(text){
     const lines=text.split(/\r?\n/).filter(l=>l.trim()!=='');
     if(lines.length<2)throw new Error('데이터가 부족합니다 (최소 헤더+1행)');
@@ -979,7 +979,17 @@ class DataPreprocessor{
     this.stats.original_rows=this.originalData.length;this.stats.columns=this.columns.length;
     return{rows:this.originalData.length,cols:this.columns.length,numCols:this.numericColumns}
   }
-  _detectDateColumn(){const kw=['date','time','datetime','날짜','시간','timestamp'];this.dateColumn=null;for(const c of this.columns){if(kw.some(k=>c.toLowerCase().includes(k))){this.dateColumn=c;break}}}
+  _detectDateColumn(){
+    // 조기경보 업로드 템플릿 보존: OPC helper 조회/시간 기준은 항상 좌측 첫 컬럼을 우선 사용한다.
+    this.templateTimeColumn=this.columns[0]||null;
+    this.dateColumn=this.templateTimeColumn;
+    if(!this.dateColumn){return}
+    const sample=this.originalData.slice(0,20).map(r=>r[this.dateColumn]).filter(v=>v!==''&&v!==null&&v!==undefined);
+    const parseable=sample.filter(v=>!isNaN(new Date(String(v).replace(/-/g,'/')).getTime())).length;
+    if(sample.length&&parseable===0){
+      console.warn('좌측 첫 컬럼이 시간으로 파싱되지 않습니다:', this.dateColumn);
+    }
+  }
   _detectNumericColumns(){
     this.numericColumns=[];if(!this.originalData||!this.originalData.length)return;
     for(const col of this.columns){if(col===this.dateColumn)continue;let n=0;const s=Math.min(20,this.originalData.length);
@@ -1241,6 +1251,7 @@ const app={
       }
     }
     this.log(`✅ 파일 로드 완료: ${info.rows.toLocaleString()}행, ${info.cols}열`);
+    this.log(`   OPC 기준 시간 컬럼: 좌측 첫 컬럼 '${this.dp.templateTimeColumn||'-'}'`);
     this.log(`   숫자 컬럼 (${info.numCols.length}개): ${info.numCols.slice(0,8).join(', ')}${info.numCols.length>8?' ...':''}`);
     // Large file warning
     if(file.size>10*1024*1024||info.rows>100000){
@@ -1307,10 +1318,12 @@ const app={
     el.innerHTML=this._opcSelectedTags.map((tag,i)=>`<div style="display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0"><button type="button" class="del-btn" onclick="app.removeOpcSelectedTag(${i})">✕</button><div style="min-width:0"><div style="font-weight:600;color:var(--gray700);word-break:break-all">${tag.fulltagname}</div><div style="color:var(--gray500)">${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}</div></div></div>`).join('');
   },
   async attachSelectedOpcTags(){
-    if(!this.dp.originalData||!this.dp.dateColumn){this.toast('먼저 시간 컬럼이 있는 XLSX 파일을 로드하세요',true);return}
+    const timeColumn=this.dp.templateTimeColumn||this.dp.columns[0];
+    if(!this.dp.originalData||!timeColumn){this.toast('먼저 좌측 첫 시간 컬럼이 있는 XLSX 파일을 로드하세요',true);return}
     if(!this._opcSelectedTags.length){this.toast('OPC helper 태그를 먼저 선택하세요',true);return}
     const status=document.getElementById('opcHelperStatus');status.textContent='OPC helper 값 조회 중...';
-    const timestamps=this.dp.originalData.map(row=>row[this.dp.dateColumn]);
+    const timestamps=this.dp.originalData.map(row=>row[timeColumn]);
+    if(timestamps.some(v=>v===null||v===undefined||String(v).trim()==='')){this.toast('좌측 첫 시간 컬럼에 빈 값이 있어 OPC helper를 맞출 수 없습니다',true);return}
     try{
       const result=await portalApi.fetchHelperValues({tags:this._opcSelectedTags.map(t=>t.fulltagname),timestamps,chunk_minutes:60});
       if(!result.ok)throw new Error(result.error||'OPC helper 조회 실패');
@@ -1319,7 +1332,7 @@ const app={
       const summary=(result.helpers||[]).map(h=>`${h.display_name||h.fulltagname}: ${h.non_null_count}/${this.dp.originalData.length}`).join(' | ');
       status.textContent=`helper 컬럼 추가 완료: ${summary}`;
       this.log(`🏷️ OPC helper 컬럼 추가: ${summary}`);
-      this.toast('OPC helper 컬럼을 필터/소팅에 사용할 수 있습니다. 새 필터를 추가해 확인하세요.');
+      this.toast('좌측 첫 시간 컬럼 기준 OPC helper를 필터/소팅에 사용할 수 있습니다. 새 필터를 추가해 확인하세요.');
     }catch(err){status.textContent=err.message;this.toast(err.message,true)}
   },
   saveOpcFavorite(){
@@ -1824,7 +1837,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 
   /* ===== PRESETS ===== */
   getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),helper_tags:this._opcSelectedTags,validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
-  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
+  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??false;document.getElementById('applyTimeRealign').checked=s.time?.realign??false;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
   showPresetSaveModal(){document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';document.getElementById('presetSaveModal').classList.add('show');document.getElementById('presetNameInput').focus()},
   showPresetLoadModal(){
     const list=this.pm.list();const el=document.getElementById('presetList');
