@@ -1328,6 +1328,7 @@ const app={
       const result=await portalApi.fetchHelperValues({tags:this._opcSelectedTags.map(t=>t.fulltagname),timestamps,chunk_minutes:60});
       if(!result.ok)throw new Error(result.error||'OPC helper 조회 실패');
       for(const helper of result.helpers||[])this.dp.addHelperColumn(helper);
+      this.refreshFilterColumnOptions();
       this._initOutlierCols();this._initSimulationCols();this.currentPage=0;this.updateTable();
       const summary=(result.helpers||[]).map(h=>`${h.display_name||h.fulltagname}: ${h.non_null_count}/${this.dp.originalData.length}`).join(' | ');
       status.textContent=`helper 컬럼 추가 완료: ${summary}`;
@@ -1569,6 +1570,18 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
     const lo=document.getElementById('fmin-'+id),hi=document.getElementById('fmax-'+id);
     if(lo)lo.value=(s.mean-3*s.std).toFixed(6);
     if(hi)hi.value=(s.mean+3*s.std).toFixed(6);
+  },
+  refreshFilterColumnOptions(){
+    const cols=this.dp.numericColumns;
+    document.querySelectorAll('.filter-row').forEach(row=>{
+      const id=row.id.split('-')[1];
+      const select=document.getElementById('fcol-'+id);
+      if(!select)return;
+      const current=select.value;
+      select.innerHTML=cols.map(c=>`<option value="${c}">${this.displayColumnName(c)}</option>`).join('');
+      if(cols.includes(current))select.value=current;
+      this.onFilterColChange(id);
+    });
   },
   addFilter(){
     const cols=this.dp.numericColumns;if(!cols.length){this.toast('먼저 파일을 로드하세요',true);return}
