@@ -1186,7 +1186,7 @@ const app={
   _chart:null,_distChart:null,_chartMode:'processed', // 'processed'|'original'|'validation'
   _hasProcessed:false,_activeDistCol:null,_valData:null,_valProcessed:null,
   _sortCol:null,_sortDir:1,_sourceFileName:'',_sourceBaseName:'processed_data',_pendingPresetName:null,_preservePendingOnNextFileDialog:false,
-  _opcSearchResults:[],_opcSelectedTags:[],
+  _opcSearchResults:[],_opcSelectedTags:[],_simulationTargetsTouched:false,
 
   init(){
     const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
@@ -1236,7 +1236,7 @@ const app={
     document.getElementById('sbCols').textContent=info.cols;
     document.getElementById('processBtn').disabled=false;
     this._hasProcessed=false;this._chartMode='processed';this._valData=null;this._valProcessed=null;
-    this._sortCol=null;this._sortDir=1;
+    this._sortCol=null;this._sortDir=1;this._simulationTargetsTouched=false;
     this.currentPage=0;this.updateTable();
     this._initCharts();this._initSimulationCols();this._initOutlierCols();
     this._updateDownloadGuidance();
@@ -1268,7 +1268,7 @@ const app={
     if(this._chart){this._chart.destroy();this._chart=null}
     if(this._distChart){this._distChart.destroy();this._distChart=null}
     this.dp=new DataPreprocessor();this._hasProcessed=false;this._chartMode='processed';this._valData=null;this._valProcessed=null;this._activeDistCol=null;
-    this._sortCol=null;this._sortDir=1;this._sourceFileName='';this._sourceBaseName='processed_data';this._pendingPresetName=null;this._preservePendingOnNextFileDialog=false;this.searchTerm='';this.currentPage=0;
+    this._sortCol=null;this._sortDir=1;this._simulationTargetsTouched=false;this._sourceFileName='';this._sourceBaseName='processed_data';this._pendingPresetName=null;this._preservePendingOnNextFileDialog=false;this.searchTerm='';this.currentPage=0;
     document.getElementById('logOutput').textContent='σ 조기경보 시스템 모델링 데이터 전처리 도구 (Web v3.1)\n로그 출력 대기 중...\n';
     document.getElementById('filterContainer').innerHTML='';
     document.getElementById('valDlDesc').style.display='none';
@@ -1379,18 +1379,25 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 
   _initSimulationCols(){
     const cols=this.dp.originalNumericColumns();
-    document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+    document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${c}" onchange="app.markSimulationTargetsTouched()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
   },
 
   _initOutlierCols(){
     const cols=this.dp.originalNumericColumns();
-    document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${c}" checked style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+    document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${c}" onchange="app.syncSimulationTargetsFromOutliers()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+    this.syncSimulationTargetsFromOutliers(true);
   },
 
   toggleChip(chip){chip.classList.toggle('active');const ci=parseInt(chip.dataset.ci);const c=PALETTE[ci%PALETTE.length];chip.style.cssText=chip.classList.contains('active')?`background:${c};border-color:${c}`:`background:white;border-color:#E5E7EB`;try{this.renderChart()}catch(e){}},
   selectAllChips(on){document.querySelectorAll('.col-chip').forEach((chip,i)=>{chip.classList.toggle('active',on);const ci=parseInt(chip.dataset.ci);const c=PALETTE[ci%PALETTE.length];chip.style.cssText=on?`background:${c};border-color:${c}`:`background:white;border-color:#E5E7EB`});try{this.renderChart()}catch(e){}},
-  simSelectAll(on){document.querySelectorAll('.sim-col-check').forEach(c=>{c.checked=on})},
-  outlierSelectAll(on){document.querySelectorAll('.outlier-col-check').forEach(c=>{c.checked=on})},
+  markSimulationTargetsTouched(){this._simulationTargetsTouched=true},
+  syncSimulationTargetsFromOutliers(force=false){
+    if(this._simulationTargetsTouched&&!force)return;
+    const selected=new Set(this.getOutlierCols());
+    document.querySelectorAll('.sim-col-check').forEach(c=>{c.checked=selected.has(c.value)});
+  },
+  simSelectAll(on){this._simulationTargetsTouched=true;document.querySelectorAll('.sim-col-check').forEach(c=>{c.checked=on})},
+  outlierSelectAll(on){document.querySelectorAll('.outlier-col-check').forEach(c=>{c.checked=on});this.syncSimulationTargetsFromOutliers()},
   getOutlierCols(){return[...document.querySelectorAll('.outlier-col-check:checked')].map(el=>el.value)},
   getSimulationCols(){return[...document.querySelectorAll('.sim-col-check:checked')].map(el=>el.value)},
   getCheckedCols(){return[...document.querySelectorAll('.col-chip.active')].map(c=>c.dataset.col)},
@@ -1656,6 +1663,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   /* ===== PROCESSING ===== */
   runPreprocessing(){
     if(!this.dp.originalData){this.toast('먼저 파일을 로드하세요',true);return}
+    if(document.getElementById('applyOutlier').checked&&!this.getOutlierCols().length){this.toast('이상값 처리 대상 컬럼을 1개 이상 선택하세요',true);return}
     const t0=performance.now();this.log('\n'+'='.repeat(50));
     this.log(`🔄 전처리 시작... (총 ${this.dp.originalData.length.toLocaleString()}행)`);
     this.dp.resetState();this.progress(10,'필터링 중...');
