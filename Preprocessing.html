@@ -668,7 +668,7 @@ tr:hover td{background:var(--blue-light)}
       <div class="sb-section">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🔧</span> 필터
-          <i class="tip" data-tip="AND 조건으로 데이터를 필터링합니다.&#10;컬럼을 선택하면 min/max/avg/중앙값과 ±3σ 기준이 표시됩니다.&#10;중요한 수치만 보이도록 정리된 상태입니다.">i</i>
+          <i class="tip" data-tip="필터는 조건에 맞는 행만 남기는 기능입니다.&#10;예: UNIT TARG GRID = 1이면 값이 1인 행만 남습니다.&#10;특정 값을 제거하려면 반대 조건을 사용하세요. 예: != 1은 1이 아닌 행만 남깁니다.&#10;여러 필터는 AND 조건으로 모두 만족하는 행만 남습니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
@@ -972,7 +972,7 @@ class DataPreprocessor{
   _parseLine(line){const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(inQ){if(c==='"'&&line[i+1]==='"'){cur+='"';i++}else if(c==='"')inQ=false;else cur+=c}else{if(c==='"')inQ=true;else if(c===','){r.push(cur.trim());cur=''}else cur+=c}}r.push(cur.trim());return r}
   loadData(text){
     const{headers,rows}=this.parseCSV(text);
-    const clean=headers.filter(h=>!h.startsWith('Unnamed'));this.columns=clean;
+    const clean=headers.filter(h=>h&&h.trim()&&!h.startsWith('Unnamed'));this.columns=clean;
     this.originalData=rows.map(r=>{const o={};clean.forEach(h=>{o[h]=r[h]});return o});
     this.processedData=this.originalData.map(r=>({...r}));this.removedRows=[];this.helperColumns=[];
     this._detectDateColumn();this._detectNumericColumns();
@@ -1031,7 +1031,7 @@ class DataPreprocessor{
       for(const f of filters){const val=Number(row[f.column]);if(isNaN(val)){pass=false;break}
         if(f.operator==='>='&&!(val>=f.value))pass=false;else if(f.operator==='<='&&!(val<=f.value))pass=false;
         else if(f.operator==='>'&&!(val>f.value))pass=false;else if(f.operator==='<'&&!(val<f.value))pass=false;
-        else if(f.operator==='='&&val!==f.value)pass=false;
+        else if(f.operator==='='&&val!==f.value)pass=false;else if(f.operator==='!='&&val===f.value)pass=false;
         else if(f.operator==='range'&&!(val>=f.min&&val<=f.max))pass=false;if(!pass)break}
       if(pass)kept.push(row);else removed.push({...row,_reason:'filter'})}
     if(removed.length)this.removedRows.push(...removed);
@@ -1117,11 +1117,14 @@ class DataPreprocessor{
   }
   realignTimestamps(startStr,intervalMin){
     if(!this.processedData||!this.dateColumn)return{success:false,msg:'날짜 컬럼 없음'};
-    const start=new Date(startStr.replace(/-/g,'/'));if(isNaN(start.getTime()))return{success:false,msg:'시작 시간 형식 오류'};
+    const parsedStart=new Date(startStr.replace(/-/g,'/'));if(isNaN(parsedStart.getTime()))return{success:false,msg:'시작 시간 형식 오류'};
+    const start=this._snapToEvenMinute(parsedStart);
     for(let i=0;i<this.processedData.length;i++){const nd=new Date(start.getTime()+i*intervalMin*60000);this.processedData[i][this.dateColumn]=this._fmtDate(nd)}
-    return{success:true,msg:`✅ 시간 재정렬: ${startStr}부터 ${intervalMin}분 간격`}
+    return{success:true,msg:`✅ 시간 재정렬: ${this._fmtDate(start)}부터 ${intervalMin}분 간격`}
   }
   _fmtDate(d){const p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+  _snapToEvenMinute(d){const nd=new Date(d);nd.setMinutes(Math.floor(nd.getMinutes()/2)*2,0,0);return nd}
+  snapStartTime(value){const raw=value||'';const parsed=new Date(String(raw).replace(/-/g,'/'));if(isNaN(parsed.getTime()))return raw;return this._fmtDate(this._snapToEvenMinute(parsed))}
   inferInterval(){
     if(!this.processedData||this.processedData.length<2||!this.dateColumn)return 2;
     try{const times=this.processedData.slice(0,20).map(r=>new Date(r[this.dateColumn]).getTime()).filter(t=>!isNaN(t)).sort((a,b)=>a-b);
@@ -1198,7 +1201,7 @@ const app={
     fi.addEventListener('change',e=>{if(e.target.files[0])this.handleFile(e.target.files[0])});
     presetImport.addEventListener('change',e=>this.importPresetFile(e));
     const now=new Date();const p=n=>String(n).padStart(2,'0');
-    document.getElementById('startTime').value=`${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:00`;
+    document.getElementById('startTime').value=this.dp._fmtDate(this.dp._snapToEvenMinute(now));
     // Delegated sort for table headers
     document.getElementById('previewHead').addEventListener('click',e=>{
       const th=e.target.closest('th');if(th&&th.dataset.col)this.sortTable(th.dataset.col);
@@ -1598,7 +1601,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
       <select id="fcol-${id}" onchange="app.onFilterColChange(${id})" style="flex:2;min-width:0">${colOpts}</select>
       <select id="fop-${id}" onchange="app.onFilterOpChange(${id})" style="flex:0 0 62px;min-width:0">
         <option value="range">range</option><option value=">=">&gt;=</option><option value="<=">&lt;=</option>
-        <option value=">">&gt;</option><option value="<">&lt;</option><option value="=">=</option>
+        <option value=">">&gt;</option><option value="<">&lt;</option><option value="=">=</option><option value="!=">!=</option>
       </select>
       <span id="frange-${id}" style="display:flex;gap:2px;flex:2;min-width:0">
         <input type="number" id="fmin-${id}" placeholder="최소" step="any" style="min-width:0">
@@ -1686,7 +1689,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
         setTimeout(()=>{
           const iv=parseInt(document.getElementById('interval').value)||2;
           if(document.getElementById('applyTimeNorm').checked)this.log(this.dp.normalizeTimestamps(iv).msg);
-          if(document.getElementById('applyTimeRealign').checked){const st=document.getElementById('startTime').value;this.log(this.dp.realignTimestamps(st,iv).msg)}
+          if(document.getElementById('applyTimeRealign').checked){const input=document.getElementById('startTime');const st=this.dp.snapStartTime(input.value);input.value=st;this.log(this.dp.realignTimestamps(st,iv).msg)}
           const el=((performance.now()-t0)/1000).toFixed(2);this.progress(100,'✅ 전처리 완료!');
           this.log('');this.log(this.dp.getSummary());this.log(`⏱ 총 소요 시간: ${el}초`);
             this._hasProcessed=true;this._chartMode='processed';this._valData=null;
@@ -1858,7 +1861,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 
   /* ===== PRESETS ===== */
   getCurrentSettings(){return{outlier:{apply:document.getElementById('applyOutlier').checked,method:document.querySelector('input[name=outlierMethod]:checked')?.value||'2.5sigma',pre_mode:document.getElementById('preRemovalMode').value||'prefilter'},time:{normalize:document.getElementById('applyTimeNorm').checked,realign:document.getElementById('applyTimeRealign').checked,start_time:document.getElementById('startTime').value,interval:document.getElementById('interval').value},filters:this.getFilters(),helper_tags:this._opcSelectedTags,validation:{ratio:20},simulation:{total_minutes:parseInt(document.getElementById('simTotalMinutes').value)||180,segment_ratios:[0,1,2].map(i=>parseFloat(document.getElementById('simSeg'+i).value)||0),intensity:parseFloat(document.getElementById('simIntensity').value)||1.0}}},
-  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=s.time.start_time;if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
+  applySettings(s){if(!s)return;document.getElementById('applyOutlier').checked=s.outlier?.apply??true;const om=s.outlier?.method||'2.5sigma';document.querySelectorAll('input[name=outlierMethod]').forEach(r=>{r.checked=r.value===om});document.getElementById('preRemovalMode').value=s.outlier?.pre_mode??'prefilter';document.getElementById('applyTimeNorm').checked=s.time?.normalize??true;document.getElementById('applyTimeRealign').checked=s.time?.realign??true;if(s.time?.start_time)document.getElementById('startTime').value=this.dp.snapStartTime(s.time.start_time);if(s.time?.interval)document.getElementById('interval').value=s.time.interval;this._opcSelectedTags=s.helper_tags||[];this.renderOpcSelectedTags();const sim=s.simulation||{};document.getElementById('simTotalMinutes').value=sim.total_minutes??180;[0,1,2].forEach(i=>{document.getElementById('simSeg'+i).value=(sim.segment_ratios?.[i]??[25,25,50][i])});document.getElementById('simIntensity').value=String(sim.intensity??1.0);this._updateDownloadGuidance()},
   showPresetSaveModal(){document.getElementById('presetNameInput').value='';document.getElementById('presetDescInput').value='';document.getElementById('presetSaveModal').classList.add('show');document.getElementById('presetNameInput').focus()},
   showPresetLoadModal(){
     const list=this.pm.list();const el=document.getElementById('presetList');
