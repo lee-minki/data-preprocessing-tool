@@ -30,6 +30,19 @@
   --section-space:clamp(14px,1.2vw,20px);
 }
 body{font-family:var(--font-body);background:radial-gradient(circle at top left,rgba(118,87,255,.16),transparent 24%),radial-gradient(circle at top right,rgba(68,211,255,.12),transparent 18%),var(--bg);color:var(--gray800);min-height:100vh;line-height:1.62;font-size:14px;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body[data-ui-theme="dark"]{
+  --bg:#081120;--white:#0F1A2E;--gray50:#0C1627;--gray100:#132036;--gray200:#22314D;
+  --gray300:#344564;--gray400:#6E7D97;--gray500:#9BA8BA;--gray600:#C5CFDC;--gray700:#DCE5F1;--gray800:#EEF4FF;--gray900:#F8FBFF;
+  --primary:#9A86FF;--primary-light:rgba(154,134,255,.16);--primary-dark:#C5B6FF;
+  --blue:#69DBFF;--blue-light:rgba(105,219,255,.14);
+  --success:#39C78A;--success-light:rgba(57,199,138,.16);
+  --warning:#F0A84A;--warning-light:rgba(240,168,74,.16);
+  --error:#FF7F90;--error-light:rgba(255,127,144,.16);
+  --surface-dark:#07111F;--surface-dark-2:#0D1B32;
+  --shadow:0 18px 40px rgba(0,0,0,.28);
+  --shadow-lg:0 30px 82px rgba(0,0,0,.34);
+}
+body[data-ui-theme="dark"]{background:radial-gradient(circle at top left,rgba(118,87,255,.2),transparent 24%),radial-gradient(circle at top right,rgba(68,211,255,.1),transparent 18%),var(--bg)}
 
 /* LANDING */
 #landingView{display:block;min-height:100vh;padding:clamp(20px,2vw,32px) 0 clamp(48px,4vw,72px);animation:fadeIn .5s ease;position:relative}
@@ -44,6 +57,9 @@ body{font-family:var(--font-body);background:radial-gradient(circle at top left,
 .nav-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .nav-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
 .nav-link:hover,.nav-link.active{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.42);color:#fff}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.theme-toggle:hover{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.38)}
+.theme-toggle .theme-toggle-icon{font-size:14px;line-height:1}
 .landing-shell{width:var(--shell-width);margin:0 auto;display:flex;flex-direction:column;gap:var(--section-space);align-items:center}
 .landing-shell>*{width:100%}
 .hero-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.76fr);gap:clamp(14px,1.3vw,20px);padding:clamp(18px,1.7vw,24px);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,253,.98));border:1px solid rgba(195,207,223,.72);box-shadow:var(--shadow);color:var(--gray800);position:relative;overflow:hidden;max-width:var(--content-width-wide);margin:0 auto}
@@ -101,6 +117,7 @@ body{font-family:var(--font-body);background:radial-gradient(circle at top left,
 .dz-text{color:var(--gray700);font-size:14px;font-weight:600;margin-bottom:12px}
 .dz-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--gray900);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 16px 28px rgba(9,17,31,.16)}
 .dz-btn:hover{background:var(--primary-dark)}
+.file-input-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;opacity:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .dz-format{font-size:11px;color:var(--gray500);margin-top:10px;line-height:1.5;max-width:28ch}
 .feature-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(16px,1.6vw,22px);max-width:var(--content-width);margin:0 auto}
 .feature-card{border-radius:24px;padding:20px;text-align:left;transition:all .2s}
@@ -121,6 +138,61 @@ body{font-family:var(--font-body);background:radial-gradient(circle at top left,
 .dash-links a:hover{background:rgba(118,87,255,.18);border-color:rgba(118,87,255,.34);color:#fff}
   .dash-ver{font-size:11px;color:rgba(255,255,255,.72);padding:4px 10px;background:rgba(255,255,255,.08);border-radius:20px;flex-shrink:0}
 .dash-body{display:grid;grid-template-columns:clamp(320px,24vw,460px) minmax(0,1fr);height:calc(100vh - 53px)}
+body[data-ui-theme="dark"] .hero-panel,
+body[data-ui-theme="dark"] .route-card,
+body[data-ui-theme="dark"] .launch-copy,
+body[data-ui-theme="dark"] .landing-card,
+body[data-ui-theme="dark"] .feature-card,
+body[data-ui-theme="dark"] .audience-card,
+body[data-ui-theme="dark"] .hero-process-card,
+body[data-ui-theme="dark"] .sidebar,
+body[data-ui-theme="dark"] .stat-card,
+body[data-ui-theme="dark"] .compare-card,
+body[data-ui-theme="dark"] .chart-card,
+body[data-ui-theme="dark"] .table-card,
+body[data-ui-theme="dark"] .log-card,
+body[data-ui-theme="dark"] .modal,
+body[data-ui-theme="dark"] .workflow-step{background:var(--white);border-color:var(--gray200);color:var(--gray700)}
+body[data-ui-theme="dark"] .site-nav{background:rgba(7,17,31,.9)}
+body[data-ui-theme="dark"] .dropzone{background:linear-gradient(180deg,#15233b,#101b2f) !important;border-color:rgba(173,153,255,.7) !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 22px 44px rgba(5,10,20,.34) !important}
+body[data-ui-theme="dark"] .dropzone:hover,body[data-ui-theme="dark"] .dropzone.over{background:linear-gradient(180deg,#182944,#13233d) !important;border-color:#b8a9ff !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 26px 52px rgba(8,14,28,.42) !important}
+body[data-ui-theme="dark"] .dz-text{color:#f5f8ff !important;text-shadow:0 1px 0 rgba(0,0,0,.22)}
+body[data-ui-theme="dark"] .dz-btn{background:#f8fbff !important;color:#111b2f !important;box-shadow:0 18px 34px rgba(4,10,20,.34) !important;font-weight:800}
+body[data-ui-theme="dark"] .dz-btn:hover{background:#d9cbff !important;color:#111b2f !important}
+body[data-ui-theme="dark"] .dz-format{color:#d6deea !important}
+body[data-ui-theme="dark"] .launch-list li,
+body[data-ui-theme="dark"] .preset-item:hover,
+body[data-ui-theme="dark"] tr:hover td{background:var(--gray50)}
+body[data-ui-theme="dark"] .workflow-step-text,
+body[data-ui-theme="dark"] .landing-subtitle,
+body[data-ui-theme="dark"] .feature-card .fc-desc,
+body[data-ui-theme="dark"] .feature-card .fc-note,
+body[data-ui-theme="dark"] .route-card p,
+body[data-ui-theme="dark"] .process-step p,
+body[data-ui-theme="dark"] .landing-card p,
+body[data-ui-theme="dark"] .launch-copy p,
+body[data-ui-theme="dark"] .table-meta,
+body[data-ui-theme="dark"] .log,
+body[data-ui-theme="dark"] .val-dl-desc,
+body[data-ui-theme="dark"] .landing-footnote{color:var(--gray500)}
+body[data-ui-theme="dark"] .route-card h3,
+body[data-ui-theme="dark"] .feature-card .fc-title,
+body[data-ui-theme="dark"] .landing-card h1,
+body[data-ui-theme="dark"] .landing-card h2,
+body[data-ui-theme="dark"] .launch-copy h2,
+body[data-ui-theme="dark"] .landing-title,
+body[data-ui-theme="dark"] .process-step strong,
+body[data-ui-theme="dark"] .table-title,
+body[data-ui-theme="dark"] .sb-value,
+body[data-ui-theme="dark"] .sb-head,
+body[data-ui-theme="dark"] .method-title,
+body[data-ui-theme="dark"] .audience-card strong{color:var(--gray800)}
+body[data-ui-theme="dark"] .route-meta,
+body[data-ui-theme="dark"] .sb-label,
+body[data-ui-theme="dark"] .sc-label,
+body[data-ui-theme="dark"] .sc-sub,
+body[data-ui-theme="dark"] .fc-icon{color:var(--gray500)}
+body[data-ui-theme="dark"] input,body[data-ui-theme="dark"] select,body[data-ui-theme="dark"] .table-search,body[data-ui-theme="dark"] .page-btn,body[data-ui-theme="dark"] .chart-sel,body[data-ui-theme="dark"] .page-size-sel{background:var(--gray50);border-color:var(--gray200);color:var(--gray800)}
 
 /* SIDEBAR */
 .sidebar{width:auto;min-width:0;background:var(--white);border-right:1px solid var(--gray200);overflow-y:auto;padding:clamp(16px,1.4vw,24px)}
@@ -137,15 +209,78 @@ body{font-family:var(--font-body);background:radial-gradient(circle at top left,
 .sb-value{font-size:13px;color:var(--gray800);margin-bottom:8px}
 .sb-divider{border:none;border-top:1px solid var(--gray100);margin:8px 0}
 .workflow-list{display:flex;flex-direction:column;gap:6px}
-.workflow-step{display:flex;gap:0;align-items:flex-start;padding:6px 8px;background:var(--gray50);border:1px solid var(--gray100);border-radius:8px}
+.workflow-step{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--gray50);border:1px solid var(--gray100);border-radius:8px}
 .workflow-step-text{font-size:11px;color:var(--gray600);line-height:1.5}
+.workflow-info-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:999px;border:1px solid var(--gray200);background:var(--white);color:var(--primary-dark);font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;transition:all .15s}
+.workflow-info-btn:hover{background:var(--primary-light);border-color:rgba(118,87,255,.28)}
 .chart-guide{margin:0 16px 10px;padding:8px 10px;border-radius:8px;background:var(--blue-light);color:#334155;font-size:11px;line-height:1.55;border:1px solid rgba(59,130,246,.12)}
+.spotlight-overlay{position:fixed;inset:0;background:rgba(7,17,31,.62);z-index:11000;display:none;pointer-events:none}
+.spotlight-overlay.show{display:block}
+.spotlight-hole{position:absolute;border-radius:20px;box-shadow:0 0 0 9999px rgba(7,17,31,.62);border:2px solid rgba(118,87,255,.48);transition:all .18s ease}
+.spotlight-target{position:relative;z-index:11001 !important;outline:2px solid rgba(118,87,255,.52);box-shadow:0 0 0 6px rgba(118,87,255,.12),0 20px 38px rgba(15,23,42,.18);border-radius:18px;transition:all .18s ease}
+.spotlight-callout{position:fixed;max-width:min(360px,calc(100vw - 28px));padding:14px 16px;border-radius:18px;background:#07111f;color:#fff;border:1px solid rgba(118,87,255,.28);box-shadow:0 24px 60px rgba(6,15,30,.3);z-index:11002;display:none}
+.spotlight-callout.show{display:block}
+.spotlight-callout strong{display:block;font-size:14px;margin-bottom:6px}
+.spotlight-callout p{margin:0;font-size:12px;line-height:1.7;color:rgba(255,255,255,.78)}
+
+
+.tutorial-step-trigger{cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.tutorial-step-trigger:hover{background:var(--primary-light);border-color:rgba(118,87,255,.28);transform:translateY(-1px)}
+.tutorial-step-trigger:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.save-output-guide{display:grid;gap:5px;padding:9px 10px;border:1px solid var(--gray200);border-radius:10px;background:var(--gray50);font-size:10.5px;color:var(--gray500);line-height:1.45}
+.save-output-title{font-size:10px;font-weight:800;color:var(--gray700);text-transform:uppercase;letter-spacing:.05em}
+.save-output-item{display:grid;gap:1px}.save-output-item b{color:var(--gray700);font-size:11px}.save-output-item span{color:var(--gray500)}
+.tutorial-dim{position:fixed;inset:0;background:rgba(7,17,31,.38);z-index:10950;display:none;pointer-events:none}
+.tutorial-dim.show{display:block}
+.tutorial-highlight{position:relative;z-index:10960!important;outline:3px solid rgba(118,87,255,.8);box-shadow:0 0 0 8px rgba(118,87,255,.18),0 24px 58px rgba(6,15,30,.22)!important;border-radius:18px;transition:outline .18s,box-shadow .18s;background:var(--white)!important;color:var(--gray800)!important;isolation:isolate}.tutorial-highlight *{color:inherit}.tutorial-highlight .sb-label,.tutorial-highlight .val-dl-desc,.tutorial-highlight .sb-body,.tutorial-highlight .method-badge,.tutorial-highlight .tip{opacity:1!important}.tutorial-highlight .sb-label,.tutorial-highlight .val-dl-desc{color:var(--gray600)!important}.tutorial-highlight .method-title,.tutorial-highlight b{color:var(--gray800)!important}
+.tutorial-callout{position:fixed;z-index:10970;width:min(420px,calc(100vw - 28px));max-height:calc(100vh - 24px);overflow:auto;padding:16px;border-radius:18px;background:#07111f;color:#fff;border:1px solid rgba(118,87,255,.34);box-shadow:0 28px 80px rgba(6,15,30,.38);display:none}
+.tutorial-callout.show{display:block}.tutorial-kicker{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;color:#cfc6ff;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.tutorial-dots{display:flex;gap:5px}.tutorial-dot{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,.22)}.tutorial-dot.active{background:#9a86ff}
+.tutorial-callout h3{font-size:17px;line-height:1.3;margin:0 0 8px;color:#fff}.tutorial-callout p{margin:0 0 10px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.65}.tutorial-section-title{font-size:11px;font-weight:900;color:#fff;margin:10px 0 5px}.tutorial-list{display:grid;gap:4px;margin:0 0 8px;padding:0;list-style:none}.tutorial-list li{font-size:12px;line-height:1.55;color:rgba(255,255,255,.78)}.tutorial-list li::before{content:'- ';color:#9a86ff;font-weight:900}.tutorial-files{display:grid;gap:6px;margin-top:8px}.tutorial-file{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.78);line-height:1.45}.tutorial-file b{display:block;color:#fff;margin-bottom:2px}.tutorial-actions{display:flex;justify-content:space-between;gap:8px;margin-top:12px}.tutorial-actions .btn{width:auto;padding:7px 12px;font-size:12px}.tutorial-actions-left,.tutorial-actions-right{display:flex;gap:8px}
 
 /* TOOLTIP */
 .tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--gray200);color:var(--gray500);font-size:9px;font-weight:800;cursor:help;flex-shrink:0;vertical-align:middle;margin-left:3px;font-style:normal}
 .tip::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:#1F2937;color:#fff;font-size:11px;font-weight:400;white-space:pre-line;padding:8px 12px;border-radius:8px;z-index:9999;width:min(230px,calc(100vw - 64px));line-height:1.55;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .15s;text-transform:none;letter-spacing:0}
 .tip::before{content:'';position:absolute;left:calc(100% + 1px);top:50%;transform:translateY(-50%);border:5px solid transparent;border-right-color:#1F2937;opacity:0;pointer-events:none;transition:opacity .15s}
 .tip:hover::after,.tip:hover::before{opacity:1}
+.tip-rich::after,.tip-rich::before,.tip-floating::after,.tip-floating::before{display:none}
+.floating-tip-panel{position:fixed;z-index:13000;max-width:min(420px,calc(100vw - 24px));padding:12px 14px;border-radius:12px;background:#1F2937;color:#fff;font-size:13px;font-weight:500;line-height:1.65;white-space:pre-line;box-shadow:0 18px 44px rgba(6,15,30,.34);opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .12s ease,transform .12s ease;word-break:keep-all;overflow-wrap:anywhere}
+.floating-tip-panel.show{opacity:1;transform:translateY(0)}
+.rich-tip-panel{--panel-bg:#f8fbff;--panel-text:#0f1f36;--panel-muted:#52637d;--panel-border:rgba(118,87,255,.22);--panel-shadow:0 28px 80px rgba(15,28,52,.22);--panel-chip-bg:rgba(118,87,255,.1);--panel-chip-text:#5f3ef3;--panel-card-bg:rgba(255,255,255,.78);--panel-card-border:rgba(130,148,178,.2);--panel-grid:#cfd8e7;--panel-guide:rgba(45,72,120,.22);--panel-keep:#dff9eb;--panel-remove:#ffe4e7;--panel-tail:#e85d75;--panel-tail-glow:rgba(232,93,117,.18);--panel-curve:#4f7df8;--panel-iqr:#1eae7a;--panel-point:#16a34a;--panel-label:#20344f;--panel-label-soft:#61738f;--method-clean-active-bg:#fff3e4;--method-clean-active-text:#8a4b00;--method-balance-active-bg:#f2edff;--method-balance-active-text:#5b3ee7;--method-volume-active-bg:#edf7ff;--method-volume-active-text:#155e9d;--method-shape-active-bg:#edf9f1;--method-shape-active-text:#0f7a52;position:fixed;top:0;left:0;width:min(980px,calc(100vw - 24px));max-height:calc(100vh - 18px);overflow:hidden;background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-border);border-radius:22px;box-shadow:var(--panel-shadow);padding:14px;z-index:12000;opacity:0;transform:translateY(8px) scale(.99);pointer-events:none;transition:opacity .18s ease,transform .18s ease;backdrop-filter:blur(18px)}
+.rich-tip-panel[data-ui-scheme="dark"]{--panel-bg:#07111f;--panel-text:#f8fbff;--panel-muted:rgba(255,255,255,.72);--panel-border:rgba(118,87,255,.3);--panel-shadow:0 32px 88px rgba(6,15,30,.4);--panel-chip-bg:rgba(118,87,255,.16);--panel-chip-text:#d8cfff;--panel-card-bg:rgba(255,255,255,.04);--panel-card-border:rgba(255,255,255,.08);--panel-grid:#1b2c45;--panel-guide:rgba(255,255,255,.16);--panel-keep:rgba(23,156,115,.12);--panel-remove:rgba(216,90,102,.16);--panel-tail:#ff879c;--panel-tail-glow:rgba(255,135,156,.2);--panel-curve:#9fd7ff;--panel-iqr:#58d9a8;--panel-point:#a7f3d0;--panel-label:rgba(255,255,255,.86);--panel-label-soft:rgba(255,255,255,.6);--method-clean-active-bg:rgba(255,214,153,.18);--method-clean-active-text:#ffd89b;--method-balance-active-bg:rgba(196,181,253,.18);--method-balance-active-text:#ddd3ff;--method-volume-active-bg:rgba(147,197,253,.18);--method-volume-active-text:#c7e3ff;--method-shape-active-bg:rgba(110,231,183,.16);--method-shape-active-text:#b9f5d6}
+.rich-tip-panel.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.rich-tip-header{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:2px;align-items:center;margin-bottom:8px}
+.rich-tip-eyebrow{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:4px 9px;border-radius:999px;background:var(--panel-chip-bg);border:1px solid var(--panel-border);color:var(--panel-chip-text);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;align-self:start;margin-top:2px}
+.rich-tip-title{font-size:18px;font-weight:850;letter-spacing:-.025em;line-height:1.25;color:var(--panel-text)}
+.rich-tip-desc{grid-column:2;color:var(--panel-muted);font-size:12px;line-height:1.45;max-width:88ch;margin-top:0}
+.rich-tip-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:start}
+.rich-tip-main{background:var(--panel-card-bg);border:1px solid var(--panel-card-border);border-radius:18px;padding:10px;display:grid;gap:8px}
+.compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
+.compare-grid.compact{grid-template-columns:repeat(4,minmax(0,1fr));margin:0;order:0}
+.rich-tip-card{padding:9px 10px;display:grid;gap:5px;background:color-mix(in srgb,var(--panel-bg) 86%, #fff 14%);border:1px solid var(--panel-card-border);border-radius:14px;min-height:68px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}
+.rich-tip-card.active{outline:none;border-color:color-mix(in srgb,var(--panel-chip-text) 46%, transparent);background:var(--panel-chip-bg);box-shadow:0 10px 24px color-mix(in srgb,var(--panel-chip-text) 12%, transparent)}
+.rich-tip-card.clickable{cursor:pointer}.rich-tip-card.clickable:hover{transform:translateY(-1px)}
+.compare-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.compare-title{font-size:13px;font-weight:850;line-height:1.25;color:var(--panel-text)}
+.compare-tag{display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:850;border:1px solid var(--panel-card-border);white-space:nowrap}.compare-tag.clean{background:#fff0dc;color:#b45309}.compare-tag.balance{background:#efe9ff;color:#5b3ee7}.compare-tag.volume{background:#e8f8ff;color:#2563eb}.compare-tag.shape{background:#eef2f7;color:#475569}
+.compare-metric{display:grid;gap:2px;font-size:10.5px;color:var(--panel-muted);line-height:1.35}.compare-metric b{color:var(--panel-text)}
+.graph-shell{display:grid;grid-template-columns:minmax(0,1fr) 258px;gap:8px;align-items:stretch;order:1}
+.sigma-compare{position:relative;height:210px;border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--panel-bg) 86%, #fff 14%),color-mix(in srgb,var(--panel-bg) 94%, #000 6%));border:1px solid var(--panel-card-border);overflow:hidden}
+.sigma-compare svg{display:block;width:100%;height:100%}.sigma-compare text{transform-box:fill-box;transform-origin:center;transform:scaleX(1.32)}.sigma-compare .guide{stroke:var(--panel-guide);stroke-width:1.2;stroke-dasharray:4 4}.sigma-compare .baseline{stroke:var(--panel-grid);stroke-width:1.4}.sigma-compare .sigma-line{stroke:color-mix(in srgb,var(--panel-label-soft) 54%, transparent);stroke-width:1.5;stroke-dasharray:6 5}.sigma-compare .sigma-line.main{stroke:color-mix(in srgb,var(--panel-chip-text) 78%, transparent);stroke-width:2.4;animation:linePulse 2.2s ease-in-out infinite}.sigma-compare .label{fill:var(--panel-label);font-size:13px;font-weight:850}.sigma-compare .label-soft{fill:var(--panel-label-soft);font-size:12px;font-weight:800}.sigma-compare .axis-caption{fill:var(--panel-label-soft);font-size:12px;font-weight:800}.sigma-compare .area-caption{fill:var(--panel-label);font-size:13px;font-weight:850}.sigma-compare .point.keep{fill:var(--panel-point);animation:keepPulse 2.6s ease-in-out infinite}.sigma-compare .point.mid{fill:color-mix(in srgb,var(--panel-curve) 72%, #fff 28%);opacity:.9}.sigma-compare .point.outlier{fill:var(--panel-tail)}.sigma-compare .tail-left,.sigma-compare .tail-right{transform-box:fill-box;transform-origin:center;animation-duration:2.8s;animation-timing-function:ease-in-out;animation-iteration-count:infinite}.sigma-compare .tail-left{animation-name:tailLeftFly}.sigma-compare .tail-right{animation-name:tailRightFly}.sigma-compare .tail-drop{transform-box:fill-box;transform-origin:center;animation:tailDrop 2.8s ease-in-out infinite}.sigma-compare .ghost{opacity:.22}
+.graph-note{display:grid;grid-template-columns:1fr;gap:8px;align-content:stretch;margin:0}.graph-note-row{display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px;align-items:start;font-size:11px;color:var(--panel-muted);line-height:1.45;padding:9px 10px;border-radius:14px;border:1px solid var(--panel-card-border);background:color-mix(in srgb,var(--panel-bg) 84%, #fff 16%)}.graph-note-row b{color:var(--panel-text)}.graph-note-row .note-key{display:inline-flex;align-items:center;gap:5px;font-weight:850;color:var(--panel-text);white-space:nowrap}.graph-note-row .note-key::before{content:'';width:8px;height:8px;border-radius:999px;background:var(--note-color,#7657ff)}
+.graph-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;order:2}.glance-card{padding:9px 10px;border-radius:14px;border:1px solid var(--panel-card-border);background:color-mix(in srgb,var(--panel-bg) 84%, #fff 16%)}.glance-card b{display:block;font-size:9px;color:var(--panel-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}.glance-card strong{display:block;font-size:12.5px;color:var(--panel-text);line-height:1.25}.glance-card span{display:block;margin-top:3px;font-size:10.5px;color:var(--panel-muted);line-height:1.35}
+.rich-tip-side{order:3;display:block;background:color-mix(in srgb,var(--panel-bg) 84%, #fff 16%);border:1px solid var(--panel-card-border);border-radius:14px;padding:10px 12px}.rich-tip-side strong{display:block;margin:0 0 6px;font-size:12px;line-height:1.35;color:var(--panel-text)}.rich-tip-list{display:grid;grid-template-columns:1fr;gap:3px;font-size:11.5px;color:var(--panel-muted);line-height:1.45}.rich-tip-list > div{padding:0;background:transparent;border:0}.rich-tip-list > div::before{content:"- ";color:var(--panel-chip-text);font-weight:900}.rich-tip-list b{color:var(--panel-text)}
+.rich-tip-foot{margin-top:8px;padding:0 4px;font-size:10.5px;color:var(--panel-muted);line-height:1.35;text-align:right}.method-tabs{display:none}.rich-tip-card button.method-card-btn{all:unset;display:block;cursor:pointer}
+
+.sigma-compare .area-original{fill:color-mix(in srgb,var(--panel-grid) 28%, transparent);opacity:.34}
+.sigma-compare .area-keep{fill:var(--panel-keep);stroke:color-mix(in srgb,var(--panel-point) 54%, transparent);stroke-width:1.2;animation:zoneBreathe 3s ease-in-out infinite}
+.sigma-compare .area-removed{fill:var(--panel-remove);stroke:color-mix(in srgb,var(--panel-tail) 48%, transparent);stroke-width:1.2;transform-box:fill-box;transform-origin:center;animation:removeAreaDiscard 3.2s ease-in-out infinite}
+.sigma-compare .curve-keep{fill:none;stroke:var(--panel-curve);stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--panel-curve) 24%, transparent));stroke-dasharray:900;animation:curveDraw 1.2s ease both}
+.sigma-compare .curve-removed{fill:none;stroke:var(--panel-tail);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 8px 18px var(--panel-tail-glow));transform-box:fill-box;transform-origin:center;animation:discardCurve 3.2s ease-in-out infinite}
+.sigma-compare .removed-left{--discard-x:-58px;--discard-y:28px}.sigma-compare .removed-right{--discard-x:58px;--discard-y:28px}
+.sigma-compare .removed-label{fill:var(--panel-tail);font-size:12px;font-weight:850;animation:discardLabel 3.2s ease-in-out infinite}.sigma-compare .pre-iter-secondary{opacity:.48;animation-delay:.25s}.sigma-compare .iter-stage{opacity:0}.sigma-compare .iter-stage-0{animation:iterStage0 7.2s ease-in-out infinite}.sigma-compare .iter-stage-1{animation:iterStage1 7.2s ease-in-out infinite}.sigma-compare .iter-stage-2{animation:iterStage2 7.2s ease-in-out infinite}.sigma-compare .recalc-arrow{stroke:var(--panel-chip-text);stroke-width:2;fill:none;stroke-dasharray:5 5;opacity:.8}.sigma-compare .stage-label{fill:var(--panel-chip-text);font-size:11px;font-weight:850}
+
+@keyframes iterStage0{0%,29%{opacity:1}36%,100%{opacity:0}}@keyframes iterStage1{0%,29%{opacity:0}38%,64%{opacity:1}72%,100%{opacity:0}}@keyframes iterStage2{0%,64%{opacity:0}74%,100%{opacity:1}}@keyframes keepPulse{0%,100%{opacity:.84;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}@keyframes tailLeftFly{0%,18%{opacity:1;transform:translate(0,0) scale(1)}48%,100%{opacity:0;transform:translate(-52px,34px) scale(.58)}}@keyframes tailRightFly{0%,18%{opacity:1;transform:translate(0,0) scale(1)}48%,100%{opacity:0;transform:translate(52px,34px) scale(.58)}}@keyframes tailDrop{0%,18%{opacity:1;transform:translate(0,0)}48%,100%{opacity:0;transform:translate(0,38px)}}@keyframes removePulse{0%,100%{opacity:.7}50%{opacity:1}}@keyframes discardCurve{0%,18%{opacity:1;transform:translate(0,0) scale(1)}56%,82%{opacity:0;transform:translate(var(--discard-x),var(--discard-y)) scale(.58)}100%{opacity:1;transform:translate(0,0) scale(1)}}@keyframes removeAreaDiscard{0%,24%{opacity:.78}58%,82%{opacity:0}100%{opacity:.78}}@keyframes discardLabel{0%,24%{opacity:1}58%,82%{opacity:.12}100%{opacity:1}}@keyframes linePulse{0%,100%{opacity:.7}50%{opacity:1}}@keyframes zoneBreathe{0%,100%{opacity:.82}50%{opacity:1}}@keyframes curveDraw{from{stroke-dashoffset:900}to{stroke-dashoffset:0}}
+@media(max-width:760px){.rich-tip-panel{width:calc(100vw - 20px);padding:10px}.rich-tip-title{font-size:16px}.rich-tip-desc{font-size:11.5px}.compare-grid,.compare-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr))}.rich-tip-card{min-height:52px;padding:8px 9px}.graph-shell{grid-template-columns:1fr}.sigma-compare{height:160px}.graph-note{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.graph-note-row{padding:7px 8px}.glance-card{padding:7px 8px}.rich-tip-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.graph-meta{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.rich-tip-side{padding:8px 10px}.rich-tip-foot{display:none}}
+@media(max-width:640px){.rich-tip-panel{width:calc(100vw - 12px);max-height:calc(100vh - 12px);padding:10px;border-radius:18px;overflow:auto}.rich-tip-header{grid-template-columns:1fr}.rich-tip-desc{grid-column:1}.compare-grid,.compare-grid.compact{grid-template-columns:1fr}.graph-note{grid-template-columns:1fr}.sigma-compare{height:180px}.rich-tip-foot{text-align:left}}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--gray200);background:var(--white);color:var(--gray700);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;width:100%}
@@ -345,6 +480,7 @@ tr:hover td{background:var(--blue-light)}
       <a class="nav-link active" href="Preprocessing.html">메인</a>
       <a class="nav-link" href="program_intro.html">프로그램 소개</a>
       <a class="nav-link" href="MANUAL.html">사용자 매뉴얼</a>
+      <button type="button" class="theme-toggle" id="landingThemeToggle" onclick="app.toggleTheme()"><span class="theme-toggle-icon">🌙</span><span class="theme-toggle-label">다크 모드</span></button>
     </nav>
   </header>
 
@@ -359,9 +495,9 @@ tr:hover td{background:var(--blue-light)}
         <div class="dropzone" id="dropzone">
           <div class="dz-icon">☁️</div>
           <div class="dz-text">XLSX 파일을 드래그하거나 클릭해 불러오세요</div>
-          <button class="dz-btn" type="button">파일 선택</button>
+          <label class="dz-btn" for="fileInput" role="button" tabindex="0" aria-label="파일 선택">파일 선택</label>
           <div class="dz-format">브라우저 로컬 처리 · 서버 업로드 없음</div>
-          <input type="file" id="fileInput" accept=".xlsx" hidden>
+          <input type="file" id="fileInput" accept=".xlsx" class="file-input-visually-hidden" aria-hidden="true" tabindex="-1">
         </div>
       </div>
 
@@ -496,6 +632,7 @@ tr:hover td{background:var(--blue-light)}
           <a href="Preprocessing.html">메인</a>
       <a href="program_intro.html">소개</a>
       <a href="MANUAL.html">매뉴얼</a>
+      <button type="button" class="theme-toggle" id="dashboardThemeToggle" onclick="app.toggleTheme()"><span class="theme-toggle-icon">🌙</span><span class="theme-toggle-label">다크 모드</span></button>
     </div>
     <span class="dash-ver">v3.1</span>
   </div>
@@ -528,16 +665,16 @@ tr:hover td{background:var(--blue-light)}
         </div>
         <div class="sb-body">
           <div class="workflow-list">
-            <div class="workflow-step"><div class="workflow-step-text"><b>원본 트렌드 확인</b><br>업로드 직후 우측 차트에서 전체 추세와 튀는 구간을 먼저 확인합니다.</div></div>
-            <div class="workflow-step"><div class="workflow-step-text"><b>이상값 / 필터 / 시간 설정</b><br>좌측에서 제거 기준, 필터 조건, 시간 보정 기준을 정합니다.</div></div>
-            <div class="workflow-step"><div class="workflow-step-text"><b>전처리 실행 · 자동 저장</b><br>전처리데이터(정상 Validation 20% 포함)와 Simulation Data가 한 번에 저장됩니다.</div></div>
-            <div class="workflow-step"><div class="workflow-step-text"><b>차트와 로그 재확인</b><br>전처리 후 추세, 분포, 로그를 보고 설정이 적절했는지 확인합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="0"><button type="button" class="workflow-info-btn" data-spotlight-target="chartCard" data-spotlight-title="원본 트렌드 확인" data-spotlight-desc="여기서 먼저 전체 추세와 튀는 구간을 봅니다. 파일을 불러오면 차트가 열리고, 이상값 기준을 정하기 전에 가장 먼저 확인하는 화면입니다.">i</button><div class="workflow-step-text"><b>원본 트렌드 확인</b><br>업로드 직후 우측 차트에서 전체 추세와 튀는 구간을 먼저 확인합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="1"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-controls" data-spotlight-title="이상값 / 필터 / 시간 설정" data-spotlight-desc="이 구역에서 제거 기준, Condition, 시간 보정 기준을 차례로 정합니다. 먼저 차트를 본 뒤 필요한 항목만 최소한으로 조정하면 됩니다.">i</button><div class="workflow-step-text"><b>이상값 / 필터 / 시간 설정</b><br>좌측에서 제거 기준, 필터 조건, 시간 보정 기준을 정합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="2"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-action" data-spotlight-title="전처리 실행 · 자동 저장" data-spotlight-desc="설정이 끝나면 여기서 전처리를 실행합니다. 전처리 결과와 Validation 포함 파일, Simulation Data가 자동 저장됩니다.">i</button><div class="workflow-step-text"><b>전처리 실행 · 자동 저장</b><br>전처리데이터(정상 Validation 20% 포함)와 Simulation Data가 한 번에 저장됩니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="3"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-review" data-spotlight-title="차트와 로그 재확인" data-spotlight-desc="실행 후에는 전/후 비교, 차트, 로그를 다시 확인합니다. 너무 많이 지워졌는지, 설정이 적절했는지 마지막으로 판단하는 단계입니다.">i</button><div class="workflow-step-text"><b>차트와 로그 재확인</b><br>전처리 후 추세, 분포, 로그를 보고 설정이 적절했는지 확인합니다.</div></div>
           </div>
         </div>
       </div>
 
       <!-- 이상값 처리 -->
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-controls">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>📊</span> 이상값 처리
           <i class="tip" data-tip="이상값 처리를 켜면 숫자 컬럼에서 튀는 행을 제거합니다.&#10;많이 제거할수록 학습 데이터는 더 촘촘하고 안정적이지만 전체 데이터 양은 줄어듭니다.&#10;덜 제거할수록 원본 데이터 양은 더 많이 남지만 이상값이 일부 포함될 수 있습니다.">i</i>
@@ -552,22 +689,22 @@ tr:hover td{background:var(--blue-light)}
             <label>
               <input type="radio" name="outlierMethod" value="2sigma">
               <span class="method-choice"><span class="method-title">2σ · 보수적</span><span class="method-badge clean">제거↑</span><span class="method-badge clean">데이터량↓</span></span>
-              <i class="tip" data-tip="평균과 표준편차 기준으로 제거합니다.&#10;정상 범위를 보수적으로 잡아 더 많이 제거합니다.&#10;학습 데이터를 더 깔끔하게 만들고 싶을 때 사용하세요.">i</i>
+              <i class="tip tip-rich" data-help-target="outlier-methods" data-help-method="2sigma" data-tip="강하게 정리하는 방식입니다. 더 많이 제거하고 더 깔끔하게 남깁니다.">i</i>
             </label>
             <label>
               <input type="radio" name="outlierMethod" value="2.5sigma" checked>
               <span class="method-choice"><span class="method-title">2.5σ · 균형형</span><span class="method-badge balance">기본</span><span class="method-badge balance">균형</span></span>
-              <i class="tip" data-tip="평균과 표준편차 기준의 균형형 설정입니다.&#10;너무 많이 지우지 않으면서 튀는 값을 잘 잡습니다.&#10;기본 운영값으로 사용하기 좋습니다.">i</i>
+              <i class="tip tip-rich" data-help-target="outlier-methods" data-help-method="2.5sigma" data-tip="처음 쓰기 가장 무난한 방식입니다. 적당히 지우고 적당히 남깁니다.">i</i>
             </label>
             <label>
               <input type="radio" name="outlierMethod" value="3sigma">
               <span class="method-choice"><span class="method-title">3σ · 보존형</span><span class="method-badge volume">데이터량↑</span><span class="method-badge volume">잔존 가능</span></span>
-              <i class="tip" data-tip="평균과 표준편차 기준이지만 극단값 위주로만 제거합니다.&#10;데이터를 최대한 많이 남기고 싶을 때 적합합니다.&#10;약한 이상은 일부 남을 수 있습니다.">i</i>
+              <i class="tip tip-rich" data-help-target="outlier-methods" data-help-method="3sigma" data-tip="데이터를 더 많이 남기는 방식입니다. 너무 많이 지워지는 것이 걱정될 때 봅니다.">i</i>
             </label>
             <label>
               <input type="radio" name="outlierMethod" value="iqr">
               <span class="method-choice"><span class="method-title">IQR · 비대칭 대응</span><span class="method-badge shape">분포형 대응</span></span>
-              <i class="tip" data-tip="Q1~Q3 범위(IQR)를 기준으로 제거합니다.&#10;분포가 한쪽으로 치우친 데이터에서 더 안정적입니다.&#10;비대칭 센서 데이터에 우선 고려하세요.">i</i>
+              <i class="tip tip-rich" data-help-target="outlier-methods" data-help-method="iqr" data-tip="한쪽으로 치우친 데이터에 맞는 방식입니다. 비슷한 모양이 아닌 데이터일 때 봅니다.">i</i>
             </label>
           </div>
           <div style="font-size:11px;color:var(--gray400);margin-top:6px">처리: 이상값 포함 행 전체 삭제</div>
@@ -584,7 +721,7 @@ tr:hover td{background:var(--blue-light)}
             3σ: 데이터를 많이 남기고 극단값만 제거하는 보존형 기준
           </div>
           <div class="sb-label" style="margin-top:8px">선제거 모드
-            <i class="tip" data-tip="메인 이상값 처리 전에 극단값을 먼저 정리하는 단계입니다.&#10;MAD는 중앙값 기준이라 극단값에 덜 흔들립니다.&#10;1회 선제거: MAD 기반 거친 1차 제거&#10;반복 clipping: median/MAD 기반 3σ clipping을 최대 5회 반복&#10;트렌드 오염이 심한 파일에서 먼저 사용하세요.">i</i>
+            <i class="tip tip-rich" data-help-target="pre-removal-modes" data-help-method="prefilter" data-tip="메인 이상값 처리 전에 극단값이 먼저 빠지는 면적을 보여줍니다.">i</i>
           </div>
           <select id="preRemovalMode" style="margin-bottom:6px">
             <option value="none">사용 안 함</option>
@@ -782,10 +919,15 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- 액션 -->
-      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px" id="workflowTarget-action">
         <button type="button" class="btn primary" id="processBtn" onclick="app.runPreprocessing()" disabled>🚀 전처리 실행 · 자동 저장</button>
         <div class="val-dl-desc" style="display:block;padding-top:0">
           실행 시 <b>전처리데이터(정상 Validation 포함)</b>와 <b>Simulation Data</b>를 자동 저장합니다.
+        </div>
+        <div class="save-output-guide" id="saveOutputGuide">
+          <div class="save-output-title">저장 파일 구성</div>
+          <div class="save-output-item"><b>① *_prepro_with_valid.xlsx</b><span>전처리 완료 데이터 + 정상 Validation 20%</span></div>
+          <div class="save-output-item"><b>② Simulation_Data_*.xlsx</b><span>정상 → 전환 → 이상 시나리오 점검 데이터</span></div>
         </div>
       </div>
     </div>
@@ -892,6 +1034,7 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- Log -->
+      <div id="workflowTarget-review">
       <div class="log-card">
         <div class="table-header" onclick="document.getElementById('logOutput').classList.toggle('hidden')" style="cursor:pointer">
           <span class="table-title">📋 처리 로그</span>
@@ -900,6 +1043,7 @@ tr:hover td{background:var(--blue-light)}
         <div class="log" id="logOutput">σ 조기경보 시스템 모델링 데이터 전처리 도구 (Web v3.1)
 로그 출력 대기 중...
 </div>
+      </div>
       </div>
     </div>
   </div>
@@ -1193,8 +1337,12 @@ const app={
 
   init(){
     const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
+    const dzBtn=dz.querySelector('.dz-btn');
     const presetImport=document.getElementById('presetImportInput');
-    dz.addEventListener('click',()=>{if(this._preservePendingOnNextFileDialog){this._preservePendingOnNextFileDialog=false}else{this._pendingPresetName=null}fi.click()});
+    this.applyTheme(this.resolveThemePreference());
+    dz.addEventListener('click',e=>{if(e.target.closest('.dz-btn,#fileInput'))return;this.openFileChooser()});
+    dzBtn?.addEventListener('click',e=>{e.stopPropagation();this._prepareFileDialog()});
+    dzBtn?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();this.openFileChooser()}});
     dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
     dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
     dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(!this._pendingPresetName)this._pendingPresetName=null;if(e.dataTransfer.files[0])this.handleFile(e.dataTransfer.files[0])});
@@ -1206,7 +1354,18 @@ const app={
     document.getElementById('previewHead').addEventListener('click',e=>{
       const th=e.target.closest('th');if(th&&th.dataset.col)this.sortTable(th.dataset.col);
     });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',e=>{
+      const saved=localStorage.getItem('dp_ui_theme');
+      if(saved==='light'||saved==='dark')return;
+      this.applyTheme(e.matches?'dark':'light');
+    });
   },
+
+  resolveThemePreference(){const saved=localStorage.getItem('dp_ui_theme');if(saved==='light'||saved==='dark')return saved;return window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'},
+  applyTheme(theme){const next=theme==='dark'?'dark':'light';document.body.dataset.uiTheme=next;document.documentElement.dataset.theme=next;document.querySelectorAll('.theme-toggle').forEach(btn=>{const icon=btn.querySelector('.theme-toggle-icon'),label=btn.querySelector('.theme-toggle-label');if(icon)icon.textContent=next==='dark'?'☀️':'🌙';if(label)label.textContent=next==='dark'?'라이트 모드':'다크 모드';btn.setAttribute('aria-pressed',String(next==='dark'))});},
+  toggleTheme(){const next=(document.body.dataset.uiTheme||'light')==='dark'?'light':'dark';localStorage.setItem('dp_ui_theme',next);this.applyTheme(next);this.toast(next==='dark'?'다크 모드로 전환했습니다.':'라이트 모드로 전환했습니다.');},
+  _prepareFileDialog(){if(this._preservePendingOnNextFileDialog){this._preservePendingOnNextFileDialog=false}else{this._pendingPresetName=null}},
+  openFileChooser(){const fi=document.getElementById('fileInput');this._prepareFileDialog();fi.value='';fi.click()},
 
   _stripExt(name=''){const i=name.lastIndexOf('.');return i>0?name.slice(0,i):name},
   _timestamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`},
@@ -1216,7 +1375,10 @@ const app={
     const valDesc=document.getElementById('valDlDesc');
     valDesc.innerHTML=`자동 저장 파일명: <b>${names.combined}.xlsx</b><br>의미: 전처리 완료 데이터 + 정상 Validation 20%가 합쳐진 최종 전처리데이터<br>※ Validation은 순수 정상 데이터만 포함하며, 실행 시 자동 저장됩니다.`;
     const simDesc=document.getElementById('simulationDlDesc');
-    simDesc.innerHTML=`저장 파일명: <b>Simulation_Data_${this._timestamp()}.xlsx</b><br>시트명: <b>Simulation</b><br>구조: 정상 → 전환 → 이상 (비율 합계 100, 총 120~180분 권장)<br>※ 이상 데이터는 이 Simulation에서만 생성합니다. 브라우저 기본 다운로드 위치로 저장됩니다.`;
+    const simName=`Simulation_Data_${this._timestamp()}`;
+    simDesc.innerHTML=`저장 파일명: <b>${simName}.xlsx</b><br>시트명: <b>Simulation</b><br>구조: 정상 → 전환 → 이상 (비율 합계 100, 총 120~180분 권장)<br>※ 이상 데이터는 이 Simulation에서만 생성합니다. 브라우저 기본 다운로드 위치로 저장됩니다.`;
+    const guide=document.getElementById('saveOutputGuide');
+    if(guide){guide.innerHTML=`<div class="save-output-title">저장 파일 구성</div><div class="save-output-item"><b>① ${names.combined}.xlsx</b><span>전처리 완료 데이터 + 정상 Validation 20%</span></div><div class="save-output-item"><b>② ${simName}.xlsx</b><span>정상 → 전환 → 이상 시나리오 점검 데이터</span></div>`}
   },
 
   handleFile(file){
@@ -1889,7 +2051,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   exportPreset(name){const preset=this.pm.export(name);if(!preset){this.toast('프리셋 내보내기에 실패했습니다',true);return}const safe=''.concat(name).replace(/[^\w\-가-힣 ]+/g,'_').trim()||'preset';const blob=new Blob([JSON.stringify(preset,null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.download=`${safe}.json`;a.href=URL.createObjectURL(blob);a.click();URL.revokeObjectURL(a.href);this.toast(`프리셋 "${name}" 내보내기 완료!`);this.log(`📤 프리셋 내보내기: ${safe}.json`)},
   triggerPresetImport(){document.getElementById('presetImportInput').click()},
   importPresetFile(e){const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const preset=JSON.parse(reader.result);const name=this.pm.import(preset);this.toast(`프리셋 "${name}" 가져오기 완료!`);this.log(`📥 프리셋 가져오기: ${name}`);if(document.getElementById('presetLoadModal').classList.contains('show'))this.showPresetLoadModal()}catch(err){this.toast(`프리셋 가져오기 실패: ${err.message}`,true)}finally{e.target.value=''}};reader.readAsText(file,'utf-8')},
-  openFileWithPreset(name){this._pendingPresetName=name;this._preservePendingOnNextFileDialog=true;this.closeModal('presetLoadModal');document.getElementById('fileInput').click();},
+  openFileWithPreset(name){this._pendingPresetName=name;this._preservePendingOnNextFileDialog=true;this.closeModal('presetLoadModal');this.openFileChooser();},
 
   /* ===== UI ===== */
   progress(val,text){document.getElementById('progressWrap').classList.toggle('show',val>0&&val<100);document.getElementById('progressFill').style.width=val+'%';document.getElementById('progressText').textContent=text;if(val>=100)setTimeout(()=>document.getElementById('progressWrap').classList.remove('show'),2000)},
@@ -1898,6 +2060,855 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 };
 
 document.addEventListener('DOMContentLoaded',()=>app.init());
+</script>
+<template id="richTipTemplate-outlier-methods">
+  <div class="rich-tip-panel" role="dialog" aria-label="이상값 처리 방식 설명">
+    <div class="rich-tip-header">
+      <div class="rich-tip-eyebrow">Outlier Guide</div>
+      <div class="rich-tip-title" data-role="title"></div>
+      <div class="rich-tip-desc" data-role="desc"></div>
+    </div>
+    <div class="rich-tip-layout">
+      <div class="rich-tip-main">
+        <div class="compare-grid compact" data-role="cards"></div>
+        <div class="graph-shell">
+          <div class="sigma-compare" data-role="graph"></div>
+          <div class="graph-note" data-role="notes"></div>
+        </div>
+        <div class="graph-meta" data-role="glance"></div>
+        <div class="rich-tip-side">
+          <strong data-role="side-title"></strong>
+          <div class="rich-tip-list" data-role="side-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rich-tip-foot">각 i에 마우스를 올리면 해당 방식이 바로 선택됩니다. 상단 카드를 눌러 즉시 비교할 수 있습니다.</div>
+  </div>
+</template>
+<template id="richTipTemplate-pre-removal-modes">
+  <div class="rich-tip-panel" role="dialog" aria-label="선제거 모드 설명">
+    <div class="rich-tip-header">
+      <div class="rich-tip-eyebrow">Pre-removal Guide</div>
+      <div class="rich-tip-title" data-role="title"></div>
+      <div class="rich-tip-desc" data-role="desc"></div>
+    </div>
+    <div class="rich-tip-layout">
+      <div class="rich-tip-main">
+        <div class="compare-grid compact" data-role="cards"></div>
+        <div class="graph-shell">
+          <div class="sigma-compare" data-role="graph"></div>
+          <div class="graph-note" data-role="notes"></div>
+        </div>
+        <div class="graph-meta" data-role="glance"></div>
+        <div class="rich-tip-side">
+          <strong data-role="side-title"></strong>
+          <div class="rich-tip-list" data-role="side-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rich-tip-foot">선제거는 메인 이상값 처리 전에 극단값이 기준을 오염시키지 않도록 먼저 면적을 줄이는 단계입니다.</div>
+  </div>
+</template>
+<script>
+(() => {
+  const METHOD_HELP = {
+    '2sigma': {
+      badge: '보수형',
+      tabClass: 'clean',
+      title: '보수형은 “확실히 튀는 값부터 먼저 정리”하고 싶을 때 고릅니다',
+      desc: '데이터를 더 깔끔하게 만들고 싶을 때 쓰는 방식입니다. 좌우 바깥 구간을 먼저 잘라내기 때문에 행 수는 더 줄 수 있지만, 노이즈가 많은 파일에서는 판단이 쉽습니다.',
+      sideTitle: '처음 쓰는 사용자라면 이렇게 이해하면 됩니다',
+      sideList: [
+        '가장 <b>강하게 정리</b>하는 쪽입니다.',
+        '차트에서 튀는 값이 많고, 우선 <b>깨끗한 데이터</b>를 만들고 싶을 때 맞습니다.',
+        '대신 정상 범위 일부도 같이 빠질 수 있어 <b>행 수 감소</b>를 같이 봐야 합니다.'
+      ],
+      glance: [
+        ['추천 상황', '노이즈가 많고 정제를 우선할 때', '데이터 양보다 안정적인 패턴 확보가 더 중요할 때'],
+        ['제거 강도', '강함', '왼쪽/오른쪽 바깥 구간이 먼저 사라집니다'],
+        ['남는 느낌', '가운데가 빨리 정리됨', '빠르게 보수적인 학습 구간을 만듭니다']
+      ],
+      notes: [
+        ['보이는 법', '초록 면적은 남는 데이터 집합이고, 빨간 면적은 삭제되어 날아가는 구간입니다.'],
+        ['차이', '2.5σ·3σ보다 안쪽에서 자르기 때문에 빨간 삭제 구간이 가장 큽니다.']
+      ]
+    },
+    '2.5sigma': {
+      badge: '균형형',
+      tabClass: 'balance',
+      title: '균형형은 “너무 많이 지우지도, 너무 남기지도 않게” 시작할 때 좋습니다',
+      desc: '처음 실행할 때 가장 무난한 기본값입니다. 2σ보다 조금 더 남기고, 3σ보다는 조금 더 정리해서 전체적인 균형을 맞춥니다.',
+      sideTitle: '가장 무난한 시작점',
+      sideList: [
+        '처음에는 이 값을 두고 결과를 보는 것이 가장 편합니다.',
+        '차트가 너무 거칠면 2σ로, 너무 많이 지워지면 3σ로 옮겨가면 됩니다.',
+        '즉 <b>비교 기준점</b> 역할을 하는 방식입니다.'
+      ],
+      glance: [
+        ['추천 상황', '처음 실행하는 기본 선택', '결과를 보고 더 강하게/약하게 조정하기 좋습니다'],
+        ['제거 강도', '중간', '보수형과 보존형의 가운데 느낌입니다'],
+        ['남는 느낌', '중심 + 주변이 적당히 유지', '가장 무난한 결과를 기대할 수 있습니다']
+      ],
+      notes: [
+        ['보이는 법', '빨간 면적이 날아간 뒤 가운데 초록 면적만 남습니다.'],
+        ['차이', '빨간 삭제 구간 크기가 2σ와 3σ 사이의 중간입니다.']
+      ]
+    },
+    '3sigma': {
+      badge: '보존형',
+      tabClass: 'volume',
+      title: '보존형은 “데이터를 최대한 많이 남기고 싶다”는 상황에 맞습니다',
+      desc: '행 수가 너무 많이 줄어드는 것이 걱정될 때 보는 방식입니다. 아주 극단적인 값만 먼저 빼고 나머지는 더 많이 유지합니다.',
+      sideTitle: '데이터 양이 중요할 때',
+      sideList: [
+        '2σ, 2.5σ보다 <b>더 바깥까지 남깁니다</b>.',
+        '값을 많이 보존하는 대신, 완만한 이상값은 일부 남을 수 있습니다.',
+        '행 수 유지가 중요한 파일에서 먼저 비교해볼 만합니다.'
+      ],
+      glance: [
+        ['추천 상황', '행 수 보존이 중요할 때', '너무 많이 지워지는 것이 걱정될 때'],
+        ['제거 강도', '약함', '가장 바깥 구간만 주로 제거합니다'],
+        ['남는 느낌', '주변부까지 넓게 유지', '데이터량을 많이 가져갑니다']
+      ],
+      notes: [
+        ['보이는 법', '대부분의 초록 면적이 남고 아주 바깥 빨간 면적만 날아갑니다.'],
+        ['차이', '삭제되는 빨간 구간이 가장 작아 데이터 양을 더 많이 보존합니다.']
+      ]
+    },
+    'iqr': {
+      badge: '비대칭 대응',
+      tabClass: 'shape',
+      title: '비대칭 대응은 “그래프 모양이 한쪽으로 치우쳐 있을 때” 더 잘 맞습니다',
+      desc: 'IQR은 평균을 기준으로 딱 반씩 보는 대신, 실제 분포 모양을 따라 중심 구간을 잡습니다. 그래서 한쪽 꼬리가 긴 데이터에서는 이쪽이 더 자연스럽습니다.',
+      sideTitle: 'IQR은 이런 데이터에 어울립니다',
+      sideList: [
+        '한쪽으로 길게 늘어진 그래프처럼 <b>비대칭 분포</b>에서 읽기 쉽습니다.',
+        '정규분포처럼 예쁘게 생기지 않은 센서 데이터에 더 안정적일 수 있습니다.',
+        '그래프 배경도 일부러 한쪽 꼬리가 긴 모양으로 보여줍니다.'
+      ],
+      glance: [
+        ['추천 상황', '한쪽으로 치우친 센서 데이터', '평균 기준보다 실제 모양이 더 중요할 때'],
+        ['제거 강도', '분포 기준', '좌우를 똑같이 자르지 않고 모양을 먼저 봅니다'],
+        ['남는 느낌', '치우친 중심대를 자연스럽게 유지', '비대칭 데이터를 덜 억지로 자릅니다']
+      ],
+      notes: [
+        ['보이는 법', 'IQR 중심 면적만 남고 양쪽 빨간 꼬리 면적은 날아갑니다.'],
+        ['차이', '좌우 대칭보다 Q1~Q3 중심대역을 기준으로 삭제 구간을 보여줍니다.']
+      ]
+    }
+  };
+
+
+  const PRE_REMOVAL_HELP = {
+    none: {
+      badge: '미사용',
+      tabClass: 'shape',
+      title: '선제거 없음은 “원본 면적을 그대로 메인 이상값 처리로 넘기는” 방식입니다',
+      desc: '먼저 잘라내는 면적이 없습니다. 원본 분포의 극단값까지 그대로 남기므로 이후 평균/표준편차 기준이 극단값에 끌릴 수 있습니다.',
+      sideTitle: '이럴 때 선택합니다',
+      sideList: [
+        '파일이 이미 안정적이고 튀는 값이 거의 없을 때 사용합니다.',
+        '원본 면적을 최대한 그대로 보고 싶을 때 맞습니다.',
+        '단, 큰 극단값이 있으면 뒤쪽 이상값 기준이 넓어질 수 있습니다.'
+      ],
+      glance: [
+        ['추천 상황', '깨끗한 파일', '선제 단계에서 삭제되는 빨간 면적이 없습니다'],
+        ['제거 강도', '없음', '전체 면적이 다음 단계로 전달됩니다'],
+        ['남는 느낌', '원본 그대로', '데이터 양은 가장 많이 유지됩니다']
+      ],
+      notes: [
+        ['보이는 법', '전체 면적이 초록으로 남고 빨간 삭제 면적은 없습니다.'],
+        ['차이', '극단값이 평균/표준편차를 오염시켜도 먼저 막아주지 않습니다.']
+      ]
+    },
+    prefilter: {
+      badge: 'MAD',
+      tabClass: 'clean',
+      title: 'MAD 선제거는 “아주 큰 극단값 면적만 먼저 떼어내는” 1차 정리입니다',
+      desc: '평균 대신 중앙값과 MAD를 기준으로 보므로 큰 극단값에 덜 흔들립니다. 메인 이상값 처리 전에 멀리 떨어진 빨간 면적을 먼저 날려 기준 오염을 줄입니다.',
+      sideTitle: 'MAD 선제거를 쉽게 보면',
+      sideList: [
+        '<b>중앙값</b>을 중심으로 원래 덩어리를 먼저 찾습니다.',
+        '멀리 튄 스파이크나 긴 꼬리처럼 <b>명백한 극단 면적</b>만 먼저 제거합니다.',
+        '한 번만 적용하므로 과하게 깎기보다 <b>기준 오염 방지</b>에 가깝습니다.'
+      ],
+      glance: [
+        ['추천 상황', '큰 스파이크가 평균을 흔들 때', '원본 덩어리와 멀리 떨어진 면적을 먼저 제거합니다'],
+        ['제거 강도', '1회 강한 극단값 제거', '중앙 덩어리는 넓게 유지합니다'],
+        ['남는 느낌', '오염 제거 후 안정화', '메인 이상값 기준이 덜 왜곡됩니다']
+      ],
+      notes: [
+        ['보이는 법', '중앙 초록 면적은 유지되고 멀리 떨어진 빨간 면적만 날아갑니다.'],
+        ['차이', '평균이 아니라 중앙값/MAD 기준이라 큰 스파이크에 덜 끌립니다.']
+      ]
+    },
+    iterative: {
+      badge: '반복',
+      tabClass: 'volume',
+      title: '반복 clipping은 “제거 후 다시 기준을 잡는” 단계적 정리입니다',
+      desc: '한 번 제거한 뒤 남은 면적으로 중앙값/MAD 또는 표준편차 기준을 다시 계산합니다. 빨간 면적이 여러 차례 줄어들며 기준이 점점 안정됩니다.',
+      sideTitle: '반복 clipping은 이렇게 이해하면 됩니다',
+      sideList: [
+        '1차로 가장 먼 빨간 면적을 제거하고, 남은 초록 면적으로 기준을 다시 잡습니다.',
+        '다시 계산한 기준 밖에 남은 빨간 면적을 최대 5회까지 반복 제거합니다.',
+        '노이즈가 여러 층으로 섞인 파일에서 <b>기준을 단계적으로 안정화</b>할 때 적합합니다.'
+      ],
+      glance: [
+        ['추천 상황', '극단값 층이 여러 번 보일 때', '한 번 제거해도 바깥 면적이 계속 남는 파일에 적합합니다'],
+        ['제거 강도', '반복형', '삭제 면적이 여러 차례 나뉘어 날아갑니다'],
+        ['남는 느낌', '단계적으로 좁혀짐', '최종 초록 면적이 더 안정적으로 남습니다']
+      ],
+      notes: [
+        ['보이는 법', '빨간 면적이 1차, 2차처럼 단계적으로 날아갑니다.'],
+        ['차이', '한 번 기준을 잡고 끝내지 않고 남은 면적으로 기준을 다시 계산합니다.']
+      ]
+    }
+  };
+
+  const METHOD_ORDER = ['2sigma', '2.5sigma', '3sigma', 'iqr'];
+  const PRE_REMOVAL_ORDER = ['none', 'prefilter', 'iterative'];
+  const TAB_LABEL = {
+    '2sigma': ['2σ · 보수형', '강하게 정리'],
+    '2.5sigma': ['2.5σ · 균형형', '기본 시작점'],
+    '3sigma': ['3σ · 보존형', '많이 남김'],
+    'iqr': ['IQR · 비대칭 대응', '치우친 분포']
+  };
+  const PRE_REMOVAL_LABEL = {
+    none: ['사용 안 함', '원본 면적 유지'],
+    prefilter: ['1회 선제거 · MAD', '극단 면적 먼저 제거'],
+    iterative: ['반복 clipping · 3σ', '여러 차례 기준 안정화']
+  };
+
+  let activeTrigger = null;
+  let activePanel = null;
+  let hideTimer = null;
+  let spotlightTarget = null;
+  let spotlightOverlay = null;
+  let spotlightHole = null;
+  let spotlightCallout = null;
+
+  const clearHideTimer = () => {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+  };
+
+  const resolvePanelTheme = () => {
+    const body = document.body;
+    const explicit = body?.dataset?.uiTheme || body?.dataset?.theme || document.documentElement?.dataset?.theme;
+    if (explicit === 'dark' || body?.classList.contains('theme-dark') || body?.classList.contains('dark')) return 'dark';
+    if (explicit === 'light' || body?.classList.contains('theme-light') || body?.classList.contains('light')) return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  };
+
+  const applyPanelTheme = (panel) => {
+    if (panel) panel.dataset.uiScheme = resolvePanelTheme();
+  };
+
+  const pointsToAttr = (points) => points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+
+  const samplePoints = (from, to, yFn, step = 10) => {
+    const points = [[from, yFn(from)]];
+    for (let x = Math.ceil(from / step) * step; x < to; x += step) {
+      if (x > from) points.push([x, yFn(x)]);
+    }
+    points.push([to, yFn(to)]);
+    return points;
+  };
+
+  const areaPoints = (points, baseline = 182) => {
+    if (!points.length) return '';
+    const first = points[0], last = points[points.length - 1];
+    return pointsToAttr([...points, [last[0], baseline], [first[0], baseline]]);
+  };
+
+  const buildGraphSvg = (method) => {
+    const baseline = 182;
+    if (method === 'iqr') {
+      const skewY = (x) => baseline - 126 * Math.exp(-((x - 408) ** 2) / (2 * (x < 408 ? 118 : 248) ** 2));
+      const q1 = 252, median = 414, q3 = 584;
+      const full = samplePoints(96, 920, skewY);
+      const left = samplePoints(96, q1, skewY);
+      const keep = samplePoints(q1, q3, skewY);
+      const right = samplePoints(q3, 920, skewY);
+      return `
+        <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="54" y1="${baseline}" x2="946" y2="${baseline}" class="baseline"></line>
+          <line x1="54" y1="142" x2="946" y2="142" class="guide"></line>
+          <line x1="54" y1="104" x2="946" y2="104" class="guide ghost"></line>
+          <polygon points="${areaPoints(full, baseline)}" class="area-original"></polygon>
+          <polygon points="${areaPoints(left, baseline)}" class="area-removed removed-left"></polygon>
+          <polygon points="${areaPoints(keep, baseline)}" class="area-keep"></polygon>
+          <polygon points="${areaPoints(right, baseline)}" class="area-removed removed-right"></polygon>
+          <polyline points="${pointsToAttr(keep)}" class="curve-keep"></polyline>
+          <polyline points="${pointsToAttr(left)}" class="curve-removed removed-left"></polyline>
+          <polyline points="${pointsToAttr(right)}" class="curve-removed removed-right"></polyline>
+          <line x1="${q1}" y1="48" x2="${q1}" y2="${baseline}" class="sigma-line main"></line>
+          <line x1="${median}" y1="36" x2="${median}" y2="${baseline}" class="sigma-line main"></line>
+          <line x1="${q3}" y1="48" x2="${q3}" y2="${baseline}" class="sigma-line main"></line>
+          <text x="238" y="38" class="label">Q1</text>
+          <text x="382" y="28" class="label">중앙값</text>
+          <text x="566" y="38" class="label">Q3</text>
+          <text x="334" y="112" class="label-soft">IQR 유지 면적</text>
+        </svg>`;
+    }
+
+    const threshold = {
+      '2sigma': { left: 285, right: 715, title: '2σ 보수형', caption: '초록 면적이 가장 작게 남음', removeOpacity: 1 },
+      '2.5sigma': { left: 235, right: 765, title: '2.5σ 균형형', caption: '중간 크기의 초록 면적 유지', removeOpacity: .82 },
+      '3sigma': { left: 190, right: 810, title: '3σ 보존형', caption: '초록 면적이 가장 넓게 남음', removeOpacity: .62 }
+    }[method] || { left: 235, right: 765, title: '2.5σ 균형형', caption: '중간 크기의 초록 면적 유지', removeOpacity: .82 };
+    const bellY = (x) => baseline - 156 * Math.exp(-((x - 500) ** 2) / (2 * 214 ** 2));
+    const full = samplePoints(94, 906, bellY);
+    const left = samplePoints(94, threshold.left, bellY);
+    const keep = samplePoints(threshold.left, threshold.right, bellY);
+    const right = samplePoints(threshold.right, 906, bellY);
+    return `
+      <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="54" y1="${baseline}" x2="946" y2="${baseline}" class="baseline"></line>
+        <line x1="54" y1="142" x2="946" y2="142" class="guide"></line>
+        <line x1="54" y1="104" x2="946" y2="104" class="guide ghost"></line>
+        <polygon points="${areaPoints(full, baseline)}" class="area-original"></polygon>
+        <polygon points="${areaPoints(left, baseline)}" class="area-removed removed-left" style="opacity:${threshold.removeOpacity}"></polygon>
+        <polygon points="${areaPoints(keep, baseline)}" class="area-keep"></polygon>
+        <polygon points="${areaPoints(right, baseline)}" class="area-removed removed-right" style="opacity:${threshold.removeOpacity}"></polygon>
+        <polyline points="${pointsToAttr(keep)}" class="curve-keep"></polyline>
+        <polyline points="${pointsToAttr(left)}" class="curve-removed removed-left"></polyline>
+        <polyline points="${pointsToAttr(right)}" class="curve-removed removed-right"></polyline>
+        <line x1="285" y1="46" x2="285" y2="${baseline}" class="sigma-line ${method === '2sigma' ? 'main' : ''}"></line>
+        <line x1="715" y1="46" x2="715" y2="${baseline}" class="sigma-line ${method === '2sigma' ? 'main' : ''}"></line>
+        <line x1="235" y1="58" x2="235" y2="${baseline}" class="sigma-line ${method === '2.5sigma' ? 'main' : ''}"></line>
+        <line x1="765" y1="58" x2="765" y2="${baseline}" class="sigma-line ${method === '2.5sigma' ? 'main' : ''}"></line>
+        <line x1="190" y1="70" x2="190" y2="${baseline}" class="sigma-line ${method === '3sigma' ? 'main' : ''}"></line>
+        <line x1="810" y1="70" x2="810" y2="${baseline}" class="sigma-line ${method === '3sigma' ? 'main' : ''}"></line>
+        <line x1="500" y1="20" x2="500" y2="${baseline}" class="sigma-line"></line>
+        <text x="270" y="38" class="label-soft">-2σ</text><text x="700" y="38" class="label-soft">+2σ</text>
+        <text x="212" y="52" class="label-soft">-2.5σ</text><text x="742" y="52" class="label-soft">+2.5σ</text>
+        <text x="174" y="66" class="label-soft">-3σ</text><text x="794" y="66" class="label-soft">+3σ</text>
+        <text x="484" y="18" class="label">평균</text>
+      </svg>`;
+  };
+
+  const buildPreRemovalGraphSvg = (mode) => {
+    const baseline = 182;
+    const contaminatedY = (x) => baseline
+      - 116 * Math.exp(-((x - 480) ** 2) / (2 * 165 ** 2))
+      - 76 * Math.exp(-((x - 842) ** 2) / (2 * 34 ** 2))
+      - 34 * Math.exp(-((x - 132) ** 2) / (2 * 38 ** 2));
+
+    if (mode === 'iterative') {
+      const y0 = contaminatedY;
+      const y1 = (x) => baseline - 142 * Math.exp(-((x - 500) ** 2) / (2 * 150 ** 2)) - 34 * Math.exp(-((x - 730) ** 2) / (2 * 38 ** 2));
+      const y2 = (x) => baseline - 158 * Math.exp(-((x - 492) ** 2) / (2 * 128 ** 2));
+      const s0 = {left: 154, right: 790, med: 515};
+      const s1 = {left: 226, right: 705, med: 500};
+      const s2 = {left: 238, right: 690, med: 492};
+      const full0 = samplePoints(94, 906, y0);
+      const keep0 = samplePoints(s0.left, s0.right, y0);
+      const left0 = samplePoints(94, s0.left, y0);
+      const right0 = samplePoints(s0.right, 906, y0);
+      const full1 = samplePoints(s0.left, s0.right, y1);
+      const keep1 = samplePoints(s1.left, s1.right, y1);
+      const left1 = samplePoints(s0.left, s1.left, y1);
+      const right1 = samplePoints(s1.right, s0.right, y1);
+      const keep2 = samplePoints(s2.left, s2.right, y2);
+      return `
+      <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="54" y1="${baseline}" x2="946" y2="${baseline}" class="baseline"></line>
+        <line x1="54" y1="142" x2="946" y2="142" class="guide"></line>
+        <line x1="54" y1="104" x2="946" y2="104" class="guide ghost"></line>
+        <g class="iter-stage iter-stage-0">
+          <polygon points="${areaPoints(full0, baseline)}" class="area-original"></polygon>
+          <polygon points="${areaPoints(left0, baseline)}" class="area-removed removed-left"></polygon>
+          <polygon points="${areaPoints(right0, baseline)}" class="area-removed removed-right"></polygon>
+          <polygon points="${areaPoints(keep0, baseline)}" class="area-keep"></polygon>
+          <polyline points="${pointsToAttr(keep0)}" class="curve-keep"></polyline>
+          <polyline points="${pointsToAttr(left0)}" class="curve-removed removed-left"></polyline>
+          <polyline points="${pointsToAttr(right0)}" class="curve-removed removed-right"></polyline>
+          <line x1="${s0.med}" y1="34" x2="${s0.med}" y2="${baseline}" class="sigma-line main"></line>
+        </g>
+        <g class="iter-stage iter-stage-1">
+          <polygon points="${areaPoints(full1, baseline)}" class="area-original"></polygon>
+          <polygon points="${areaPoints(left1, baseline)}" class="area-removed removed-left"></polygon>
+          <polygon points="${areaPoints(right1, baseline)}" class="area-removed removed-right"></polygon>
+          <polygon points="${areaPoints(keep1, baseline)}" class="area-keep"></polygon>
+          <polyline points="${pointsToAttr(keep1)}" class="curve-keep"></polyline>
+          <polyline points="${pointsToAttr(left1)}" class="curve-removed removed-left"></polyline>
+          <polyline points="${pointsToAttr(right1)}" class="curve-removed removed-right"></polyline>
+          <line x1="${s1.med}" y1="34" x2="${s1.med}" y2="${baseline}" class="sigma-line main"></line>
+        </g>
+        <g class="iter-stage iter-stage-2">
+          <polygon points="${areaPoints(keep2, baseline)}" class="area-keep"></polygon>
+          <polyline points="${pointsToAttr(keep2)}" class="curve-keep"></polyline>
+          <line x1="${s2.med}" y1="34" x2="${s2.med}" y2="${baseline}" class="sigma-line main"></line>
+        </g>
+      </svg>`;
+    }
+
+    const configs = {
+      none: { left: 94, right: 906, title: '선제거 없음', caption: '전체 면적이 그대로 다음 단계로 이동', med: 515, remove: false },
+      prefilter: { left: 168, right: 760, title: 'MAD 선제거', caption: '멀리 떨어진 극단 면적만 먼저 삭제', med: 500, remove: true }
+    };
+    const cfg = configs[mode] || configs.prefilter;
+    const full = samplePoints(94, 906, contaminatedY);
+    const keep = samplePoints(cfg.left, cfg.right, contaminatedY);
+    const left = samplePoints(94, cfg.left, contaminatedY);
+    const right = samplePoints(cfg.right, 906, contaminatedY);
+    const removedMarkup = cfg.remove ? `
+          <polygon points="${areaPoints(left, baseline)}" class="area-removed removed-left"></polygon>
+          <polygon points="${areaPoints(right, baseline)}" class="area-removed removed-right"></polygon>
+          <polyline points="${pointsToAttr(left)}" class="curve-removed removed-left"></polyline>
+          <polyline points="${pointsToAttr(right)}" class="curve-removed removed-right"></polyline>` : '';
+    return `
+      <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="54" y1="${baseline}" x2="946" y2="${baseline}" class="baseline"></line>
+        <line x1="54" y1="142" x2="946" y2="142" class="guide"></line>
+        <line x1="54" y1="104" x2="946" y2="104" class="guide ghost"></line>
+        <polygon points="${areaPoints(full, baseline)}" class="area-original"></polygon>
+        ${removedMarkup}
+        <polygon points="${areaPoints(keep, baseline)}" class="area-keep"></polygon>
+        <polyline points="${pointsToAttr(keep)}" class="curve-keep"></polyline>
+        <line x1="${cfg.med}" y1="34" x2="${cfg.med}" y2="${baseline}" class="sigma-line main"></line>
+        <line x1="${cfg.left}" y1="58" x2="${cfg.left}" y2="${baseline}" class="sigma-line ${cfg.remove ? 'main' : ''}"></line>
+        <line x1="${cfg.right}" y1="58" x2="${cfg.right}" y2="${baseline}" class="sigma-line ${cfg.remove ? 'main' : ''}"></line>
+        <text x="${cfg.med - 26}" y="28" class="label">중앙값</text>
+      </svg>`;
+  };
+
+  const escapeHtml = (text) => String(text).replace(/[&<>\"]/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
+
+  const renderMethodPanel = (panel, method) => {
+    const isPreRemoval = panel.dataset.richTip === 'pre-removal-modes';
+    const help = isPreRemoval ? PRE_REMOVAL_HELP : METHOD_HELP;
+    const order = isPreRemoval ? PRE_REMOVAL_ORDER : METHOD_ORDER;
+    const labels = isPreRemoval ? PRE_REMOVAL_LABEL : TAB_LABEL;
+    const fallback = isPreRemoval ? 'prefilter' : '2.5sigma';
+    const graphBuilder = isPreRemoval ? buildPreRemovalGraphSvg : buildGraphSvg;
+    const data = help[method] || help[fallback];
+    const activeMethod = help[method] ? method : fallback;
+    panel.dataset.method = activeMethod;
+    panel.querySelector('[data-role="title"]').textContent = data.title;
+    panel.querySelector('[data-role="desc"]').textContent = data.desc;
+    panel.querySelector('[data-role="side-title"]').textContent = data.sideTitle;
+    panel.querySelector('[data-role="graph"]').innerHTML = graphBuilder(activeMethod);
+    panel.querySelector('[data-role="glance"]').innerHTML = data.glance.map(([label, title, body]) => `<div class="glance-card"><b>${label}</b><strong>${title}</strong><span>${body}</span></div>`).join('');
+    panel.querySelector('[data-role="side-list"]').innerHTML = data.sideList.map((item) => `<div>${item}</div>`).join('');
+    panel.querySelector('[data-role="notes"]').innerHTML = data.notes.map(([label, body], index) => `<div class="graph-note-row"><div class="note-key" style="--note-color:${index === 0 ? '#7657ff' : '#e85d75'}">${label}</div><div>${body}</div></div>`).join('');
+    panel.querySelector('[data-role="cards"]').innerHTML = order.map((key) => {
+      const info = help[key];
+      const [title] = labels[key];
+      const accent = key === '2sigma' || key === 'prefilter' ? 'clean' : key === '2.5sigma' ? 'balance' : key === '3sigma' || key === 'iterative' ? 'volume' : 'shape';
+      return `<div class="rich-tip-card clickable ${key === activeMethod ? 'active' : ''}" data-method-card="${key}"><div class="compare-head"><div class="compare-title">${title}</div><span class="compare-tag ${accent}">${info.badge}</span></div><div class="compare-metric"><div>${info.glance[0][2]}</div><div>${info.glance[1][1]} · ${info.glance[2][1]}</div></div></div>`;
+    }).join('');
+    panel.querySelectorAll('[data-method-card]').forEach((el) => {
+      el.addEventListener('click', () => renderMethodPanel(panel, el.dataset.methodCard));
+    });
+  };
+
+  const getPanel = (target, method) => {
+    const existing = document.querySelector(`.rich-tip-panel[data-rich-tip="${target}"]`);
+    if (existing) {
+      applyPanelTheme(existing);
+      renderMethodPanel(existing, method);
+      return existing;
+    }
+    const template = document.getElementById(`richTipTemplate-${target}`);
+    if (!template) return null;
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.dataset.richTip = target;
+    applyPanelTheme(node);
+    renderMethodPanel(node, method);
+    node.addEventListener('mouseenter', clearHideTimer);
+    node.addEventListener('mouseleave', () => scheduleHide());
+    document.body.appendChild(node);
+    return node;
+  };
+
+  const placePanel = (trigger, panel) => {
+    const rect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const gap = 16;
+    const viewportPad = 12;
+    const rightSpace = window.innerWidth - rect.right;
+    const leftSpace = rect.left;
+    const usableSideSpace = Math.max(rightSpace, leftSpace);
+    let left;
+    if (panelRect.width > usableSideSpace - gap * 2) left = (window.innerWidth - panelRect.width) / 2;
+    else {
+      left = rect.right + gap;
+      if (rightSpace < panelRect.width + gap && leftSpace > rightSpace) left = rect.left - panelRect.width - gap;
+    }
+    left = Math.max(viewportPad, Math.min(left, window.innerWidth - panelRect.width - viewportPad));
+    let top = rect.top + rect.height / 2 - panelRect.height / 2;
+    if (panelRect.height > window.innerHeight * 0.72) top = viewportPad;
+    top = Math.max(viewportPad, Math.min(top, window.innerHeight - panelRect.height - viewportPad));
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  };
+
+  const showPanel = (trigger) => {
+    clearHideTimer();
+    const target = trigger.dataset.helpTarget;
+    const method = target === 'pre-removal-modes' ? (document.getElementById('preRemovalMode')?.value || 'prefilter') : (trigger.dataset.helpMethod || '2.5sigma');
+    if (!target) return;
+    const panel = getPanel(target, method);
+    if (!panel) return;
+    if (activePanel && activePanel !== panel) activePanel.classList.remove('show');
+    activeTrigger = trigger;
+    activePanel = panel;
+    applyPanelTheme(panel);
+    panel.classList.add('show');
+    placePanel(trigger, panel);
+  };
+
+  const hidePanel = () => {
+    clearHideTimer();
+    if (activePanel) activePanel.classList.remove('show');
+    activePanel = null;
+    activeTrigger = null;
+  };
+
+  const scheduleHide = () => {
+    clearHideTimer();
+    hideTimer = setTimeout(() => hidePanel(), 140);
+  };
+
+  const ensureSpotlight = () => {
+    if (spotlightOverlay) return;
+    spotlightOverlay = document.createElement('div');
+    spotlightOverlay.className = 'spotlight-overlay';
+    spotlightHole = document.createElement('div');
+    spotlightHole.className = 'spotlight-hole';
+    spotlightOverlay.appendChild(spotlightHole);
+    spotlightCallout = document.createElement('div');
+    spotlightCallout.className = 'spotlight-callout';
+    document.body.appendChild(spotlightOverlay);
+    document.body.appendChild(spotlightCallout);
+  };
+
+  const clearSpotlight = () => {
+    if (spotlightTarget) spotlightTarget.classList.remove('spotlight-target');
+    spotlightTarget = null;
+    if (spotlightOverlay) spotlightOverlay.classList.remove('show');
+    if (spotlightCallout) spotlightCallout.classList.remove('show');
+  };
+
+  const placeSpotlight = () => {
+    if (!spotlightTarget || !spotlightHole || !spotlightCallout) return;
+    const rect = spotlightTarget.getBoundingClientRect();
+    const pad = 10;
+    spotlightHole.style.left = `${rect.left - pad}px`;
+    spotlightHole.style.top = `${rect.top - pad}px`;
+    spotlightHole.style.width = `${rect.width + pad * 2}px`;
+    spotlightHole.style.height = `${rect.height + pad * 2}px`;
+    const calloutRect = spotlightCallout.getBoundingClientRect();
+    let left = rect.right + 18;
+    if (left + calloutRect.width > window.innerWidth - 12) left = rect.left - calloutRect.width - 18;
+    if (left < 12) left = 12;
+    let top = rect.top;
+    if (top + calloutRect.height > window.innerHeight - 12) top = window.innerHeight - calloutRect.height - 12;
+    if (top < 12) top = 12;
+    spotlightCallout.style.left = `${left}px`;
+    spotlightCallout.style.top = `${top}px`;
+  };
+
+  const showSpotlight = (button) => {
+    ensureSpotlight();
+    clearSpotlight();
+    const target = document.getElementById(button.dataset.spotlightTarget);
+    if (!target) return;
+    spotlightTarget = target;
+    target.classList.add('spotlight-target');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    spotlightCallout.innerHTML = `<strong>${escapeHtml(button.dataset.spotlightTitle || '')}</strong><p>${escapeHtml(button.dataset.spotlightDesc || '')}</p>`;
+    spotlightOverlay.classList.add('show');
+    spotlightCallout.classList.add('show');
+    setTimeout(placeSpotlight, 220);
+  };
+
+
+  let basicTipPanel = null;
+  let basicTipTrigger = null;
+
+  const ensureBasicTipPanel = () => {
+    if (basicTipPanel) return basicTipPanel;
+    basicTipPanel = document.createElement('div');
+    basicTipPanel.className = 'floating-tip-panel';
+    document.body.appendChild(basicTipPanel);
+    return basicTipPanel;
+  };
+
+  const placeBasicTip = () => {
+    if (!basicTipPanel || !basicTipTrigger || !basicTipPanel.classList.contains('show')) return;
+    const rect = basicTipTrigger.getBoundingClientRect();
+    const panelRect = basicTipPanel.getBoundingClientRect();
+    const pad = 12;
+    const gap = 12;
+    const rightFits = rect.right + gap + panelRect.width <= window.innerWidth - pad;
+    const leftFits = rect.left - gap - panelRect.width >= pad;
+    let left = rightFits ? rect.right + gap : (leftFits ? rect.left - gap - panelRect.width : window.innerWidth - panelRect.width - pad);
+    left = Math.max(pad, Math.min(left, window.innerWidth - panelRect.width - pad));
+    let top = rect.top + rect.height / 2 - panelRect.height / 2;
+    top = Math.max(pad, Math.min(top, window.innerHeight - panelRect.height - pad));
+    basicTipPanel.style.left = `${left}px`;
+    basicTipPanel.style.top = `${top}px`;
+  };
+
+  const showBasicTip = (trigger) => {
+    const text = trigger.dataset.tip || '';
+    if (!text.trim()) return;
+    const panel = ensureBasicTipPanel();
+    basicTipTrigger = trigger;
+    panel.textContent = text;
+    panel.classList.add('show');
+    placeBasicTip();
+  };
+
+  const hideBasicTip = () => {
+    if (basicTipPanel) basicTipPanel.classList.remove('show');
+    basicTipTrigger = null;
+  };
+
+  const bindBasicTips = () => {
+    document.querySelectorAll('.tip[data-tip]:not(.tip-rich)').forEach((trigger) => {
+      if (trigger.dataset.basicTipBound === 'true') return;
+      trigger.dataset.basicTipBound = 'true';
+      trigger.classList.add('tip-floating');
+      trigger.addEventListener('mouseenter', () => showBasicTip(trigger));
+      trigger.addEventListener('focus', () => showBasicTip(trigger));
+      trigger.addEventListener('mouseleave', hideBasicTip);
+      trigger.addEventListener('blur', hideBasicTip);
+    });
+  };
+
+
+  const TUTORIAL_STEPS = [
+    {
+      title: '원본 트렌드 확인',
+      target: 'chartCard',
+      fallbackTarget: 'launchPanel',
+      summary: '업로드 직후에는 우측 차트에서 전체 추세와 튀는 구간을 먼저 봅니다.',
+      how: ['샘플 수와 구간 수를 조정해 전체 흐름과 상세 구간을 번갈아 봅니다.', '컬럼 칩을 켜고 끄며 특정 센서만 튀는지 확인합니다.', '오른쪽 분포도에서 한쪽으로 치우친 분포인지 확인합니다.'],
+      intent: '제거 기준을 정하기 전에 원본 데이터의 모양을 이해하기 위한 단계입니다.',
+      hiddenSummary: '파일을 업로드하면 원본 트렌드 차트가 이 위치에 표시됩니다. 먼저 XLSX 파일을 불러오세요.'
+    },
+    {
+      title: '이상값 / 필터 / 시간 설정',
+      target: 'workflowTarget-controls',
+      summary: '좌측 설정 영역에서 어떤 데이터를 남기고 제외할지 정합니다.',
+      how: ['이상값 방식은 2σ/2.5σ/3σ/IQR 중 데이터 성격에 맞게 고릅니다.', '선제거 모드는 큰 극단값이 기준을 오염시킬 때 사용합니다.', '대상 컬럼은 이상값을 검사할 센서만 체크합니다.', '필터는 운전 조건처럼 특정 값/범위만 남길 때 기입합니다.', '시간 처리는 수집 시간이 밀렸거나 간격이 불규칙할 때 맞춥니다.'],
+      intent: '모델 학습에 들어갈 데이터의 품질 기준과 시간축을 정하는 단계입니다.'
+    },
+    {
+      title: '전처리 실행 · 자동 저장',
+      target: 'workflowTarget-action',
+      summary: '설정이 끝나면 이 버튼으로 전처리와 자동 저장을 한 번에 실행합니다.',
+      how: ['버튼이 비활성화되어 있으면 먼저 파일을 업로드해야 합니다.', '실행 전 저장 파일 구성을 확인해 어떤 산출물이 만들어지는지 파악합니다.', 'Simulation 비율과 대상 컬럼을 설정하면 점검용 시나리오 파일도 같이 생성됩니다.'],
+      intent: '수작업 저장을 줄이고 같은 기준의 산출물을 반복 가능하게 만들기 위한 단계입니다.',
+      files: [
+        ['*_prepro_with_valid.xlsx', '전처리 완료 데이터와 정상 Validation 20%가 합쳐진 최종 전처리데이터입니다.'],
+        ['Simulation_Data_*.xlsx', '정상 → 전환 → 이상 구간으로 구성된 Alert 점검용 시뮬레이션 데이터입니다.'],
+        ['*_prepro.xlsx / *_valid.xlsx', '필요 시 수동 분리 저장에 쓰는 전처리 본문/Validation 구성입니다.']
+      ]
+    },
+    {
+      title: '차트와 로그 재확인',
+      target: 'workflowTarget-review',
+      fallbackTarget: 'chartCard',
+      summary: '전처리 후 결과가 의도대로 바뀌었는지 차트와 로그를 다시 확인합니다.',
+      how: ['삭제 행 수가 예상보다 과하지 않은지 로그에서 확인합니다.', '전처리 후 추세와 분포가 안정적으로 바뀌었는지 봅니다.', '자동 저장 파일명과 생성 메시지가 로그에 남았는지 확인합니다.'],
+      intent: '설정이 과하거나 부족하지 않았는지 마지막으로 검토하기 위한 단계입니다.'
+    }
+  ];
+
+  let tutorialOverlay = null;
+  let tutorialCallout = null;
+  let tutorialTarget = null;
+  let tutorialIndex = 0;
+
+  const isVisibleNode = (node) => {
+    if (!node) return false;
+    const style = window.getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+  };
+
+  const ensureTutorial = () => {
+    if (tutorialOverlay && tutorialCallout) return;
+    tutorialOverlay = document.createElement('div');
+    tutorialOverlay.className = 'tutorial-dim';
+    tutorialCallout = document.createElement('div');
+    tutorialCallout.className = 'tutorial-callout';
+    document.body.appendChild(tutorialOverlay);
+    document.body.appendChild(tutorialCallout);
+  };
+
+  const clearTutorialHighlight = () => {
+    if (tutorialTarget) tutorialTarget.classList.remove('tutorial-highlight');
+    tutorialTarget = null;
+  };
+
+  const closeTutorial = () => {
+    clearTutorialHighlight();
+    if (tutorialOverlay) tutorialOverlay.classList.remove('show');
+    if (tutorialCallout) tutorialCallout.classList.remove('show');
+  };
+
+  const resolveTutorialTarget = (step) => {
+    const primary = document.getElementById(step.target);
+    if (isVisibleNode(primary)) return {node: primary, hidden: false};
+    const fallback = document.getElementById(step.fallbackTarget || 'launchPanel') || primary;
+    return {node: fallback, hidden: true};
+  };
+
+  const renderTutorialCallout = (index, hidden) => {
+    const step = TUTORIAL_STEPS[index];
+    const dots = TUTORIAL_STEPS.map((_, i) => `<span class="tutorial-dot ${i === index ? 'active' : ''}"></span>`).join('');
+    const how = (hidden && step.hiddenSummary ? [step.hiddenSummary] : step.how).map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const files = step.files ? `<div class="tutorial-section-title">저장 파일 구성</div><div class="tutorial-files">${step.files.map(([name, body]) => `<div class="tutorial-file"><b>${escapeHtml(name)}</b>${escapeHtml(body)}</div>`).join('')}</div>` : '';
+    tutorialCallout.innerHTML = `
+      <div class="tutorial-kicker"><span>Step ${index + 1} / ${TUTORIAL_STEPS.length}</span><span class="tutorial-dots">${dots}</span></div>
+      <h3>${escapeHtml(step.title)}</h3>
+      <p>${escapeHtml(hidden && step.hiddenSummary ? step.hiddenSummary : step.summary)}</p>
+      <div class="tutorial-section-title">어떻게 기입하고 보나</div>
+      <ul class="tutorial-list">${how}</ul>
+      <div class="tutorial-section-title">의도</div>
+      <p>${escapeHtml(step.intent)}</p>
+      ${files}
+      <div class="tutorial-actions">
+        <div class="tutorial-actions-left"><button type="button" class="btn btn-sm" data-tutorial-action="close">닫기</button></div>
+        <div class="tutorial-actions-right">
+          <button type="button" class="btn btn-sm" data-tutorial-action="prev" ${index === 0 ? 'disabled' : ''}>이전</button>
+          <button type="button" class="btn btn-sm primary" data-tutorial-action="next">${index === TUTORIAL_STEPS.length - 1 ? '완료' : '다음'}</button>
+        </div>
+      </div>`;
+    tutorialCallout.querySelector('[data-tutorial-action="close"]').addEventListener('click', closeTutorial);
+    tutorialCallout.querySelector('[data-tutorial-action="prev"]')?.addEventListener('click', () => showTutorialStep(Math.max(0, tutorialIndex - 1)));
+    tutorialCallout.querySelector('[data-tutorial-action="next"]').addEventListener('click', () => {
+      if (tutorialIndex >= TUTORIAL_STEPS.length - 1) closeTutorial();
+      else showTutorialStep(tutorialIndex + 1);
+    });
+  };
+
+  const placeTutorialCallout = () => {
+    if (!tutorialCallout || !tutorialTarget || !tutorialCallout.classList.contains('show')) return;
+    const rect = tutorialTarget.getBoundingClientRect();
+    const calloutRect = tutorialCallout.getBoundingClientRect();
+    const pad = 14;
+    const gap = 18;
+    const candidates = [
+      {left: rect.right + gap, top: rect.top},
+      {left: rect.left - calloutRect.width - gap, top: rect.top},
+      {left: rect.left, top: rect.bottom + gap},
+      {left: rect.left, top: rect.top - calloutRect.height - gap}
+    ];
+    let pos = candidates.find(c => c.left >= pad && c.left + calloutRect.width <= window.innerWidth - pad && c.top >= pad && c.top + calloutRect.height <= window.innerHeight - pad) || candidates[0];
+    pos.left = Math.max(pad, Math.min(pos.left, window.innerWidth - calloutRect.width - pad));
+    pos.top = Math.max(pad, Math.min(pos.top, window.innerHeight - calloutRect.height - pad));
+    tutorialCallout.style.left = `${pos.left}px`;
+    tutorialCallout.style.top = `${pos.top}px`;
+  };
+
+  const showTutorialStep = (index) => {
+    ensureTutorial();
+    closeTutorial();
+    tutorialIndex = Math.max(0, Math.min(index, TUTORIAL_STEPS.length - 1));
+    const step = TUTORIAL_STEPS[tutorialIndex];
+    const {node, hidden} = resolveTutorialTarget(step);
+    if (!node) return;
+    if (step.target === 'workflowTarget-review') document.getElementById('logOutput')?.classList.remove('hidden');
+    tutorialTarget = node;
+    node.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+    renderTutorialCallout(tutorialIndex, hidden);
+    tutorialOverlay.classList.add('show');
+    tutorialCallout.classList.add('show');
+    setTimeout(() => {
+      node.classList.add('tutorial-highlight');
+      placeTutorialCallout();
+    }, 240);
+  };
+
+  const bindTutorialSteps = () => {
+    document.querySelectorAll('.tutorial-step-trigger[data-tutorial-step]').forEach(step => {
+      if (step.dataset.tutorialBound === 'true') return;
+      step.dataset.tutorialBound = 'true';
+      step.addEventListener('click', event => {
+        if (event.target.closest('.workflow-info-btn')) return;
+        showTutorialStep(parseInt(step.dataset.tutorialStep, 10) || 0);
+      });
+      step.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          showTutorialStep(parseInt(step.dataset.tutorialStep, 10) || 0);
+        }
+      });
+    });
+  };
+
+  const bindRichTips = () => {
+    bindBasicTips();
+    bindTutorialSteps();
+    document.querySelectorAll('.tip-rich[data-help-target]').forEach((trigger) => {
+      if (trigger.dataset.richTipBound === 'true') return;
+      trigger.dataset.richTipBound = 'true';
+      trigger.addEventListener('mouseenter', () => {
+        if (trigger.dataset.helpTarget === 'pre-removal-modes') {
+          trigger.dataset.helpMethod = document.getElementById('preRemovalMode')?.value || 'prefilter';
+        }
+        showPanel(trigger);
+      });
+      trigger.addEventListener('focus', () => {
+        if (trigger.dataset.helpTarget === 'pre-removal-modes') {
+          trigger.dataset.helpMethod = document.getElementById('preRemovalMode')?.value || 'prefilter';
+        }
+        showPanel(trigger);
+      });
+      trigger.addEventListener('mouseleave', () => scheduleHide());
+      trigger.addEventListener('blur', () => scheduleHide());
+    });
+
+    document.querySelectorAll('.workflow-info-btn[data-spotlight-target]').forEach((button) => {
+      if (button.dataset.spotlightBound === 'true') return;
+      button.dataset.spotlightBound = 'true';
+      button.addEventListener('mouseenter', () => showSpotlight(button));
+      button.addEventListener('focus', () => showSpotlight(button));
+      button.addEventListener('mouseleave', clearSpotlight);
+      button.addEventListener('blur', clearSpotlight);
+      button.addEventListener('click', event => {event.stopPropagation(); showSpotlight(button);});
+    });
+
+    const preRemovalSelect = document.getElementById('preRemovalMode');
+    preRemovalSelect?.addEventListener('change', () => {
+      const panel = document.querySelector('.rich-tip-panel.show[data-rich-tip="pre-removal-modes"]');
+      if (panel) renderMethodPanel(panel, preRemovalSelect.value || 'prefilter');
+    });
+
+    window.addEventListener('scroll', () => {
+      if (activeTrigger && activePanel && activePanel.classList.contains('show')) placePanel(activeTrigger, activePanel);
+      if (basicTipTrigger) placeBasicTip();
+      if (spotlightTarget) placeSpotlight();
+      placeTutorialCallout();
+    }, { passive:true });
+    window.addEventListener('resize', () => {
+      if (activeTrigger && activePanel && activePanel.classList.contains('show')) placePanel(activeTrigger, activePanel);
+      if (basicTipTrigger) placeBasicTip();
+      if (spotlightTarget) placeSpotlight();
+      placeTutorialCallout();
+    });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (activePanel) applyPanelTheme(activePanel); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        hidePanel();
+        clearSpotlight();
+        hideBasicTip();
+        closeTutorial();
+      }
+    });
+  };
+
+  document.addEventListener('DOMContentLoaded', bindRichTips);
+})();
 </script>
 </body>
 </html>

@@ -193,20 +193,24 @@
               <span class="step-no">4</span>
               <div>
                 <strong><code>전처리 실행 · 자동 저장</code></strong>
-                <p>진행률이 끝날 때까지 기다리고, 로그에 완료 메시지가 나오는지 확인합니다.</p>
+                <p>진행률이 끝날 때까지 기다리고, 실행 버튼 아래의 저장 파일 구성과 로그 완료 메시지를 확인합니다.</p>
               </div>
             </li>
             <li>
               <span class="step-no">5</span>
               <div>
                 <strong>저장 결과와 차트 확인</strong>
-                <p>전처리데이터와 Simulation Data 생성 여부, Validation 분리 여부, 통계 비교와 로그를 확인하면 첫 실행은 성공입니다.</p>
+                <p>전처리데이터(정상 Validation 20% 포함)와 Simulation Data 생성 여부, 통계 비교와 로그를 확인하면 첫 실행은 성공입니다.</p>
               </div>
             </li>
           </ol>
           <div class="warn">
             <strong>처음 사용할 때 가장 안전한 방법</strong>
             <p>처음부터 필터를 많이 넣기보다 기본값으로 한 번 실행해 보고, 그다음 필요한 기준만 하나씩 조정하세요.</p>
+          </div>
+          <div class="callout">
+            <strong>화면에서 바로 배우는 방법</strong>
+            <p>메인 화면 좌측의 <code>사용 순서</code> 항목을 클릭하면 해당 부위로 자동 이동하고, 하이라이트와 설명 카드로 무엇을 기입하고 어떤 의도로 확인해야 하는지 단계별로 안내합니다.</p>
           </div>
         </section>
 
@@ -224,7 +228,7 @@
             <div class="card">
               <span class="label">좌측 중단</span>
               <h3>기준 설정</h3>
-              <p>이상값 처리, 필터, 시간 처리, Validation / Simulation 조건을 같은 순서로 정합니다.</p>
+              <p>이상값 처리, 선제거, 필터, 시간 처리, Validation / Simulation 조건을 같은 순서로 정합니다. 각 i 도움말과 사용 순서 튜토리얼로 기능 의도를 확인할 수 있습니다.</p>
             </div>
             <div class="card">
               <span class="label">우측 상단</span>
@@ -267,7 +271,7 @@
             <div class="mini-card">
               <span class="label">Step 4</span>
               <h3>로그와 저장 결과 확인</h3>
-              <p>제거된 행 수, 최종 데이터 수, Validation 자동 구성, Simulation 저장 여부를 순서대로 검토합니다.</p>
+              <p>제거된 행 수, 최종 데이터 수, 자동 저장 파일 구성, Simulation 저장 여부를 순서대로 검토합니다.</p>
             </div>
           </div>
           <figure class="manual-shot">
@@ -306,17 +310,21 @@
         <section class="section" id="outputs">
           <div class="section-intro">
             <h2>5. 저장 결과와 차트</h2>
-            <p>전처리 실행이 끝나면 파일 저장뿐 아니라 Validation 분리와 차트 검토까지 확인해야 작업이 완결됩니다.</p>
+            <p>전처리 실행이 끝나면 자동 저장 파일 구성과 차트 검토까지 확인해야 작업이 완결됩니다.</p>
           </div>
 
           <table class="file-table">
             <tr>
               <th><code>원본이름_prepro_with_valid.xlsx</code></th>
-              <td>전처리 완료 데이터와 뒤쪽 20% 정상 Validation 구간이 함께 들어가는 프리비전 업로드용 기본 결과 파일입니다.</td>
+              <td>전처리 완료 데이터와 뒤쪽 20% 정상 Validation 구간이 함께 들어가는 기본 자동 저장 결과 파일입니다.</td>
             </tr>
             <tr>
               <th><code>Simulation_Data_YYYYMMDD_HHMMSS.xlsx</code></th>
-              <td>정상 → 전환 → 이상 구간으로 만든 점검용 시뮬레이션 파일입니다. 제거된 이상값이 없으면 생성이 생략될 수 있습니다.</td>
+              <td>정상 → 전환 → 이상 구간으로 만든 Alert 점검용 시뮬레이션 파일입니다. Simulation 대상 컬럼과 구간 비율 설정에 따라 생성됩니다.</td>
+            </tr>
+            <tr>
+              <th><code>원본이름_prepro.xlsx / 원본이름_valid.xlsx</code></th>
+              <td>필요 시 수동 분리 저장에서 쓰는 전처리 본문과 Validation 전용 구성입니다. 기본 자동 저장 흐름은 <code>_prepro_with_valid.xlsx</code>를 중심으로 확인합니다.</td>
             </tr>
           </table>
 
@@ -377,7 +385,7 @@
             <li><span class="checkmark">3</span><div><strong>필요한 기준만 넣었다</strong><p>필터, 이상값 처리, 시간 처리를 과도하게 사용하지 않았다. 웹 UI에서는 이상값 대상 컬럼을 1개 이상 직접 선택해야 한다.</p></div></li>
             <li><span class="checkmark">4</span><div><strong>전처리 완료 로그를 확인했다</strong><p>제거된 행 수, 최종 데이터 수, 완료 메시지를 확인했다.</p></div></li>
             <li><span class="checkmark">5</span><div><strong>Validation / Simulation 결과를 확인했다</strong><p>Validation 자동 구성과 Simulation 저장 여부를 로그와 화면에서 확인했다.</p></div></li>
-            <li><span class="checkmark">6</span><div><strong>자동 저장 파일명을 확인했다</strong><p><code>_prepro_with_valid.xlsx</code>와 Simulation 파일이 기대대로 생성됐는지 확인했다.</p></div></li>
+            <li><span class="checkmark">6</span><div><strong>자동 저장 파일 구성을 확인했다</strong><p><code>_prepro_with_valid.xlsx</code>와 Simulation 파일이 기대대로 생성됐는지 실행 영역과 로그에서 확인했다.</p></div></li>
           </ul>
           <div class="success">
             <strong>여기까지 끝났다면</strong>

@@ -1,6 +1,6 @@
 # 시계열 데이터 전처리 프로그램
 
-Excel/CSV 형식의 시계열 데이터를 필터링, 이상값 처리, 시간 보정, Validation 데이터 생성까지 한 번에 수행하는 데스크톱 GUI 도구입니다.
+Excel/CSV 형식의 시계열 데이터를 필터링, 이상값 처리, 시간 보정, Validation/Simulation 산출물 생성까지 수행하는 전처리 도구입니다. 데스크톱 GUI와 함께 XLSX 업로드 중심의 웹 Control Room(`Preprocessing.html`)을 제공합니다.
 
 기본 실행 파일은 Windows용 `gui_app.py`(tkinter)이고, macOS에서는 `gui_app_mac.py`(PyQt5)를 사용합니다.
 
@@ -30,7 +30,7 @@ python gui_app_mac.py
 
 ## 주요 기능
 
-- **파일 로드**: Excel(`.xlsx`) / CSV(`.csv`) 지원
+- **파일 로드**: 데스크톱은 Excel(`.xlsx`) / CSV(`.csv`) 지원, 웹 Control Room은 XLSX 업로드 중심
 - **CSV 인코딩 자동 감지**: UTF-8, CP949, EUC-KR 순으로 시도
 - **다중 조건 필터링**: 숫자 컬럼 기준 AND 조건 결합
   - 연산자: `>=`, `<=`, `>`, `<`, `=`, `!=`, `range`
@@ -41,22 +41,34 @@ python gui_app_mac.py
   - 시간 재정렬(`realign_timestamps`): 지정 시작 시각부터 시간축 재생성
 - **프리셋 관리**: 저장 / 불러오기 / 내보내기 / 가져오기 / 파일+프리셋 한번에 열기
 - **트렌드 차트**: 최대 5개 컬럼 비교, 평균선/통계 표시
-- **Validation 데이터 생성**:
+- **웹 자동 저장 산출물**:
+  - `*_prepro_with_valid.xlsx` — 전처리 완료 데이터 + 정상 Validation 20%
+  - `Simulation_Data_YYYYMMDD_HHMMSS.xlsx` — 정상 → 전환 → 이상 Alert 점검용 데이터
+- **데스크톱 Validation 데이터 생성**:
   - `*_prepro.xlsx`
   - `*_prepro_with_valid.xlsx`
   - `*_valid.xlsx`
-- **시뮬레이션 생성 코어**: `data_preprocessor.py`에 관련 함수가 남아 있지만, 현재 데스크톱 GUI의 기본 사용자 흐름은 Validation 생성 중심입니다.
 - **도움말/단축키**: F1 매뉴얼, Ctrl+O/Ctrl+S/Ctrl+P/Ctrl+T 지원
 
 ## 권장 작업 흐름
+
+### 웹 Control Room
+
+1. XLSX 파일 업로드
+2. 우측 데이터 분석 카드에서 원본 추세와 분포 확인
+3. 좌측에서 이상값 방식, 선제거 모드, 대상 컬럼, 필터, 시간 처리, Validation / Simulation 조건 설정
+4. `🚀 전처리 실행 · 자동 저장`
+5. 실행 영역의 `저장 파일 구성`과 로그에서 `_prepro_with_valid.xlsx` / `Simulation_Data_*.xlsx` 확인
+
+메인 화면의 `사용 순서` 항목을 클릭하면 각 부위가 하이라이트되고, 무엇을 기입하고 어떤 의도로 확인하는지 튜토리얼로 볼 수 있습니다.
+
+### 데스크톱 GUI
 
 1. 파일 불러오기
 2. 필터 / 이상값 / 시간 처리 옵션 설정
 3. `🚀 전처리 실행`
 4. 필요 시 `🧪 Validation 데이터 생성`
 5. `💾 결과 저장`
-
-Validation 데이터 생성은 전처리 과정에서 제거된 행이 있어야 동작합니다.
 
 ## 개발 환경
 
@@ -146,11 +158,11 @@ OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같
 웹 UI 기준 주요 동작:
 
 - 필터는 조건에 맞는 행만 남깁니다. 예: `= 1`은 1인 행만 남기고, `!= 1`은 1이 아닌 행만 남깁니다.
-- OPC helper 태그는 업로드 XLSX의 좌측 첫 시간 컬럼에 맞춰 내부 helper 컬럼으로 붙고, 최종 다운로드에는 포함되지 않습니다.
+- OPC helper 태그는 업로드 XLSX의 좌측 첫 시간 컬럼에 맞춰 내부 helper 컬럼으로 붙고, 최종 저장 파일에는 포함되지 않습니다.
 - 시간 재정렬 시작 시간은 2분 배수로 자동 보정됩니다. 예: `10:05:00` → `10:04:00`.
 - 헤더가 비어 있는 열은 로드 시 제외되어 Simulation/다운로드 파일에 빈 헤더 열이 따라붙지 않습니다.
 - 이상값 처리 대상 컬럼은 기본 해제 상태이며, 이상값 처리가 켜져 있으면 1개 이상 선택해야 전처리가 실행됩니다.
-- 이상값 처리 대상 컬럼을 선택하면 Simulation 대상도 자동으로 같은 컬럼이 체크됩니다. 이후 Simulation 대상은 사용자가 직접 수정할 수 있습니다.
+- 이상값 처리 대상 컬럼을 선택하면 Simulation 대상도 자동으로 같은 컬럼이 체크됩니다. 이후 Simulation 대상은 사용자가 직접 수정할 수 있습니다. 선제거 모드(MAD/반복 clipping)는 메인 이상값 처리 전 극단값이 기준을 오염시키지 않도록 먼저 정리하는 옵션입니다.
 
 ```bash
 # 태그 검색/정적 파일 확인용 로컬 backend
