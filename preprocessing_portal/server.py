@@ -117,6 +117,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
     _rate_limit_state: dict[str, deque[float]] = {}
 
     def _client_ip(self) -> str:
+        forwarded = self.headers.get("X-Forwarded-For", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip() or "unknown"
         return self.client_address[0] if self.client_address else "unknown"
 
     def _is_rate_limited(self) -> bool:

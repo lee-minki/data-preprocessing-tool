@@ -271,6 +271,22 @@ class PortalMultiUserModeTests(unittest.TestCase):
         for _ in range(50):
             self.assertFalse(handler._is_rate_limited())
 
+    def test_x_forwarded_for_overrides_client_address(self) -> None:
+        Handler = self._make_handler(allow_remote=True, rate_limit=2)
+        Handler._rate_limit_state = {}
+
+        # IIS/nginx 가 forwarding 한 client IP — 본 client_address 는 127.0.0.1
+        h1 = Handler("127.0.0.1")
+        h1.headers = {"X-Forwarded-For": "10.0.0.5, 192.168.1.1"}
+        h2 = Handler("127.0.0.1")
+        h2.headers = {"X-Forwarded-For": "10.0.0.6"}
+
+        self.assertFalse(h1._is_rate_limited())
+        self.assertFalse(h1._is_rate_limited())
+        self.assertTrue(h1._is_rate_limited())
+        # 다른 X-Forwarded-For 는 별도 버킷
+        self.assertFalse(h2._is_rate_limited())
+
     def test_rate_limit_is_per_ip(self) -> None:
         Handler = self._make_handler(allow_remote=True, rate_limit=2)
         Handler._rate_limit_state = {}
