@@ -1,0 +1,24 @@
+{
+  "name": "import-check",
+  "description": "imported preset for browser runtime test",
+  "version": "1.2.0",
+  "settings": {
+    "outlier": {
+      "apply": true,
+      "method": "2.5sigma"
+    },
+    "time": {
+      "normalize": true,
+      "realign": true,
+      "start_time": "2026-05-01 00:00:00",
+      "interval": "2"
+    },
+    "filters": [],
+    "validation": {
+      "ratio": 55,
+      "segment_ratios": [25, 25, 25, 25],
+      "sigma_start": 2.5,
+      "sigma_end": 4.5
+    }
+  }
+}
