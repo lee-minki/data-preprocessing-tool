@@ -16,6 +16,13 @@ from preprocessing_portal.server import (
     _normalize_prefix,
     _resolve_prefixes,
 )
+from preprocessing_portal.tag_cache import (
+    DATETIME_COLUMN,
+    QUALITY_COLUMN,
+    VALUE_COLUMN,
+    TagCache,
+    opc_rows_to_frame,
+)
 
 
 class DataPreprocessorRegressionTests(unittest.TestCase):
@@ -99,6 +106,110 @@ class DataPreprocessorRegressionTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(preprocessor.processed_df.index.tolist(), [0, 1, 2])
         self.assertEqual(preprocessor.get_removed_source_indices(), [0, 1])
+
+
+class TagCacheRegressionTests(unittest.TestCase):
+    @staticmethod
+    def _sample_rows(start_iso: str, count: int) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                DATETIME_COLUMN: pd.date_range(start_iso, periods=count, freq="2min"),
+                VALUE_COLUMN: [float(i) for i in range(count)],
+            }
+        )
+
+    def test_save_then_load_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = TagCache(tmpdir)
+            df = self._sample_rows("2024-01-01 00:00:00", 5)
+            total = cache.save("TI-101", df)
+            self.assertEqual(total, 5)
+
+            coverage = cache.get_coverage("TI-101")
+            self.assertIsNotNone(coverage)
+            self.assertEqual(coverage.row_count, 5)
+            self.assertEqual(coverage.first_time.year, 2024)
+
+            loaded = cache.load_range(
+                "TI-101",
+                pd.Timestamp("2024-01-01 00:00:00").to_pydatetime(),
+                pd.Timestamp("2024-01-01 00:08:00").to_pydatetime(),
+            )
+            self.assertEqual(len(loaded), 5)
+            self.assertTrue(loaded[QUALITY_COLUMN].eq("Good").all())
+
+    def test_has_range_requires_full_coverage(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = TagCache(tmpdir)
+            cache.save("TI-101", self._sample_rows("2024-01-01 00:00:00", 3))
+
+            in_range = pd.Timestamp("2024-01-01 00:00:00").to_pydatetime()
+            out_of_range = pd.Timestamp("2024-01-01 00:10:00").to_pydatetime()
+            self.assertTrue(
+                cache.has_range("TI-101", in_range, in_range)
+            )
+            self.assertFalse(
+                cache.has_range("TI-101", in_range, out_of_range)
+            )
+
+    def test_merge_dedupes_overlapping_timestamps(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = TagCache(tmpdir)
+            first = self._sample_rows("2024-01-01 00:00:00", 3)
+            cache.save("TI-101", first)
+
+            overlap = pd.DataFrame(
+                {
+                    DATETIME_COLUMN: [pd.Timestamp("2024-01-01 00:02:00")],
+                    VALUE_COLUMN: [999.0],
+                }
+            )
+            total = cache.save("TI-101", overlap)
+            self.assertEqual(total, 3)
+
+            loaded = cache.load_range(
+                "TI-101",
+                pd.Timestamp("2024-01-01 00:02:00").to_pydatetime(),
+                pd.Timestamp("2024-01-01 00:02:00").to_pydatetime(),
+            )
+            self.assertEqual(loaded.iloc[0][VALUE_COLUMN], 999.0)
+
+    def test_yearly_split_writes_separate_sheets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = TagCache(tmpdir)
+            df = pd.DataFrame(
+                {
+                    DATETIME_COLUMN: [
+                        pd.Timestamp("2023-12-31 23:58:00"),
+                        pd.Timestamp("2024-01-01 00:00:00"),
+                    ],
+                    VALUE_COLUMN: [1.0, 2.0],
+                }
+            )
+            cache.save("TI-101", df)
+            with pd.ExcelFile(cache.tag_path("TI-101")) as xl:
+                self.assertEqual(sorted(xl.sheet_names), ["2023", "2024"])
+
+    def test_index_auto_rebuilds_when_tag_file_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = TagCache(tmpdir)
+            cache.save("TI-101", self._sample_rows("2024-01-01 00:00:00", 2))
+            index_df = cache.read_index()
+            self.assertEqual(len(index_df), 1)
+
+            # Add another tag and ensure index refreshes.
+            cache.save("FI-205", self._sample_rows("2024-06-01 00:00:00", 2))
+            refreshed = cache.read_index()
+            self.assertEqual(sorted(refreshed["tag"].tolist()), ["FI-205", "TI-101"])
+
+    def test_opc_rows_to_frame_fills_missing_quality(self) -> None:
+        rows = [
+            {"datetime": pd.Timestamp("2024-01-01"), "value": 1.0},
+            {"datetime": pd.Timestamp("2024-01-01 00:02"), "value": 2.0, "quality": "Bad"},
+        ]
+        df = opc_rows_to_frame(rows)
+        self.assertEqual(df[QUALITY_COLUMN].iloc[0], "Good")
+        self.assertEqual(df[QUALITY_COLUMN].iloc[1], "Bad")
 
 
 class PortalSecurityRegressionTests(unittest.TestCase):

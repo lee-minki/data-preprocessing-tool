@@ -57,6 +57,19 @@ try:
 except Exception:
     HAS_OPC = False
 
+try:
+    from preprocessing_portal.tag_cache import (
+        TagCache,
+        opc_rows_to_frame,
+        DATETIME_COLUMN,
+        VALUE_COLUMN,
+    )
+    HAS_TAG_CACHE = True
+except Exception:
+    HAS_TAG_CACHE = False
+
+CACHE_DIR_NAME = "data_cache"
+
 
 class FilterWidget(QFrame):
     """필터 조건 위젯"""
@@ -490,7 +503,46 @@ class DataPreprocessorMac(QMainWindow):
         opc_row2.addWidget(self.opc_cancel_btn)
         opc_layout.addLayout(opc_row2)
 
-        opc_group.setMaximumHeight(130)
+        opc_cache_row = QHBoxLayout()
+        self.cache_use_check = QCheckBox("📦 캐시 우선 사용")
+        self.cache_use_check.setChecked(True)
+        self.cache_use_check.setToolTip(
+            "data_cache/ 에 해당 태그·기간이 있으면 OPC 대신 즉시 로드"
+        )
+        opc_cache_row.addWidget(self.cache_use_check)
+
+        self.cache_auto_save_check = QCheckBox("자동 저장")
+        self.cache_auto_save_check.setChecked(True)
+        self.cache_auto_save_check.setToolTip(
+            "OPC에서 가져온 데이터를 data_cache/<tag>.xlsx 에 자동 추가"
+        )
+        opc_cache_row.addWidget(self.cache_auto_save_check)
+
+        self.cache_save_btn = QPushButton("💾 캐시에 저장")
+        self.cache_save_btn.setToolTip(
+            "현재 로드된 데이터를 data_cache/<tag>.xlsx 에 병합 저장"
+        )
+        self.cache_save_btn.clicked.connect(self._save_to_cache_manual)
+        opc_cache_row.addWidget(self.cache_save_btn)
+
+        self.cache_open_btn = QPushButton("📂 캐시 폴더 열기")
+        self.cache_open_btn.clicked.connect(self._open_cache_dir)
+        opc_cache_row.addWidget(self.cache_open_btn)
+
+        opc_cache_row.addStretch()
+        opc_layout.addLayout(opc_cache_row)
+
+        if not HAS_TAG_CACHE:
+            for widget in (
+                self.cache_use_check,
+                self.cache_auto_save_check,
+                self.cache_save_btn,
+                self.cache_open_btn,
+            ):
+                widget.setEnabled(False)
+            self.cache_use_check.setToolTip("tag_cache 모듈을 사용할 수 없습니다")
+
+        opc_group.setMaximumHeight(165)
         main_layout.addWidget(opc_group)
 
         # === 파일 선택 ===
@@ -650,8 +702,96 @@ class DataPreprocessorMac(QMainWindow):
 
         main_layout.addWidget(result_group)
 
+    def _get_tag_cache(self):
+        """data_cache/ 폴더 기준 TagCache 인스턴스. 모듈 없으면 None."""
+        if not HAS_TAG_CACHE:
+            return None
+        cache_dir = Path(__file__).resolve().parent / CACHE_DIR_NAME
+        return TagCache(cache_dir)
+
+    def _try_load_from_cache(self, tag: str, start: str, end: str) -> bool:
+        """캐시가 [start, end] 전체를 덮으면 즉시 로드. 성공 시 True."""
+        cache = self._get_tag_cache()
+        if cache is None or not cache.has_tag(tag):
+            return False
+        try:
+            start_dt = pd.to_datetime(start).to_pydatetime()
+            end_dt = pd.to_datetime(end).to_pydatetime()
+        except Exception:
+            return False
+        if not cache.has_range(tag, start_dt, end_dt):
+            coverage = cache.get_coverage(tag)
+            if coverage is not None:
+                self._log(
+                    f"📦 캐시 부분 적중 — 캐시 범위 "
+                    f"{coverage.first_time:%Y-%m-%d %H:%M} ~ "
+                    f"{coverage.last_time:%Y-%m-%d %H:%M} (요청 기간 미포함, OPC로 재조회)"
+                )
+            return False
+        try:
+            df = cache.load_range(tag, start_dt, end_dt)
+        except Exception as exc:
+            self._log(f"⚠️ 캐시 로드 실패: {exc} (OPC로 재조회)")
+            return False
+        if df.empty:
+            return False
+        self._log(f"📦 캐시 적중: {len(df):,}행 (OPC 호출 생략)")
+        self.progress_bar.setValue(100)
+        self.progress_label.setText("캐시에서 로드 완료!")
+        self._on_opc_finished(True, df, _from_cache=True)
+        return True
+
+    def _save_to_cache(self, tag: str, df) -> None:
+        """전달받은 DataFrame을 data_cache/ 에 병합 저장."""
+        cache = self._get_tag_cache()
+        if cache is None or df is None or len(df) == 0:
+            return
+        try:
+            total = cache.save(tag, df)
+            self._log(
+                f"💾 캐시 저장: {tag} — 누적 {total:,}행 → data_cache/{tag}.xlsx"
+            )
+        except Exception as exc:
+            self._log(f"⚠️ 캐시 저장 실패: {exc}")
+
+    def _save_to_cache_manual(self) -> None:
+        """현재 전처리기에 로드된 데이터를 캐시에 수동 저장."""
+        if self.preprocessor.original_df is None or self.preprocessor.original_df.empty:
+            QMessageBox.information(self, "안내", "저장할 데이터가 없습니다.")
+            return
+        tag = self.opc_tag_edit.text().strip()
+        if not tag:
+            QMessageBox.warning(self, "경고", "Tag 이름이 비어있습니다.")
+            return
+        df = self.preprocessor.original_df.copy()
+        date_col = self.preprocessor.date_column
+        numeric_cols = [c for c in self.preprocessor.numeric_columns if c != date_col]
+        if not date_col or not numeric_cols:
+            QMessageBox.warning(
+                self, "경고", "datetime/value 컬럼을 식별할 수 없습니다."
+            )
+            return
+        cache_df = pd.DataFrame(
+            {
+                DATETIME_COLUMN: df[date_col],
+                VALUE_COLUMN: df[numeric_cols[0]],
+            }
+        )
+        self._save_to_cache(tag, cache_df)
+
+    def _open_cache_dir(self) -> None:
+        """OS 파일 탐색기에서 data_cache/ 열기."""
+        cache_dir = Path(__file__).resolve().parent / CACHE_DIR_NAME
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        if sys.platform == "darwin":
+            os.system(f'open "{cache_dir}"')
+        elif sys.platform == "win32":
+            os.startfile(str(cache_dir))  # type: ignore[attr-defined]
+        else:
+            os.system(f'xdg-open "{cache_dir}"')
+
     def _run_opc_fetch(self):
-        """OPC 히스토리 불러오기 시작"""
+        """OPC 히스토리 불러오기 시작 (캐시 우선 사용)."""
         tag = self.opc_tag_edit.text().strip()
         start = self.opc_start_edit.text().strip()
         end = self.opc_end_edit.text().strip()
@@ -671,6 +811,10 @@ class DataPreprocessorMac(QMainWindow):
         except ValueError:
             QMessageBox.warning(self, "경고", "NS와 Chunk는 숫자여야 합니다.")
             return
+
+        if HAS_TAG_CACHE and self.cache_use_check.isChecked():
+            if self._try_load_from_cache(tag, start, end):
+                return
 
         self.opc_fetch_btn.setEnabled(False)
         self.opc_cancel_btn.setEnabled(True)
@@ -698,8 +842,11 @@ class DataPreprocessorMac(QMainWindow):
             self.opc_fetch_thread.is_cancelled = True
             self._log("⏹ OPC 불러오기 취소됨")
 
-    def _on_opc_finished(self, success: bool, df):
-        """OPC 불러오기 완료"""
+    def _on_opc_finished(self, success: bool, df, _from_cache: bool = False):
+        """OPC 또는 캐시 로드 완료 처리.
+
+        ``_from_cache`` 가 True 면 캐시에 다시 저장하지 않습니다.
+        """
         self.opc_fetch_btn.setEnabled(True)
         self.opc_cancel_btn.setEnabled(False)
         if not success or df is None:
@@ -708,14 +855,18 @@ class DataPreprocessorMac(QMainWindow):
             return
 
         self.progress_bar.setValue(100)
-        self.progress_label.setText("OPC 불러오기 완료!")
+        if not _from_cache:
+            self.progress_label.setText("OPC 불러오기 완료!")
 
-        # 가져온 DataFrame을 전처리기에 로드
         tag = self.opc_tag_edit.text().strip()
-        success2, msg = self.preprocessor.load_dataframe(df, source_name=f"OPC:{tag}")
+        source_label = "CACHE" if _from_cache else "OPC"
+        success2, msg = self.preprocessor.load_dataframe(
+            df, source_name=f"{source_label}:{tag}"
+        )
         if success2:
             self.current_file = None
-            self.file_label.setText(f"[OPC] {tag}")
+            prefix = "📦" if _from_cache else "📡"
+            self.file_label.setText(f"[{prefix} {source_label}] {tag}")
             self.file_label.setStyleSheet("color: darkblue;")
             rows = len(self.preprocessor.original_df)
             cols = len(self.preprocessor.columns)
@@ -723,6 +874,13 @@ class DataPreprocessorMac(QMainWindow):
             self._update_preview()
             self._update_filter_columns()
             self._log(f"✅ {msg}")
+
+            if (
+                not _from_cache
+                and HAS_TAG_CACHE
+                and self.cache_auto_save_check.isChecked()
+            ):
+                self._save_to_cache(tag, df)
         else:
             self._log(f"⚠️ DataFrame 로드 실패: {msg}")
 

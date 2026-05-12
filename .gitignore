@@ -66,6 +66,10 @@ PreprocessingWeb_deploy.zip
 .omx/
 .playwright-mcp/
 
+# OPC tag cache (per-user, may contain plant data) — README tracked, contents ignored
+data_cache/*
+!data_cache/README.md
+
 # Root-level screenshots (one-off captures)
 /intro-*.png
 /main-polish-*.png
