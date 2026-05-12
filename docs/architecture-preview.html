@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preprocessing 아키텍처 미리보기</title>
+  <style>
+    :root{
+      --bg:#edf2fb; --panel:#ffffff; --line:#dbe4f0; --text:#162338; --muted:#5f6f86;
+      --primary:#7657ff; --primary-soft:#eee9ff; --shadow:0 18px 48px rgba(8,18,38,.10);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Noto Sans KR",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    .wrap{max-width:1500px;margin:0 auto;padding:28px 20px 56px}
+    .hero{background:linear-gradient(135deg,#081121,#13264b);color:#fff;border-radius:28px;padding:28px 30px;box-shadow:0 26px 60px rgba(4,10,20,.22);margin-bottom:18px}
+    .hero h1{margin:0 0 10px;font-size:34px;line-height:1.15}
+    .hero p{margin:0;color:rgba(255,255,255,.78);font-size:16px;max-width:1120px}
+    .grid{display:grid;gap:18px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:var(--shadow)}
+    .card h2{margin:0 0 8px;font-size:24px}
+    .card p{margin:0 0 14px;color:var(--muted)}
+    .mermaid{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;overflow:auto}
+    .mermaid svg{width:100%;height:auto;display:block}
+    .callout{margin-top:12px;padding:14px 16px;border-radius:16px;background:#f8fafc;border:1px solid var(--line);color:#334155;font-size:14px}
+    .footer-note{margin-top:18px;padding:16px 18px;border-radius:18px;background:var(--primary-soft);border:1px solid rgba(118,87,255,.18);color:#40307f;font-size:14px}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f5f7fb;padding:2px 6px;border-radius:8px}
+    ul{margin:10px 0 0 18px;color:#334155}
+    li{margin:4px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Preprocessing 시스템 구조 / 연산 위치 / 서버 배포 방향</h1>
+      <p>이번 버전은 <strong>어디서 연산이 일어나는지</strong>를 분명히 구분했습니다. 현재 구조에서는 브라우저 UI, 프론트엔드 로직, Python backend, 산출물 저장이 모두 <strong>로컬 PC(또는 VDI 세션 내부)</strong> 자원을 사용합니다. OPC UA 조회도 서버가 아니라 <strong>로컬 환경에서만</strong> 가능합니다. 서버 배포는 가능하지만 OPC UA는 방화벽 때문에 직접 연동되지 않습니다.</p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>1. 현재 실제 실행 구조</h2>
+        <p>현재는 서버형 SaaS 구조가 아니라 <strong>로컬 실행형</strong>입니다. 연산 위치를 기준으로 보면, 사용자 화면과 전처리 계산, 파일 저장이 모두 로컬 자원에서 처리됩니다.</p>
+        <div class="mermaid">
+flowchart LR
+    user[사용자]
+
+    subgraph LOCAL[Local PC 또는 VDI 세션 내부]
+      browser[브라우저 창<br/>Preprocessing.html]
+      fe[Frontend JS 로직<br/>차트 · 필터 · 시뮬레이션 · 전처리 흐름 제어]
+      py[Python local backend<br/>preprocessing_portal/server.py]
+      idx[tag_index<br/>로컬 인덱스 파일]
+      out[로컬 파일 저장<br/>prepro_with_valid.xlsx<br/>Simulation_Data_*.xlsx]
+    end
+
+    subgraph OPCNET[로컬/VDI에서만 접근 가능한 OPC 네트워크]
+      opc[OPC UA 서버]
+    end
+
+    user --> browser
+    browser --> fe
+    fe -->|로컬 API 호출| py
+    py --> idx
+    py -->|OPC history/current 조회| opc
+    fe -->|다운로드/저장| out
+        </div>
+        <div class="callout">
+          핵심: 이 구조에서는 <b>브라우저 UI도 로컬</b>, <b>전처리 계산도 로컬</b>, <b>산출물 저장도 로컬</b>입니다. <b>OPC UA 함수도 로컬 환경에서만 동작</b>합니다.
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>2. 현재 기능별 연산 위치</h2>
+        <p>팀원들이 가장 헷갈려하는 부분을 기능 단위로 쪼개면 아래처럼 정리할 수 있습니다.</p>
+        <div class="mermaid">
+flowchart TD
+    A[사용자 업로드 / 버튼 클릭] --> B[브라우저 UI]
+    B --> C[Frontend JS 로직]
+    C --> D[필터링 / 차트 / 시뮬레이션 설정 반영]
+    D --> E[Python local backend API 호출]
+    E --> F[태그 인덱스 조회]
+    E --> G[OPC helper 값 조회]
+    C --> H[전처리 결과 다운로드 트리거]
+    H --> I[로컬 파일 저장]
+
+    style B fill:#a5d8ff,stroke:#7657ff
+    style C fill:#a5d8ff,stroke:#7657ff
+    style D fill:#a5d8ff,stroke:#7657ff
+    style E fill:#d0bfff,stroke:#7657ff
+    style F fill:#c3fae8,stroke:#20a779
+    style G fill:#ffd8a8,stroke:#d97706
+    style I fill:#b2f2bb,stroke:#2f9e44
+        </div>
+        <ul>
+          <li><b>브라우저/프론트엔드:</b> 차트 렌더링, 필터 UI, 시뮬레이션 설정, 결과 다운로드 트리거</li>
+          <li><b>Python local backend:</b> 태그 검색 API, OPC helper/current API</li>
+          <li><b>로컬 파일시스템:</b> 산출물 다운로드 저장 위치</li>
+          <li><b>OPC UA 서버:</b> 오직 로컬/VDI에서만 연결 가능</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>3. OPC helper 조회가 서버가 아니라 로컬인 이유</h2>
+        <p>현재 helper 태그는 단순 REST API가 아니라, 로컬 Python backend가 OPC UA 서버에 직접 붙어서 history/current를 읽는 구조입니다.</p>
+        <div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant B as 브라우저/Frontend
+    participant L as Local Python backend
+    participant O as OPC UA 서버
+
+    U->>B: helper 태그 선택
+    B->>L: POST /api/opc/helper-values
+    Note over B,L: 로컬에서만 호출 가능
+    L->>O: OPC UA history/current read
+    O-->>L: raw values 반환
+    L-->>B: helper values 응답
+    B-->>U: 필터/소팅용 helper 컬럼 표시
+        </div>
+        <div class="callout">
+          서버형 backend가 OPC UA에 바로 붙지 못하는 이유는 <b>방화벽</b>입니다. 즉, <b>OPC UA 함수 자체가 로컬에서만 연동</b>됩니다.
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>4. 서버 배포 시 가능한 구조</h2>
+        <p>서버 배포를 하면 프론트/백엔드/세션/파일관리는 서버로 옮길 수 있지만, <strong>OPC UA 직접 연결은 서버에서 막힙니다.</strong> 따라서 서버형은 두 가지로 나뉩니다.</p>
+        <div class="mermaid">
+flowchart LR
+    user[사용자 브라우저]
+
+    subgraph SERVER[사내 포털 서버]
+      portalFE[Portal Frontend]
+      portalBE[Portal Backend<br/>세션 · 업로드 · 실행 · 다운로드]
+      sess[세션 저장소]
+      preset[프리셋/즐겨찾기 저장소]
+    end
+
+    subgraph LOCALONLY[로컬/VDI 전용 구간]
+      sidecar[Local OPC sidecar 또는 local backend]
+      opc[OPC UA 서버]
+    end
+
+    user --> portalFE --> portalBE
+    portalBE --> sess
+    portalBE --> preset
+    sidecar --> opc
+    portalFE -. 필요 시 로컬 bridge .-> sidecar
+        </div>
+        <ul>
+          <li><b>서버에서 가능한 것:</b> 파일 업로드, 세션 관리, 전처리 실행, 산출물 다운로드, 프리셋/즐겨찾기 관리</li>
+          <li><b>서버에서 막히는 것:</b> OPC UA 직접 조회</li>
+          <li><b>해결 방향:</b> OPC helper 기능은 로컬 sidecar / local backend와 연결하는 하이브리드 구조</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>5. 추천 운영 모델</h2>
+        <p>팀 관점에서는 아래 3개를 분리해서 이해하는 것이 좋습니다.</p>
+        <div class="mermaid">
+flowchart TD
+    A[Mode 1 - 현재]\n로컬 단독 실행 --> A1[UI/전처리/저장/OPC 모두 로컬]
+    B[Mode 2 - 서버형]\n포털 배포 --> B1[UI/세션/산출물은 서버\nOPC helper는 미지원 또는 별도 연동]
+    C[Mode 3 - 하이브리드]\n추천 확장안 --> C1[포털 서버 + 로컬 OPC sidecar\n같은 UI, 다른 backend 경로]
+        </div>
+        <div class="callout">
+          가장 현실적인 방향은 <b>same frontend, different backend</b> 입니다. 다만 <b>OPC helper는 서버가 아니라 로컬 sidecar를 통하는 하이브리드</b>가 되어야 합니다.
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>6. 권장 API 분리 방향</h2>
+        <p>서버형과 로컬형을 같이 가져가려면 API도 역할을 분리해서 보는 게 좋습니다.</p>
+        <div class="mermaid">
+flowchart TD
+    A[로컬 전용 API] --> A1[GET /api/tags]
+    A --> A2[GET /api/opc/current]
+    A --> A3[POST /api/opc/helper-values]
+
+    B[서버 공통 API] --> B1[POST /api/session/upload]
+    B --> B2[POST /api/preprocess/run]
+    B --> B3[GET /api/session/preview]
+    B --> B4[GET /api/session/download]
+    B --> B5[GET or POST /api/presets]
+    B --> B6[GET or POST /api/favorites]
+        </div>
+        <ul>
+          <li><b>로컬 전용:</b> OPC가 엮인 API</li>
+          <li><b>서버 공통:</b> 업로드/전처리/다운로드/프리셋</li>
+          <li><b>핵심 구분:</b> OPC API는 서버로 못 올리고, 나머지 업무 API는 서버형으로 올릴 수 있음</li>
+        </ul>
+      </article>
+    </section>
+
+    <div class="footer-note">
+      최종 정리: 현재 구조는 “브라우저만 로컬”이 아니라 <b>브라우저, 프론트엔드 로직, Python backend, 산출물 저장, OPC 연동까지 모두 로컬 자원 사용</b>입니다. 서버 배포는 가능하지만, <b>OPC UA는 방화벽 때문에 서버에서 직접 연결되지 않으므로</b> helper 기능은 로컬 sidecar 또는 local backend와 분리 설계해야 합니다.
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#eef2ff',
+        primaryBorderColor: '#7657ff',
+        primaryTextColor: '#162338',
+        lineColor: '#5f6f86',
+        secondaryColor: '#f8fafc',
+        tertiaryColor: '#ffffff',
+        fontFamily: 'Noto Sans KR, system-ui, sans-serif',
+        fontSize: '18px'
+      },
+      flowchart: { curve: 'basis' },
+      sequence: { actorMargin: 60, boxMargin: 10 }
+    });
+  </script>
+</body>
+</html>
