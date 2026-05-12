@@ -223,5 +223,68 @@ class PortalSecurityRegressionTests(unittest.TestCase):
         self.assertLessEqual(MAX_REQUEST_BYTES, 1_000_000)
 
 
+class PortalMultiUserModeTests(unittest.TestCase):
+    """다중 사용자 모드 토글과 IP rate limit 동작."""
+
+    def _make_handler(self, *, allow_remote: bool, rate_limit: int) -> object:
+        import threading
+
+        from preprocessing_portal.server import PortalHandler
+
+        class FakeHandler(PortalHandler):
+            allow_remote_api = allow_remote
+            api_rate_limit_per_minute = rate_limit
+            _rate_limit_lock = threading.Lock()
+            _rate_limit_state: dict = {}
+
+            def __init__(self, client_ip: str, host_header: str = "") -> None:
+                # SimpleHTTPRequestHandler 초기화는 우회 — 필요한 속성만 셋업
+                self.client_address = (client_ip, 12345)
+                self.headers = {"Host": host_header} if host_header else {}
+
+        return FakeHandler
+
+    def test_allow_remote_api_bypasses_localhost_check(self) -> None:
+        Handler = self._make_handler(allow_remote=True, rate_limit=0)
+        handler = Handler("203.0.113.42", host_header="203.0.113.42:8765")
+        self.assertTrue(handler._api_request_allowed())
+
+    def test_localhost_only_blocks_remote_when_flag_off(self) -> None:
+        Handler = self._make_handler(allow_remote=False, rate_limit=0)
+        handler = Handler("203.0.113.42", host_header="203.0.113.42:8765")
+        self.assertFalse(handler._api_request_allowed())
+
+    def test_rate_limit_kicks_in_after_n_requests(self) -> None:
+        Handler = self._make_handler(allow_remote=True, rate_limit=3)
+        # Fresh state per Handler class
+        Handler._rate_limit_state = {}
+        handler = Handler("10.0.0.5")
+
+        for _ in range(3):
+            self.assertFalse(handler._is_rate_limited())
+        self.assertTrue(handler._is_rate_limited())
+
+    def test_rate_limit_zero_means_unlimited(self) -> None:
+        Handler = self._make_handler(allow_remote=True, rate_limit=0)
+        Handler._rate_limit_state = {}
+        handler = Handler("10.0.0.5")
+        for _ in range(50):
+            self.assertFalse(handler._is_rate_limited())
+
+    def test_rate_limit_is_per_ip(self) -> None:
+        Handler = self._make_handler(allow_remote=True, rate_limit=2)
+        Handler._rate_limit_state = {}
+
+        h1 = Handler("10.0.0.5")
+        h2 = Handler("10.0.0.6")
+        self.assertFalse(h1._is_rate_limited())
+        self.assertFalse(h1._is_rate_limited())
+        self.assertTrue(h1._is_rate_limited())
+        # 두 번째 IP는 영향 안 받음
+        self.assertFalse(h2._is_rate_limited())
+        self.assertFalse(h2._is_rate_limited())
+        self.assertTrue(h2._is_rate_limited())
+
+
 if __name__ == "__main__":
     unittest.main()

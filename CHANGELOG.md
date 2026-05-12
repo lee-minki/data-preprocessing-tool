@@ -1,6 +1,12 @@
 # 시계열 데이터 전처리 프로그램 - 변경 이력
 
 ## Unreleased
+### 포털 다중 사용자 모드
+- `PORTAL_ALLOW_REMOTE=1` 또는 `--allow-remote-api` 로 localhost-only API 가드를 우회해 사내망 다중 접속 허용
+- `--api-rate-limit N` (env `PORTAL_API_RATE_LIMIT`) 로 IP별 분당 호출 한도 적용 (기본 60, 0=무제한, 초과 시 HTTP 429)
+- 가드 우회 시 시작 로그에 `⚠️  Remote API access ENABLED` 출력
+- 파일은 브라우저 안에서만 처리되므로 다중 사용자 격리는 별도 작업 불필요
+
 ### OPC 캐시
 - `data_cache/<tag>.xlsx` 로컬 캐시 도입 — 자주 쓰는 태그의 히스토리를 연도별 시트(2020~) Excel로 저장
 - Mac OPC 탭에 `📦 캐시 우선 사용` / `자동 저장` 체크박스, `💾 캐시에 저장` / `📂 캐시 폴더 열기` 버튼 추가

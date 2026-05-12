@@ -9,7 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import threading
+import time
+from collections import deque
 from datetime import timedelta
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -106,8 +110,34 @@ def _static_path_blocked(url_path: str) -> bool:
 class PortalHandler(SimpleHTTPRequestHandler):
     index_dir = Path("opc_assets/tag_index")
     allowed_opc_endpoints = frozenset({OpcReadConfig().endpoint})
+    allow_remote_api: bool = False
+    api_rate_limit_per_minute: int = 60
+
+    _rate_limit_lock = threading.Lock()
+    _rate_limit_state: dict[str, deque[float]] = {}
+
+    def _client_ip(self) -> str:
+        return self.client_address[0] if self.client_address else "unknown"
+
+    def _is_rate_limited(self) -> bool:
+        limit = self.api_rate_limit_per_minute
+        if limit <= 0:
+            return False
+        now = time.time()
+        window = 60.0
+        ip = self._client_ip()
+        with self._rate_limit_lock:
+            timestamps = self._rate_limit_state.setdefault(ip, deque())
+            while timestamps and timestamps[0] < now - window:
+                timestamps.popleft()
+            if len(timestamps) >= limit:
+                return True
+            timestamps.append(now)
+            return False
 
     def _api_request_allowed(self) -> bool:
+        if self.allow_remote_api:
+            return True
         host = self.headers.get("Host", "")
         if host and not _is_local_host(host):
             return False
@@ -119,13 +149,25 @@ class PortalHandler(SimpleHTTPRequestHandler):
         return True
 
     def _reject_forbidden_api(self) -> bool:
-        if self._api_request_allowed():
-            return False
-        self._json(
-            {"ok": False, "error": "로컬 포털 API는 localhost 요청만 허용합니다"},
-            status=HTTPStatus.FORBIDDEN,
-        )
-        return True
+        if not self._api_request_allowed():
+            self._json(
+                {"ok": False, "error": "로컬 포털 API는 localhost 요청만 허용합니다"},
+                status=HTTPStatus.FORBIDDEN,
+            )
+            return True
+        if self._is_rate_limited():
+            self._json(
+                {
+                    "ok": False,
+                    "error": (
+                        f"요청이 너무 많습니다 (분당 "
+                        f"{self.api_rate_limit_per_minute}회 제한)"
+                    ),
+                },
+                status=HTTPStatus.TOO_MANY_REQUESTS,
+            )
+            return True
+        return False
 
     def _resolve_allowed_endpoint(self, endpoint: object | None) -> str:
         value = str(endpoint or OpcReadConfig().endpoint).strip()
@@ -408,6 +450,10 @@ class PortalHandler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run preprocessing portal backend")
     parser.add_argument("--host", default="127.0.0.1")
@@ -420,6 +466,21 @@ def _main(argv: list[str] | None = None) -> int:
         default=None,
         help="허용할 OPC endpoint. 여러 번 지정 가능하며 미지정 시 기본 endpoint만 허용합니다.",
     )
+    parser.add_argument(
+        "--allow-remote-api",
+        action="store_true",
+        default=_env_truthy("PORTAL_ALLOW_REMOTE"),
+        help=(
+            "비-localhost API 요청을 허용 (다중 사용자 모드). "
+            "PORTAL_ALLOW_REMOTE=1 환경변수로도 켤 수 있습니다. 사내망에서만 사용."
+        ),
+    )
+    parser.add_argument(
+        "--api-rate-limit",
+        type=int,
+        default=int(os.environ.get("PORTAL_API_RATE_LIMIT", "60") or 60),
+        help="IP별 API 요청 분당 한도 (0=무제한, 기본 60).",
+    )
     args = parser.parse_args(argv)
 
     allowed_endpoints = frozenset(args.allowed_opc_endpoint or [OpcReadConfig().endpoint])
@@ -427,6 +488,8 @@ def _main(argv: list[str] | None = None) -> int:
     class Handler(PortalHandler):
         index_dir = Path(args.index_dir)
         allowed_opc_endpoints = allowed_endpoints
+        allow_remote_api = bool(args.allow_remote_api)
+        api_rate_limit_per_minute = int(args.api_rate_limit)
 
         def __init__(self, *handler_args: object, **handler_kwargs: object) -> None:
             super().__init__(
@@ -438,6 +501,9 @@ def _main(argv: list[str] | None = None) -> int:
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"Serving preprocessing portal on http://{args.host}:{args.port}")
     print(f"Tag index dir: {Path(args.index_dir).resolve()}")
+    if args.allow_remote_api:
+        print("⚠️  Remote API access ENABLED (다중 사용자 모드)")
+    print(f"API rate limit: {args.api_rate_limit}/min per IP" if args.api_rate_limit > 0 else "API rate limit: disabled")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
