@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+from datetime import timedelta
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from preprocessing_portal.opc_adapter import OpcReadConfig, OpcUaReadAdapter, hold_sample, parse_kst
 from preprocessing_portal.tag_index import TagIndexEntry, search_tags
@@ -34,6 +36,21 @@ PLANT_PREFIXES = {
     "여주": ("YJ",),
     "yj": ("YJ",),
 }
+ALLOWED_PREFIXES = frozenset({prefix for values in PLANT_PREFIXES.values() for prefix in values})
+PREFIX_PATTERN = re.compile(r"^[A-Z0-9_]+$")
+MAX_REQUEST_BYTES = 1_000_000
+MAX_TIMESTAMP_COUNT = 200_000
+MAX_HISTORY_SPAN_DAYS = 370
+MIN_CHUNK_MINUTES = 1
+MAX_CHUNK_MINUTES = 24 * 60
+BLOCKED_STATIC_NAMES = {
+    ".git",
+    ".omx",
+    ".playwright-mcp",
+    "__pycache__",
+    ".ruff_cache",
+}
+BLOCKED_STATIC_SUFFIXES = {".py", ".pyc", ".pyo", ".zip", ".json"}
 
 
 def _entry_payload(entry: TagIndexEntry) -> dict[str, object]:
@@ -48,21 +65,78 @@ def _entry_payload(entry: TagIndexEntry) -> dict[str, object]:
     }
 
 
+def _normalize_prefix(prefix: str) -> str | None:
+    normalized = prefix.strip().upper()
+    if normalized not in ALLOWED_PREFIXES:
+        return None
+    if not PREFIX_PATTERN.fullmatch(normalized):
+        return None
+    return normalized
+
+
 def _resolve_prefixes(query: dict[str, list[str]]) -> tuple[str, ...]:
-    prefixes = [item.upper() for item in query.get("prefix", []) if item.strip()]
+    prefixes = [
+        normalized
+        for item in query.get("prefix", [])
+        if (normalized := _normalize_prefix(item)) is not None
+    ]
     plant = (query.get("plant", [""])[0] or "").strip().lower()
     if prefixes:
-        return tuple(prefixes)
+        return tuple(dict.fromkeys(prefixes))
     if plant in PLANT_PREFIXES:
         return PLANT_PREFIXES[plant]
     return ()
 
 
+def _is_local_host(host: str) -> bool:
+    hostname = host.split(":", 1)[0].strip().lower()
+    return hostname in {"127.0.0.1", "localhost", "::1", "[::1]"}
+
+
+def _static_path_blocked(url_path: str) -> bool:
+    decoded = unquote(url_path).replace("\\", "/")
+    parts = [part for part in decoded.split("/") if part and part != "."]
+    if any(part == ".." for part in parts):
+        return True
+    if any(part in BLOCKED_STATIC_NAMES for part in parts):
+        return True
+    return any(Path(part).suffix.lower() in BLOCKED_STATIC_SUFFIXES for part in parts)
+
+
 class PortalHandler(SimpleHTTPRequestHandler):
     index_dir = Path("opc_assets/tag_index")
+    allowed_opc_endpoints = frozenset({OpcReadConfig().endpoint})
+
+    def _api_request_allowed(self) -> bool:
+        host = self.headers.get("Host", "")
+        if host and not _is_local_host(host):
+            return False
+        origin = self.headers.get("Origin")
+        if origin:
+            parsed = urlparse(origin)
+            if parsed.scheme not in {"http", "https"} or not _is_local_host(parsed.netloc):
+                return False
+        return True
+
+    def _reject_forbidden_api(self) -> bool:
+        if self._api_request_allowed():
+            return False
+        self._json(
+            {"ok": False, "error": "로컬 포털 API는 localhost 요청만 허용합니다"},
+            status=HTTPStatus.FORBIDDEN,
+        )
+        return True
+
+    def _resolve_allowed_endpoint(self, endpoint: object | None) -> str:
+        value = str(endpoint or OpcReadConfig().endpoint).strip()
+        if value not in self.allowed_opc_endpoints:
+            raise ValueError("허용되지 않은 OPC endpoint입니다")
+        return value
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib override
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/") and self._reject_forbidden_api():
+            return
         if parsed.path == "/api/health":
             self._json({"ok": True, "service": "preprocessing_portal"})
             return
@@ -72,10 +146,15 @@ class PortalHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/opc/current":
             self._handle_opc_current(parse_qs(parsed.query))
             return
+        if _static_path_blocked(parsed.path):
+            self.send_error(HTTPStatus.FORBIDDEN, "Forbidden static path")
+            return
         super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib override
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/") and self._reject_forbidden_api():
+            return
         if parsed.path == "/api/opc/helper-values":
             try:
                 payload = self._read_json_body()
@@ -93,7 +172,12 @@ class PortalHandler(SimpleHTTPRequestHandler):
         )
 
     def _read_json_body(self) -> dict[str, object]:
-        length = int(self.headers.get("Content-Length", "0") or "0")
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError as exc:
+            raise ValueError("Content-Length는 숫자여야 합니다") from exc
+        if length > MAX_REQUEST_BYTES:
+            raise ValueError(f"요청 본문은 최대 {MAX_REQUEST_BYTES:,} bytes까지 허용됩니다")
         raw = self.rfile.read(length) if length else b"{}"
         try:
             payload = json.loads(raw.decode("utf-8"))
@@ -156,12 +240,12 @@ class PortalHandler(SimpleHTTPRequestHandler):
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
-        endpoint = query.get("endpoint", [OpcReadConfig().endpoint])[0]
         try:
+            endpoint = self._resolve_allowed_endpoint(query.get("endpoint", [None])[0])
             namespace = int(query.get("namespace", [str(OpcReadConfig().namespace)])[0])
-        except ValueError:
+        except ValueError as exc:
             self._json(
-                {"ok": False, "error": "namespace는 숫자여야 합니다"},
+                {"ok": False, "error": str(exc) if "endpoint" in str(exc).lower() else "namespace는 숫자여야 합니다"},
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
@@ -170,7 +254,9 @@ class PortalHandler(SimpleHTTPRequestHandler):
             for tag in tags:
                 # Reuse search to avoid repeatedly scanning every prefix when callers
                 # pass fulltagname with plant prefix.
-                prefix = tag.split(".", 1)[0].upper()
+                prefix = _normalize_prefix(tag.split(".", 1)[0])
+                if prefix is None:
+                    raise ValueError(f"허용되지 않은 태그 prefix입니다: {tag}")
                 matches = [
                     entry
                     for entry in search_tags(self.index_dir, [prefix], tag, limit=1)
@@ -233,13 +319,25 @@ class PortalHandler(SimpleHTTPRequestHandler):
             )
             return
 
-        endpoint = str(payload.get("endpoint") or OpcReadConfig().endpoint)
         try:
+            endpoint = self._resolve_allowed_endpoint(payload.get("endpoint"))
             namespace = int(payload.get("namespace") or OpcReadConfig().namespace)
             chunk_minutes = int(payload.get("chunk_minutes") or OpcReadConfig().chunk_minutes)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
             self._json(
-                {"ok": False, "error": "namespace/chunk_minutes는 숫자여야 합니다"},
+                {"ok": False, "error": str(exc) if "endpoint" in str(exc).lower() else "namespace/chunk_minutes는 숫자여야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if not (MIN_CHUNK_MINUTES <= chunk_minutes <= MAX_CHUNK_MINUTES):
+            self._json(
+                {"ok": False, "error": f"chunk_minutes는 {MIN_CHUNK_MINUTES}~{MAX_CHUNK_MINUTES} 범위여야 합니다"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+        if len(timestamps) > MAX_TIMESTAMP_COUNT:
+            self._json(
+                {"ok": False, "error": f"timestamp는 최대 {MAX_TIMESTAMP_COUNT:,}개까지 허용됩니다"},
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
@@ -248,9 +346,17 @@ class PortalHandler(SimpleHTTPRequestHandler):
             parsed_timestamps = [parse_kst(timestamp) for timestamp in timestamps]
             start = min(parsed_timestamps)
             end = max(parsed_timestamps)
+            if end - start > timedelta(days=MAX_HISTORY_SPAN_DAYS):
+                self._json(
+                    {"ok": False, "error": f"OPC 조회 기간은 최대 {MAX_HISTORY_SPAN_DAYS}일입니다"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
             entries = []
             for tag in tags:
-                prefix = tag.split(".", 1)[0].upper()
+                prefix = _normalize_prefix(tag.split(".", 1)[0])
+                if prefix is None:
+                    raise ValueError(f"허용되지 않은 태그 prefix입니다: {tag}")
                 matches = [
                     entry
                     for entry in search_tags(self.index_dir, [prefix], tag, limit=1)
@@ -308,10 +414,19 @@ def _main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--index-dir", default="opc_assets/tag_index")
     parser.add_argument("--directory", default=".")
+    parser.add_argument(
+        "--allowed-opc-endpoint",
+        action="append",
+        default=None,
+        help="허용할 OPC endpoint. 여러 번 지정 가능하며 미지정 시 기본 endpoint만 허용합니다.",
+    )
     args = parser.parse_args(argv)
+
+    allowed_endpoints = frozenset(args.allowed_opc_endpoint or [OpcReadConfig().endpoint])
 
     class Handler(PortalHandler):
         index_dir = Path(args.index_dir)
+        allowed_opc_endpoints = allowed_endpoints
 
         def __init__(self, *handler_args: object, **handler_kwargs: object) -> None:
             super().__init__(

@@ -40,6 +40,7 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QSpinBox,
     QDoubleSpinBox,
+    QTabWidget,
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -48,6 +49,13 @@ from PyQt5.QtGui import QFont
 from data_preprocessor import DataPreprocessor
 from preset_manager import PresetManager
 from version import __version__, APP_NAME
+
+try:
+    from preprocessing_portal.opc_adapter import OpcUaReadAdapter, OpcReadConfig
+    from preprocessing_portal.tag_index import find_entry
+    HAS_OPC = True
+except Exception:
+    HAS_OPC = False
 
 
 class FilterWidget(QFrame):
@@ -240,6 +248,78 @@ class ProcessingThread(QThread):
             self.finished_signal.emit(False)
 
 
+class OpcFetchThread(QThread):
+    """OPC 히스토리 데이터를 백그라운드에서 읽고 진행률을 시그널로 전달."""
+
+    progress_updated = pyqtSignal(int, str)   # (percent, status_label)
+    log_message = pyqtSignal(str)
+    finished_signal = pyqtSignal(bool, object)  # (success, DataFrame or None)
+
+    def __init__(self, tag_name: str, start_str: str, end_str: str,
+                 endpoint: str, namespace: int, chunk_minutes: int,
+                 index_dir: str, parent=None):
+        super().__init__(parent)
+        self.tag_name = tag_name
+        self.start_str = start_str
+        self.end_str = end_str
+        self.endpoint = endpoint
+        self.namespace = namespace
+        self.chunk_minutes = chunk_minutes
+        self.index_dir = index_dir
+        self.is_cancelled = False
+        self._wall_start: float = 0.0
+
+    def run(self):
+        import time
+        self._wall_start = time.time()
+
+        def on_progress(current: int, total: int, chunk_time) -> None:
+            if self.is_cancelled:
+                return
+            pct = int(current / total * 100) if total > 0 else 0
+            elapsed = time.time() - self._wall_start
+            eta_sec = int((elapsed / current) * (total - current)) if current > 0 else 0
+            time_str = chunk_time.strftime("%Y-%m-%d %H:%M")
+            eta_str = f"  |  ETA {eta_sec // 60}분 {eta_sec % 60}초" if current < total else ""
+            self.progress_updated.emit(
+                pct,
+                f"읽는 중... {time_str}  ({current}/{total} chunks){eta_str}"
+            )
+
+        try:
+            config = OpcReadConfig(
+                endpoint=self.endpoint,
+                namespace=self.namespace,
+                chunk_minutes=self.chunk_minutes,
+            )
+            entry = find_entry(self.index_dir, self.tag_name)
+            adapter = OpcUaReadAdapter(config)
+            adapter.connect()
+            self.log_message.emit(f"OPC 연결됨: {self.endpoint}")
+            try:
+                raw_rows = adapter.read_raw_history(
+                    entry, self.start_str, self.end_str,
+                    progress_callback=on_progress,
+                    cancel_callback=lambda: self.is_cancelled,
+                )
+            finally:
+                adapter.disconnect()
+
+            if self.is_cancelled:
+                self.finished_signal.emit(False, None)
+                return
+
+            elapsed = time.time() - self._wall_start
+            self.log_message.emit(
+                f"✅ OPC 완료: {len(raw_rows):,}행  ({elapsed:.1f}s)"
+            )
+            df = pd.DataFrame(raw_rows)
+            self.finished_signal.emit(True, df)
+        except Exception as exc:
+            self.log_message.emit(f"❌ OPC 오류: {exc}")
+            self.finished_signal.emit(False, None)
+
+
 class DataPreprocessorMac(QMainWindow):
     """Mac용 데이터 전처리 애플리케이션"""
 
@@ -250,6 +330,7 @@ class DataPreprocessorMac(QMainWindow):
         self.current_file = None
         self.filter_widgets: List[FilterWidget] = []
         self.processing_thread = None
+        self.opc_fetch_thread = None
         self.current_preset_name: Optional[str] = None
         self.validation_settings = {
             "ratio": 20,
@@ -352,6 +433,65 @@ class DataPreprocessorMac(QMainWindow):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QVBoxLayout(main_widget)
+
+        # === OPC 데이터 불러오기 ===
+        opc_group = QGroupBox("📡 OPC 데이터 불러오기")
+        opc_layout = QVBoxLayout(opc_group)
+
+        opc_row1 = QHBoxLayout()
+        opc_row1.addWidget(QLabel("Tag:"))
+        self.opc_tag_edit = QLineEdit()
+        self.opc_tag_edit.setPlaceholderText("예) PJ1.BOILER.TEMP_01")
+        self.opc_tag_edit.setMinimumWidth(200)
+        opc_row1.addWidget(self.opc_tag_edit)
+
+        opc_row1.addWidget(QLabel("시작:"))
+        self.opc_start_edit = QLineEdit("2024-01-01 00:00:00")
+        self.opc_start_edit.setMaximumWidth(140)
+        opc_row1.addWidget(self.opc_start_edit)
+
+        opc_row1.addWidget(QLabel("종료:"))
+        self.opc_end_edit = QLineEdit(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.opc_end_edit.setMaximumWidth(140)
+        opc_row1.addWidget(self.opc_end_edit)
+        opc_row1.addStretch()
+        opc_layout.addLayout(opc_row1)
+
+        opc_row2 = QHBoxLayout()
+        opc_row2.addWidget(QLabel("Endpoint:"))
+        self.opc_endpoint_edit = QLineEdit("opc.tcp://192.9.110.151:51241/Capstone/OPCUAServer")
+        opc_row2.addWidget(self.opc_endpoint_edit)
+
+        opc_row2.addWidget(QLabel("NS:"))
+        self.opc_ns_edit = QLineEdit("12")
+        self.opc_ns_edit.setMaximumWidth(40)
+        opc_row2.addWidget(self.opc_ns_edit)
+
+        opc_row2.addWidget(QLabel("Chunk(분):"))
+        self.opc_chunk_edit = QLineEdit("60")
+        self.opc_chunk_edit.setMaximumWidth(45)
+        opc_row2.addWidget(self.opc_chunk_edit)
+
+        opc_row2.addWidget(QLabel("Index Dir:"))
+        self.opc_index_edit = QLineEdit("opc_assets/tag_index")
+        self.opc_index_edit.setMaximumWidth(160)
+        opc_row2.addWidget(self.opc_index_edit)
+
+        self.opc_fetch_btn = QPushButton("📥 불러오기")
+        self.opc_fetch_btn.clicked.connect(self._run_opc_fetch)
+        if not HAS_OPC:
+            self.opc_fetch_btn.setEnabled(False)
+            self.opc_fetch_btn.setToolTip("preprocessing_portal 모듈 또는 opcua 패키지 없음")
+        opc_row2.addWidget(self.opc_fetch_btn)
+
+        self.opc_cancel_btn = QPushButton("⏹ 취소")
+        self.opc_cancel_btn.setEnabled(False)
+        self.opc_cancel_btn.clicked.connect(self._cancel_opc_fetch)
+        opc_row2.addWidget(self.opc_cancel_btn)
+        opc_layout.addLayout(opc_row2)
+
+        opc_group.setMaximumHeight(130)
+        main_layout.addWidget(opc_group)
 
         # === 파일 선택 ===
         file_group = QGroupBox("📁 파일 선택")
@@ -509,6 +649,82 @@ class DataPreprocessorMac(QMainWindow):
         result_layout.addWidget(self.result_text)
 
         main_layout.addWidget(result_group)
+
+    def _run_opc_fetch(self):
+        """OPC 히스토리 불러오기 시작"""
+        tag = self.opc_tag_edit.text().strip()
+        start = self.opc_start_edit.text().strip()
+        end = self.opc_end_edit.text().strip()
+        endpoint = self.opc_endpoint_edit.text().strip()
+        index_dir = self.opc_index_edit.text().strip()
+
+        if not tag:
+            QMessageBox.warning(self, "경고", "Tag 이름을 입력하세요.")
+            return
+        if not start or not end:
+            QMessageBox.warning(self, "경고", "시작/종료 시간을 입력하세요.")
+            return
+
+        try:
+            namespace = int(self.opc_ns_edit.text())
+            chunk_minutes = int(self.opc_chunk_edit.text())
+        except ValueError:
+            QMessageBox.warning(self, "경고", "NS와 Chunk는 숫자여야 합니다.")
+            return
+
+        self.opc_fetch_btn.setEnabled(False)
+        self.opc_cancel_btn.setEnabled(True)
+        self.progress_bar.setValue(0)
+        self.progress_label.setText("OPC 연결 중...")
+        self._log(f"\n📡 OPC 불러오기: {tag}  {start} ~ {end}")
+
+        self.opc_fetch_thread = OpcFetchThread(
+            tag_name=tag,
+            start_str=start,
+            end_str=end,
+            endpoint=endpoint,
+            namespace=namespace,
+            chunk_minutes=chunk_minutes,
+            index_dir=index_dir,
+        )
+        self.opc_fetch_thread.progress_updated.connect(self._on_progress)
+        self.opc_fetch_thread.log_message.connect(self._log)
+        self.opc_fetch_thread.finished_signal.connect(self._on_opc_finished)
+        self.opc_fetch_thread.start()
+
+    def _cancel_opc_fetch(self):
+        """OPC 불러오기 취소"""
+        if self.opc_fetch_thread:
+            self.opc_fetch_thread.is_cancelled = True
+            self._log("⏹ OPC 불러오기 취소됨")
+
+    def _on_opc_finished(self, success: bool, df):
+        """OPC 불러오기 완료"""
+        self.opc_fetch_btn.setEnabled(True)
+        self.opc_cancel_btn.setEnabled(False)
+        if not success or df is None:
+            self.progress_bar.setValue(0)
+            self.progress_label.setText("OPC 불러오기 실패")
+            return
+
+        self.progress_bar.setValue(100)
+        self.progress_label.setText("OPC 불러오기 완료!")
+
+        # 가져온 DataFrame을 전처리기에 로드
+        tag = self.opc_tag_edit.text().strip()
+        success2, msg = self.preprocessor.load_dataframe(df, source_name=f"OPC:{tag}")
+        if success2:
+            self.current_file = None
+            self.file_label.setText(f"[OPC] {tag}")
+            self.file_label.setStyleSheet("color: darkblue;")
+            rows = len(self.preprocessor.original_df)
+            cols = len(self.preprocessor.columns)
+            self.data_info_label.setText(f"📊 {rows:,}행 × {cols}열")
+            self._update_preview()
+            self._update_filter_columns()
+            self._log(f"✅ {msg}")
+        else:
+            self._log(f"⚠️ DataFrame 로드 실패: {msg}")
 
     def _load_file(self):
         """파일 로드"""
@@ -923,14 +1139,7 @@ class DataPreprocessorMac(QMainWindow):
             )
             return
 
-        if not self.current_file:
-            QMessageBox.warning(
-                self,
-                "경고",
-                "원본 파일 경로를 확인할 수 없습니다. 파일을 다시 불러온 뒤 시도하세요.",
-            )
-            return
-
+        # OPC 등 메모리 기반 데이터는 원본 파일 경로가 없어도 기본 경로로 저장합니다.
         # 제거된 행 확인
         summary = self.preprocessor.get_removed_rows_summary()
         if summary["total"] == 0:
@@ -1208,228 +1417,264 @@ class DataPreprocessorMac(QMainWindow):
         dialog.exec_()
 
     def _show_trend_chart(self):
-        """트렌드 차트 표시 (다중 컬럼 지원)"""
-        if self.preprocessor.processed_df is None:
-            QMessageBox.warning(
-                self, "경고", "먼저 데이터를 로드하고 전처리를 실행하세요."
-            )
+        """트렌드 + 정규분포도 전처리 전/후 비교 차트"""
+        if self.preprocessor.original_df is None:
+            QMessageBox.warning(self, "경고", "먼저 데이터를 로드하세요.")
             return
 
         try:
             import matplotlib
-
             matplotlib.use("Qt5Agg")
-            from matplotlib.backends.backend_qt5agg import (
-                FigureCanvasQTAgg as FigureCanvas,
-            )
+            from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
             from matplotlib.figure import Figure
             import matplotlib.pyplot as plt
-
-            # 한글 폰트 설정 (Mac)
-            plt.rcParams["font.family"] = [
-                "AppleGothic",
-                "Malgun Gothic",
-                "NanumGothic",
-                "sans-serif",
-            ]
-            plt.rcParams["axes.unicode_minus"] = False  # 마이너스 기호 깨짐 방지
+            import numpy as np
+            plt.rcParams["font.family"] = ["AppleGothic", "Malgun Gothic", "NanumGothic", "sans-serif"]
+            plt.rcParams["axes.unicode_minus"] = False
         except ImportError:
-            QMessageBox.critical(
-                self,
-                "오류",
-                "matplotlib이 설치되지 않았습니다.\npip install matplotlib",
-            )
+            QMessageBox.critical(self, "오류", "matplotlib이 설치되지 않았습니다.\npip install matplotlib")
             return
 
-        # 트렌드 차트 다이얼로그
+        orig_df = self.preprocessor.original_df
+        proc_df = self.preprocessor.processed_df
+        preprocessed = (
+            proc_df is not None
+            and len(proc_df) != len(orig_df)
+        )
+
         dialog = QDialog(self)
-        dialog.setWindowTitle("📊 트렌드 차트 (다중 비교)")
-        dialog.resize(1000, 750)
-        layout = QVBoxLayout(dialog)
+        dialog.setWindowTitle("📊 전처리 전/후 비교")
+        dialog.resize(1100, 820)
+        root = QVBoxLayout(dialog)
 
-        # 상단 컨트롤 영역
-        control_layout = QHBoxLayout()
+        # ── 상단 컨트롤 ──────────────────────────────────────────
+        ctrl = QHBoxLayout()
 
-        # 컬럼 선택 (다중 선택 리스트)
-        column_frame = QGroupBox("컬럼 선택 (Ctrl+클릭으로 다중 선택)")
-        column_layout = QVBoxLayout(column_frame)
-
+        col_group = QGroupBox("컬럼 선택 (Ctrl+클릭 다중)")
+        col_vbox = QVBoxLayout(col_group)
         column_list = QListWidget()
         column_list.setSelectionMode(QListWidget.ExtendedSelection)
         column_list.addItems(self.preprocessor.numeric_columns)
-        column_list.setMaximumHeight(120)
+        column_list.setMaximumHeight(110)
         if self.preprocessor.numeric_columns:
             column_list.item(0).setSelected(True)
-        column_layout.addWidget(column_list)
+        col_vbox.addWidget(column_list)
+        ctrl.addWidget(col_group)
 
-        control_layout.addWidget(column_frame)
+        opt_group = QGroupBox("옵션")
+        opt_vbox = QVBoxLayout(opt_group)
+        show_mean_chk = QCheckBox("평균선")
+        show_mean_chk.setChecked(True)
+        show_removed_chk = QCheckBox("제거된 점 표시 (빨간 마커)")
+        show_removed_chk.setChecked(True)
+        show_kde_chk = QCheckBox("정규분포 피팅 곡선")
+        show_kde_chk.setChecked(True)
+        for w in (show_mean_chk, show_removed_chk, show_kde_chk):
+            opt_vbox.addWidget(w)
+        ctrl.addWidget(opt_group)
 
-        # 옵션
-        option_frame = QGroupBox("옵션")
-        option_layout = QVBoxLayout(option_frame)
+        refresh_btn = QPushButton("🔄 업데이트")
+        ctrl.addWidget(refresh_btn)
+        ctrl.addStretch()
+        root.addLayout(ctrl)
 
-        auto_scale_check = QCheckBox("자동 스케일 (여유 20%)")
-        auto_scale_check.setChecked(True)
-        option_layout.addWidget(auto_scale_check)
+        # 전처리 미실행 안내
+        if not preprocessed:
+            notice = QLabel("ℹ️  전처리 실행 전입니다. 전처리 후 재열람하면 전/후 비교를 볼 수 있습니다.")
+            notice.setStyleSheet("color: gray; font-size: 10px; padding: 2px 4px;")
+            root.addWidget(notice)
 
-        show_mean_check = QCheckBox("평균선 표시")
-        show_mean_check.setChecked(True)
-        option_layout.addWidget(show_mean_check)
+        # ── 탭 ───────────────────────────────────────────────────
+        tabs = QTabWidget()
 
-        control_layout.addWidget(option_frame)
+        trend_widget = QWidget()
+        trend_vbox = QVBoxLayout(trend_widget)
+        trend_fig = Figure(figsize=(12, 5), dpi=100)
+        trend_canvas = FigureCanvas(trend_fig)
+        trend_vbox.addWidget(trend_canvas)
+        tabs.addTab(trend_widget, "📈 트렌드 비교")
 
-        # 버튼
-        btn_frame = QGroupBox("실행")
-        btn_layout = QVBoxLayout(btn_frame)
+        dist_widget = QWidget()
+        dist_vbox = QVBoxLayout(dist_widget)
+        dist_fig = Figure(figsize=(12, 5), dpi=100)
+        dist_canvas = FigureCanvas(dist_fig)
+        dist_vbox.addWidget(dist_canvas)
+        tabs.addTab(dist_widget, "📊 분포도 비교")
 
-        refresh_btn = QPushButton("🔄 차트 업데이트")
-        btn_layout.addWidget(refresh_btn)
+        root.addWidget(tabs)
 
-        control_layout.addWidget(btn_frame)
-        control_layout.addStretch()
-
-        layout.addLayout(control_layout)
-
-        # matplotlib Figure
-        fig = Figure(figsize=(12, 5), dpi=100)
-        canvas = FigureCanvas(fig)
-        layout.addWidget(canvas)
-
-        # 통계 정보
+        # ── 통계 요약 ─────────────────────────────────────────────
         stats_text = QTextEdit()
         stats_text.setReadOnly(True)
-        stats_text.setMaximumHeight(100)
+        stats_text.setMaximumHeight(85)
         stats_text.setStyleSheet("font-family: Menlo; font-size: 10px;")
-        layout.addWidget(stats_text)
+        root.addWidget(stats_text)
 
-        # 색상 팔레트
-        colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
+        COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
-        def update_chart():
-            """차트 업데이트"""
-            selected_items = column_list.selectedItems()
-            if not selected_items:
+        def removed_index(col: str):
+            """전처리에서 제거된 원본 행 인덱스."""
+            if proc_df is None or not preprocessed:
+                return orig_df.index[[False] * len(orig_df)]
+            source_indices = self.preprocessor.get_removed_source_indices()
+            if source_indices:
+                return orig_df.index.intersection(source_indices)
+            return orig_df.index.difference(proc_df.index)
+
+        # ── 트렌드 탭 ─────────────────────────────────────────────
+        def update_trend():
+            cols = [item.text() for item in column_list.selectedItems()][:5]
+            if not cols:
                 return
+            trend_fig.clear()
+            n = len(cols)
+            axes = trend_fig.subplots(n, 1, sharex=True) if n > 1 else [trend_fig.add_subplot(111)]
+            date_col = self.preprocessor.date_column
 
-            selected_columns = [item.text() for item in selected_items][:5]  # 최대 5개
+            for ax, col, color in zip(axes, cols, COLORS):
+                # x축 값 추출
+                def x_of(df):
+                    if date_col and date_col in df.columns:
+                        return df[date_col]
+                    return df.index.to_series()
 
-            df = self.preprocessor.processed_df
+                x_orig = x_of(orig_df)
+                y_orig = orig_df[col]
 
-            fig.clear()
-            ax = fig.add_subplot(111)
+                # 전처리 전 (회색)
+                ax.plot(x_orig, y_orig,
+                        color="#bbbbbb", linewidth=0.7, alpha=0.85,
+                        label="전처리 전", zorder=1)
 
-            # X축: 날짜 또는 인덱스
-            if (
-                self.preprocessor.date_column
-                and self.preprocessor.date_column in df.columns
-            ):
-                x_data = df[self.preprocessor.date_column]
-                ax.set_xlabel("시간")
-            else:
-                x_data = range(len(df))
-                ax.set_xlabel("인덱스")
+                # 전처리 후 (컬러)
+                if proc_df is not None and col in proc_df.columns:
+                    x_proc = x_of(proc_df)
+                    ax.plot(x_proc, proc_df[col],
+                            color=color, linewidth=0.9, alpha=0.9,
+                            label="전처리 후", zorder=2)
 
-            stats_lines = []
-            all_min, all_max = float("inf"), float("-inf")
-
-            for i, column in enumerate(selected_columns):
-                data = df[column].dropna()
-                if len(data) == 0:
-                    continue
-
-                color = colors[i % len(colors)]
-
-                plot_data = data
-                ylabel = "값"
-
-                # 플롯
-                ax.plot(
-                    x_data[: len(plot_data)],
-                    plot_data.values,
-                    color=color,
-                    linewidth=0.8,
-                    alpha=0.8,
-                    label=column,
-                )
+                # 제거된 점 (빨간 마커)
+                if show_removed_chk.isChecked() and preprocessed:
+                    rem_idx = removed_index(col)
+                    if len(rem_idx):
+                        rem_mask = orig_df.index.isin(rem_idx)
+                        ax.scatter(
+                            x_orig[rem_mask], y_orig[rem_mask],
+                            color="red", s=18, zorder=3,
+                            label=f"제거 ({len(rem_idx):,}개)", alpha=0.75,
+                        )
 
                 # 평균선
-                if show_mean_check.isChecked():
-                    mean_val = plot_data.mean()
-                    ax.axhline(y=mean_val, color=color, linestyle="--", alpha=0.3)
+                if show_mean_chk.isChecked():
+                    ax.axhline(y_orig.mean(), color="#aaaaaa", linestyle="--",
+                               linewidth=0.8, alpha=0.7)
+                    if proc_df is not None and col in proc_df.columns:
+                        ax.axhline(proc_df[col].mean(), color=color,
+                                   linestyle="--", linewidth=0.8, alpha=0.55)
 
-                # 통계
-                min_val = data.min()
-                max_val = data.max()
-                all_min = min(all_min, plot_data.min())
-                all_max = max(all_max, plot_data.max())
+                ax.set_ylabel(col, fontsize=8)
+                ax.legend(loc="upper right", fontsize=7)
+                ax.grid(True, alpha=0.22)
 
-                stats_lines.append(
-                    f"📊 {column}: 최소={min_val:.4f}, 최대={max_val:.4f}, "
-                    f"평균={data.mean():.4f}, 표준편차={data.std():.4f}, 데이터={len(data):,}개"
+            if date_col:
+                trend_fig.autofmt_xdate()
+            trend_fig.tight_layout(h_pad=0.4)
+            trend_canvas.draw()
+
+        # ── 분포도 탭 ─────────────────────────────────────────────
+        def update_dist():
+            cols = [item.text() for item in column_list.selectedItems()][:4]
+            if not cols:
+                return
+            dist_fig.clear()
+            n = len(cols)
+            axes = dist_fig.subplots(1, n) if n > 1 else [dist_fig.add_subplot(111)]
+            stat_lines = []
+
+            for ax, col in zip(axes, cols):
+                o = orig_df[col].dropna()
+                p = proc_df[col].dropna() if proc_df is not None and col in proc_df.columns else o
+
+                bins = min(60, max(15, len(p) // 30))
+                lo = min(o.min(), p.min())
+                hi = max(o.max(), p.max())
+                x_fit = np.linspace(lo, hi, 300)
+
+                # 히스토그램
+                ax.hist(o, bins=bins, range=(lo, hi), alpha=0.35,
+                        color="steelblue", density=True, label="전처리 전")
+                ax.hist(p, bins=bins, range=(lo, hi), alpha=0.45,
+                        color="darkorange", density=True, label="전처리 후")
+
+                # 정규분포 피팅 곡선
+                if show_kde_chk.isChecked():
+                    try:
+                        from scipy import stats as sp
+                        mu_o, sd_o = sp.norm.fit(o)
+                        mu_p, sd_p = sp.norm.fit(p)
+                        ax.plot(x_fit, sp.norm.pdf(x_fit, mu_o, sd_o),
+                                color="steelblue", linewidth=2,
+                                label=f"정규분포 전  μ={mu_o:.2f} σ={sd_o:.2f}")
+                        ax.plot(x_fit, sp.norm.pdf(x_fit, mu_p, sd_p),
+                                color="darkorange", linewidth=2,
+                                label=f"정규분포 후  μ={mu_p:.2f} σ={sd_p:.2f}")
+                    except ImportError:
+                        # scipy 없으면 numpy로 직접 계산
+                        mu_o, sd_o = float(o.mean()), float(o.std())
+                        mu_p, sd_p = float(p.mean()), float(p.std())
+                        def pdf(x, m, s):
+                            if s == 0:
+                                return np.zeros_like(x, dtype=float)
+                            return np.exp(-0.5 * ((x - m) / s) ** 2) / (s * np.sqrt(2 * np.pi))
+
+                        ax.plot(x_fit, pdf(x_fit, mu_o, sd_o), color="steelblue", linewidth=2,
+                                label=f"정규분포 전  μ={mu_o:.2f} σ={sd_o:.2f}")
+                        ax.plot(x_fit, pdf(x_fit, mu_p, sd_p), color="darkorange", linewidth=2,
+                                label=f"정규분포 후  μ={mu_p:.2f} σ={sd_p:.2f}")
+
+                removed_n = len(o) - len(p)
+                pct = removed_n / len(o) * 100 if len(o) else 0
+                ax.set_title(f"{col}\n제거 {removed_n:,}행 ({pct:.1f}%)", fontsize=9)
+                ax.legend(fontsize=7)
+                ax.grid(True, alpha=0.22)
+                ax.set_xlabel("값")
+                ax.set_ylabel("밀도")
+
+                d_mu = p.mean() - o.mean()
+                d_sd = p.std() - o.std()
+                stat_lines.append(
+                    f"[{col}]  "
+                    f"전: n={len(o):,}  μ={o.mean():.4f}  σ={o.std():.4f}  "
+                    f"후: n={len(p):,}  μ={p.mean():.4f}  σ={p.std():.4f}  "
+                    f"Δμ={d_mu:+.4f}  Δσ={d_sd:+.4f}  제거={removed_n:,}"
                 )
 
-            # 자동 스케일
-            if auto_scale_check.isChecked() and all_min != float("inf"):
-                range_val = all_max - all_min
-                margin = range_val * 0.2
-                ax.set_ylim(all_min - margin, all_max + margin)
+            dist_fig.tight_layout()
+            dist_canvas.draw()
+            stats_text.setText("\n".join(stat_lines))
 
-            # 스타일
-            title = ", ".join(selected_columns[:3])
-            if len(selected_columns) > 3:
-                title += f" 외 {len(selected_columns) - 3}개"
-            ax.set_title(f"트렌드: {title}", fontsize=11, fontweight="bold")
-            ax.set_ylabel(ylabel)
-            ax.grid(True, alpha=0.3)
-            ax.legend(loc="upper right", fontsize=9)
+        def update_all():
+            update_trend()
+            update_dist()
 
-            if self.preprocessor.date_column:
-                fig.autofmt_xdate()
+        def on_tab_changed(idx):
+            if idx == 0:
+                update_trend()
+            else:
+                update_dist()
 
-            fig.tight_layout()
-            canvas.draw()
+        refresh_btn.clicked.connect(update_all)
+        column_list.itemSelectionChanged.connect(update_all)
+        show_mean_chk.stateChanged.connect(update_trend)
+        show_removed_chk.stateChanged.connect(update_trend)
+        show_kde_chk.stateChanged.connect(update_dist)
+        tabs.currentChanged.connect(on_tab_changed)
 
-            # 인터랙티브 커서 추가
-            try:
-                import mplcursors
+        update_all()
 
-                cursor = mplcursors.cursor(ax, hover=True)
-
-                @cursor.connect("add")
-                def on_add(sel):
-                    line = sel.artist
-                    label = line.get_label()
-                    x_val = sel.target[0]
-                    y_val = sel.target[1]
-                    sel.annotation.set(
-                        text=f"{label}\nValue: {y_val:.4f}\nIndex: {int(x_val)}",
-                        fontsize=9,
-                        bbox=dict(
-                            boxstyle="round,pad=0.3",
-                            facecolor="white",
-                            alpha=0.9,
-                            edgecolor=line.get_color(),
-                        ),
-                    )
-            except ImportError:
-                pass  # mplcursors 없으면 기본 동작
-
-            # 통계 정보 업데이트
-            stats_text.setText("\n".join(stats_lines))
-
-        # 이벤트 연결
-        refresh_btn.clicked.connect(update_chart)
-        column_list.itemSelectionChanged.connect(update_chart)
-        auto_scale_check.stateChanged.connect(update_chart)
-        show_mean_check.stateChanged.connect(update_chart)
-
-        # 초기 차트
-        update_chart()
-
-        # 닫기 버튼
         close_btn = QPushButton("닫기")
         close_btn.clicked.connect(dialog.close)
-        layout.addWidget(close_btn)
+        root.addWidget(close_btn)
 
         dialog.exec_()
 

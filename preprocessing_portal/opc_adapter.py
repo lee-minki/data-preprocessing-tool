@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from preprocessing_portal.tag_index import TagIndexEntry, find_entry
 
@@ -114,12 +116,21 @@ class OpcUaReadAdapter:
         entry: TagIndexEntry,
         start: str | datetime,
         end: str | datetime,
+        progress_callback: Callable[[int, int, datetime], None] | None = None,
+        cancel_callback: Callable[[], bool] | None = None,
     ) -> list[dict[str, Any]]:
-        """Read raw history for a selected tag using bounded chunks."""
+        """Read raw history for a selected tag using bounded chunks.
+
+        progress_callback(current_chunk, total_chunks, chunk_start_time) is called
+        after each chunk so callers can display a progress bar or ETA.
+        """
         start_kst = parse_kst(start)
         end_kst = parse_kst(end)
         if end_kst <= start_kst:
             raise ValueError("end must be greater than start")
+
+        chunk = timedelta(minutes=max(1, self.config.chunk_minutes))
+        total_chunks = math.ceil((end_kst - start_kst) / chunk)
 
         rows: list[dict[str, Any]] = []
         boundary = self._read_boundary(entry, start_kst)
@@ -127,10 +138,17 @@ class OpcUaReadAdapter:
             rows.append(boundary)
 
         cursor = start_kst
-        chunk = timedelta(minutes=max(1, self.config.chunk_minutes))
+        chunk_idx = 0
         while cursor < end_kst:
+            if cancel_callback is not None and cancel_callback():
+                raise RuntimeError("OPC read cancelled")
+            chunk_idx += 1
             chunk_end = min(cursor + chunk, end_kst)
             rows.extend(self._read_raw_window(entry, cursor, chunk_end))
+            if cancel_callback is not None and cancel_callback():
+                raise RuntimeError("OPC read cancelled")
+            if progress_callback is not None:
+                progress_callback(chunk_idx, total_chunks, cursor)
             cursor = chunk_end
         rows.sort(key=lambda row: row["datetime"])
         return rows
@@ -232,7 +250,30 @@ def _main(argv: list[str] | None = None) -> int:
         if not args.start or not args.end:
             raise SystemExit("--start and --end are required for history reads")
         for entry in entries:
-            rows = adapter.read_raw_history(entry, args.start, args.end)
+            print(f"\n📡 {entry.fulltagname} 히스토리 읽기 중...", flush=True)
+            wall_start = time.time()
+
+            def _make_progress_cb(t0: float) -> Callable[[int, int, datetime], None]:
+                def cb(current: int, total: int, chunk_time: datetime) -> None:
+                    pct = current / total * 100 if total else 0
+                    elapsed = time.time() - t0
+                    eta = int((elapsed / current) * (total - current)) if current else 0
+                    bar_filled = int(pct / 5)
+                    bar = "█" * bar_filled + "░" * (20 - bar_filled)
+                    time_str = chunk_time.strftime("%Y-%m-%d %H:%M")
+                    eta_str = f"ETA {eta // 60}m {eta % 60}s" if current < total else "완료"
+                    print(
+                        f"\r  [{bar}] {pct:5.1f}%  {time_str}  ({current}/{total})  {eta_str}   ",
+                        end="",
+                        flush=True,
+                    )
+                return cb
+
+            rows = adapter.read_raw_history(
+                entry, args.start, args.end, progress_callback=_make_progress_cb(wall_start)
+            )
+            elapsed_total = time.time() - wall_start
+            print(f"\r  완료 ({elapsed_total:.1f}s, {len(rows):,}행)                              ")
             print(
                 json.dumps(
                     {
