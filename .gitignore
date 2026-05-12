@@ -57,3 +57,16 @@ Thumbs.db
 
 # VDI package outputs
 vdi_packages/
+
+# IIS deploy outputs (timestamped zips)
+dist_iis/
+PreprocessingWeb_deploy.zip
+
+# Tool caches
+.omx/
+.playwright-mcp/
+
+# Root-level screenshots (one-off captures)
+/intro-*.png
+/main-polish-*.png
+/web-*.png
