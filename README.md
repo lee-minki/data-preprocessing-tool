@@ -1,6 +1,8 @@
-# 시계열 데이터 전처리 프로그램
+# 프리비전 모델링 준비 전처리 Control Room
 
-Excel/CSV 형식의 시계열 데이터를 필터링, 이상값 처리, 시간 보정, Validation/Simulation 산출물 생성까지 수행하는 전처리 도구입니다. 데스크톱 GUI와 함께 XLSX 업로드 중심의 웹 Control Room(`Preprocessing.html`)을 제공합니다.
+프리비전 모델링 데이터 준비 과정에서 반복되던 Operation Condition 기반 선별, 엑셀 수작업 전처리, Validation/Simulation 구성, 2분 단위 시간축 보정을 하나의 흐름으로 정리한 전처리 도구입니다. 데스크톱 GUI와 함께 XLSX 업로드 중심의 웹 Control Room(`Preprocessing.html`)을 제공합니다.
+
+현재 웹 Control Room은 단순히 브라우저 화면만 로컬에서 도는 구조가 아니라, 브라우저 UI + Frontend JS 로직 + 로컬/VDI Python backend + 산출물 저장까지 모두 로컬 자원을 사용하는 형태입니다. 특히 OPC helper 연동은 방화벽 제약 때문에 서버에서 직접 붙지 못하고, 로컬/VDI 환경에서만 동작합니다.
 
 기본 실행 파일은 Windows용 `gui_app.py`(tkinter)이고, macOS에서는 `gui_app_mac.py`(PyQt5)를 사용합니다.
 
@@ -55,12 +57,13 @@ python gui_app_mac.py
 ### 웹 Control Room
 
 1. XLSX 파일 업로드
-2. 우측 데이터 분석 카드에서 원본 추세와 분포 확인
-3. 좌측에서 이상값 방식, 선제거 모드, 대상 컬럼, 필터, 시간 처리, Validation / Simulation 조건 설정
-4. `🚀 전처리 실행 · 자동 저장`
-5. 실행 영역의 `저장 파일 구성`과 로그에서 `_prepro_with_valid.xlsx` / `Simulation_Data_*.xlsx` 확인
+2. 우측 데이터 분석 카드에서 원본 추세와 분포, 시간축 상태 확인
+3. 필요하면 OPC helper 태그로 Operation Condition 판단 기준 보완
+4. 좌측에서 이상값 방식, 선제거 모드, 대상 컬럼, 필터, 시간 처리, Validation / Simulation 조건 설정
+5. `🚀 전처리 실행 · 자동 저장`
+6. 실행 영역의 `저장 파일 구성`과 로그에서 `_prepro_with_valid.xlsx` / `Simulation_Data_*.xlsx` 확인
 
-메인 화면의 `사용 순서` 항목을 클릭하면 각 부위가 하이라이트되고, 무엇을 기입하고 어떤 의도로 확인하는지 튜토리얼로 볼 수 있습니다.
+메인 화면의 `사용 순서` 항목 또는 `인터랙티브 매뉴얼 시작` 버튼을 누르면 각 부위가 하이라이트되고, 왜 이 단계가 필요한지와 기존 절차 대비 어떤 부분이 자동화되었는지부터 실행·자동 저장·로그 재확인까지 순서대로 확인할 수 있습니다.
 
 ### 데스크톱 GUI
 
@@ -153,7 +156,13 @@ Finder로 프로젝트 전체를 압축하면 `.venv/bin/python*` 같은 macOS �
 
 ## 웹/포털 개발 미리보기
 
-OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같은 API 계약으로 가져가는 방향입니다. 현재 추가된 최소 backend skeleton은 아래처럼 실행할 수 있습니다.
+OPC helper tag 조건 기능은 포털 서버형과 로컬/VDI backend형을 같은 API 계약으로 가져가는 방향입니다. 다만 현재 OPC UA 연동은 방화벽 제약 때문에 서버에서 직접 붙지 못하고, 로컬/VDI backend에서만 동작합니다. 즉, 서버 배포 시에는 세션/업로드/전처리/다운로드는 포털 backend로 올리고, OPC helper는 로컬 sidecar 또는 local backend를 통한 하이브리드 구조로 분리하는 것이 현실적인 방향입니다.
+
+구조 설명 문서:
+- `docs/architecture-and-deployment.md`
+- `docs/architecture-preview.html`
+
+현재 추가된 최소 backend skeleton은 아래처럼 실행할 수 있습니다.
 
 웹 UI 기준 주요 동작:
 

@@ -67,16 +67,16 @@ body[data-ui-theme="dark"]{background:radial-gradient(circle at top left,rgba(11
 .hero-copy,.hero-visual{position:relative;z-index:1}
 .landing-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:var(--primary-light);border:1px solid rgba(118,87,255,.24);color:var(--primary-dark);font-size:12px;font-weight:700;letter-spacing:.08em;margin-bottom:14px}
 .landing-title{font-family:var(--font-display);font-size:clamp(26px,2.6vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.16;color:var(--gray900);margin-bottom:10px}
-.landing-subtitle{max-width:min(48ch,100%);font-size:clamp(13px,1vw,15px);color:var(--gray600);margin-bottom:14px}
+.landing-subtitle{max-width:min(52ch,100%);font-size:clamp(13px,1vw,15px);color:var(--gray700);margin-bottom:14px;word-break:keep-all;overflow-wrap:anywhere}
 .hero-audience{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-bottom:14px}
 .audience-card{padding:13px;border-radius:18px;background:var(--gray50);border:1px solid var(--gray100);box-shadow:inset 0 1px 0 rgba(255,255,255,.52)}
 .audience-card span{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray500);margin-bottom:6px}
 .audience-card strong{font-size:14px;line-height:1.6;font-weight:600;color:var(--gray800)}
 .hero-actions{display:flex;flex-wrap:wrap;gap:10px}
-.hero-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s}
+.hero-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s;border:none;cursor:pointer;font-family:inherit}
 .hero-btn.primary{background:linear-gradient(135deg,var(--primary),#5434ec);color:#fff;box-shadow:0 16px 30px rgba(118,87,255,.28)}
-.hero-btn.secondary{background:var(--gray900);color:#fff}
-.hero-btn.ghost{border:1px solid rgba(44,58,83,.12);background:rgba(255,255,255,.58);color:var(--gray700)}
+.hero-btn.secondary{background:#f8fbff;color:#111b2f;box-shadow:0 14px 28px rgba(9,17,31,.10);border:1px solid rgba(17,27,47,.08)}
+.hero-btn.ghost{border:1px solid rgba(44,58,83,.18);background:rgba(255,255,255,.78);color:#24344f}
 .hero-btn:hover{transform:translateY(-1px)}
 .hero-visual{display:flex;flex-direction:column;gap:clamp(10px,1vw,14px)}
 .hero-image-card,.hero-process-card,.route-card,.landing-card,.feature-card,.launch-copy{background:var(--white);border:1px solid rgba(195,207,223,.55);box-shadow:var(--shadow)}
@@ -113,19 +113,20 @@ body[data-ui-theme="dark"]{background:radial-gradient(circle at top left,rgba(11
 .landing-card p{color:var(--gray600);margin-bottom:0;font-size:clamp(13px,1vw,15px);max-width:30ch}
 .dropzone{border:1.5px dashed rgba(118,87,255,.42);border-radius:22px;padding:clamp(24px,2.8vw,36px) clamp(20px,2vw,28px);background:linear-gradient(180deg,#faf8ff,#eef8ff);transition:all .25s;cursor:pointer;margin-bottom:8px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 18px 34px rgba(118,87,255,.08);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .dropzone:hover,.dropzone.over{border-color:var(--primary);background:linear-gradient(180deg,#f2eeff,#e8f6ff);transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 22px 42px rgba(118,87,255,.16)}
+.dropzone.is-busy{cursor:progress;pointer-events:none;opacity:.72;filter:saturate(.86)}
 .dz-icon{display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;margin:0 auto 12px;border-radius:22px;background:linear-gradient(135deg,var(--primary),var(--blue));font-size:27px;color:#fff;box-shadow:0 18px 30px rgba(118,87,255,.22)}
 .dz-text{color:var(--gray700);font-size:14px;font-weight:600;margin-bottom:12px}
 .dz-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:var(--gray900);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 16px 28px rgba(9,17,31,.16)}
 .dz-btn:hover{background:var(--primary-dark)}
 .file-input-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;opacity:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-.dz-format{font-size:11px;color:var(--gray500);margin-top:10px;line-height:1.5;max-width:28ch}
+.dz-format{font-size:12px;color:var(--gray600);margin-top:10px;line-height:1.55;max-width:32ch;word-break:keep-all;overflow-wrap:anywhere}
 .feature-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(16px,1.6vw,22px);max-width:var(--content-width);margin:0 auto}
 .feature-card{border-radius:24px;padding:20px;text-align:left;transition:all .2s}
 .feature-card:hover{border-color:rgba(118,87,255,.34);transform:translateY(-2px)}
 .feature-card .fc-icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:var(--primary-light);font-size:22px;color:var(--primary-dark);margin-bottom:12px}
 .feature-card .fc-title{font-weight:700;font-size:16px;color:var(--gray900);margin-bottom:5px}
-.feature-card .fc-desc{font-size:13px;color:var(--gray600);max-width:30ch}
-.feature-card .fc-note{font-size:11px;color:var(--gray400);margin-top:10px;line-height:1.6}
+.feature-card .fc-desc{font-size:13px;color:var(--gray700);max-width:32ch;word-break:keep-all;overflow-wrap:anywhere}
+.feature-card .fc-note{font-size:11.5px;color:var(--gray500);margin-top:10px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere}
 .landing-footnote{text-align:center;font-size:12px;color:var(--gray500);margin:2px auto 0;max-width:var(--content-width)}
 
 /* DASHBOARD */
@@ -233,7 +234,7 @@ body[data-ui-theme="dark"] input,body[data-ui-theme="dark"] select,body[data-ui-
 .tutorial-dim{position:fixed;inset:0;background:rgba(7,17,31,.38);z-index:10950;display:none;pointer-events:none}
 .tutorial-dim.show{display:block}
 .tutorial-highlight{position:relative;z-index:10960!important;outline:3px solid rgba(118,87,255,.8);box-shadow:0 0 0 8px rgba(118,87,255,.18),0 24px 58px rgba(6,15,30,.22)!important;border-radius:18px;transition:outline .18s,box-shadow .18s;background:var(--white)!important;color:var(--gray800)!important;isolation:isolate}.tutorial-highlight *{color:inherit}.tutorial-highlight .sb-label,.tutorial-highlight .val-dl-desc,.tutorial-highlight .sb-body,.tutorial-highlight .method-badge,.tutorial-highlight .tip{opacity:1!important}.tutorial-highlight .sb-label,.tutorial-highlight .val-dl-desc{color:var(--gray600)!important}.tutorial-highlight .method-title,.tutorial-highlight b{color:var(--gray800)!important}
-.tutorial-callout{position:fixed;z-index:10970;width:min(420px,calc(100vw - 28px));max-height:calc(100vh - 24px);overflow:auto;padding:16px;border-radius:18px;background:#07111f;color:#fff;border:1px solid rgba(118,87,255,.34);box-shadow:0 28px 80px rgba(6,15,30,.38);display:none}
+.tutorial-callout{position:fixed;z-index:10970;width:clamp(400px,24vw,500px);max-width:calc(100vw - 28px);max-height:calc(100vh - 24px);overflow:auto;padding:16px;border-radius:18px;background:#07111f;color:#fff;border:1px solid rgba(118,87,255,.34);box-shadow:0 28px 80px rgba(6,15,30,.38);display:none}
 .tutorial-callout.show{display:block}.tutorial-kicker{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;color:#cfc6ff;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.tutorial-dots{display:flex;gap:5px}.tutorial-dot{width:7px;height:7px;border-radius:999px;background:rgba(255,255,255,.22)}.tutorial-dot.active{background:#9a86ff}
 .tutorial-callout h3{font-size:17px;line-height:1.3;margin:0 0 8px;color:#fff}.tutorial-callout p{margin:0 0 10px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.65}.tutorial-section-title{font-size:11px;font-weight:900;color:#fff;margin:10px 0 5px}.tutorial-list{display:grid;gap:4px;margin:0 0 8px;padding:0;list-style:none}.tutorial-list li{font-size:12px;line-height:1.55;color:rgba(255,255,255,.78)}.tutorial-list li::before{content:'- ';color:#9a86ff;font-weight:900}.tutorial-files{display:grid;gap:6px;margin-top:8px}.tutorial-file{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.78);line-height:1.45}.tutorial-file b{display:block;color:#fff;margin-bottom:2px}.tutorial-actions{display:flex;justify-content:space-between;gap:8px;margin-top:12px}.tutorial-actions .btn{width:auto;padding:7px 12px;font-size:12px}.tutorial-actions-left,.tutorial-actions-right{display:flex;gap:8px}
 
@@ -370,7 +371,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);width:14px;he
 .chip-action-btn:hover{background:var(--gray100)}
 
 .chart-split{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);border-top:1px solid var(--gray100)}
-.chart-panel{padding:10px 14px 14px;height:clamp(230px,28vh,360px)}
+.chart-panel{padding:10px 14px 14px;height:clamp(230px,28vh,360px)}.chart-panel.is-compare{height:clamp(420px,52vh,620px)}
 .chart-panel:first-child{border-right:1px solid var(--gray100)}
 .chart-panel-label{font-size:10px;font-weight:600;color:var(--gray500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
 
@@ -404,7 +405,7 @@ tr:hover td{background:var(--blue-light)}
 .progress-inner{display:flex;align-items:center;gap:12px}
 .progress-bar{flex:1;height:6px;background:var(--gray200);border-radius:3px;overflow:hidden}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--blue));border-radius:3px;transition:width .3s;width:0%}
-.progress-text{font-size:12px;color:var(--gray500);min-width:120px;text-align:right}
+.progress-text{font-size:12px;color:var(--gray500);min-width:min(44vw,260px);text-align:right;line-height:1.35}
 
 /* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -490,7 +491,7 @@ tr:hover td{background:var(--blue-light)}
         <div class="upload-card-head">
           <span class="upload-badge">Gateway</span>
           <h1>파일 업로드로 바로 시작</h1>
-          <p>Excel 파일을 올리면 곧바로 대시보드가 열리고 원본 확인부터 전처리 설정·저장까지 한 흐름으로 이어집니다.</p>
+          <p>Excel 파일을 올리면 곧바로 대시보드가 열리고, 원본 확인부터 전처리 설정·저장까지 한 흐름으로 이어집니다.</p>
         </div>
         <div class="dropzone" id="dropzone">
           <div class="dz-icon">☁️</div>
@@ -504,9 +505,9 @@ tr:hover td{background:var(--blue-light)}
       <div class="launch-copy">
         <span class="section-kicker">Start Here</span>
           <h2>업로드 후 바로 검토</h2>
-          <p>업로드만 끝나면 기존 대시보드로 넘어가 파일 상태를 확인하고 필요한 기준만 정하면 됩니다.</p>
+          <p>업로드만 끝나면 기존 대시보드로 넘어가, 파일 상태를 확인하고 필요한 기준만 정하면 됩니다.</p>
           <ul class="launch-list">
-            <li><div><strong>먼저</strong> 파일명, 행/열 수, 원본 추세를 빠르게 확인합니다.</div></li>
+            <li><div><strong>먼저</strong> 파일 형식, 행/열 수, 원본 추세를 빠르게 확인합니다.</div></li>
             <li><div><strong>그다음</strong> 기준을 정해 실행하고 저장 결과와 로그만 다시 확인합니다.</div></li>
           </ul>
       </div>
@@ -516,7 +517,7 @@ tr:hover td{background:var(--blue-light)}
       <div class="hero-copy">
         <span class="landing-eyebrow">DATA PREPROCESSING CONTROL ROOM</span>
         <h2 class="landing-title">업로드 뒤 바로 이어지는 전처리 흐름</h2>
-        <p class="landing-subtitle">현업 파일을 올리면 원본 추세 확인, 기준 설정, 자동 저장까지 기존 전처리 화면에서 바로 이어집니다.</p>
+        <p class="landing-subtitle">업무용 원본 파일을 올리면 원본 추세 확인, 기준 설정, 자동 저장까지 기존 전처리 화면에서 바로 이어집니다.</p>
 
         <div class="hero-audience">
           <div class="audience-card">
@@ -535,7 +536,7 @@ tr:hover td{background:var(--blue-light)}
 
         <div class="hero-actions">
           <a class="hero-btn primary" href="#launchPanel">업로드 영역으로 이동</a>
-          <a class="hero-btn secondary" href="MANUAL.html">사용자 매뉴얼</a>
+          <button type="button" class="hero-btn secondary" onclick="window.startInteractiveTutorial?.()">인터랙티브 매뉴얼 시작</button>
           <a class="hero-btn ghost" href="program_intro.html">도입 배경 보기</a>
         </div>
       </div>
@@ -659,25 +660,30 @@ tr:hover td{background:var(--blue-light)}
         </div>
       </div>
 
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-overview">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🧭</span> 사용 순서 <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
+          <button type="button" class="chip-action-btn" style="margin-bottom:8px;width:100%" onclick="window.startInteractiveTutorial?.()">▶ 인터랙티브 매뉴얼 시작</button>
           <div class="workflow-list">
-            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="0"><button type="button" class="workflow-info-btn" data-spotlight-target="chartCard" data-spotlight-title="원본 트렌드 확인" data-spotlight-desc="여기서 먼저 전체 추세와 튀는 구간을 봅니다. 파일을 불러오면 차트가 열리고, 이상값 기준을 정하기 전에 가장 먼저 확인하는 화면입니다.">i</button><div class="workflow-step-text"><b>원본 트렌드 확인</b><br>업로드 직후 우측 차트에서 전체 추세와 튀는 구간을 먼저 확인합니다.</div></div>
-            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="1"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-controls" data-spotlight-title="이상값 / 필터 / 시간 설정" data-spotlight-desc="이 구역에서 제거 기준, Condition, 시간 보정 기준을 차례로 정합니다. 먼저 차트를 본 뒤 필요한 항목만 최소한으로 조정하면 됩니다.">i</button><div class="workflow-step-text"><b>이상값 / 필터 / 시간 설정</b><br>좌측에서 제거 기준, 필터 조건, 시간 보정 기준을 정합니다.</div></div>
-            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="2"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-action" data-spotlight-title="전처리 실행 · 자동 저장" data-spotlight-desc="설정이 끝나면 여기서 전처리를 실행합니다. 전처리 결과와 Validation 포함 파일, Simulation Data가 자동 저장됩니다.">i</button><div class="workflow-step-text"><b>전처리 실행 · 자동 저장</b><br>전처리데이터(정상 Validation 20% 포함)와 Simulation Data가 한 번에 저장됩니다.</div></div>
-            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="3"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-review" data-spotlight-title="차트와 로그 재확인" data-spotlight-desc="실행 후에는 전/후 비교, 차트, 로그를 다시 확인합니다. 너무 많이 지워졌는지, 설정이 적절했는지 마지막으로 판단하는 단계입니다.">i</button><div class="workflow-step-text"><b>차트와 로그 재확인</b><br>전처리 후 추세, 분포, 로그를 보고 설정이 적절했는지 확인합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="0"><button type="button" class="workflow-info-btn" data-spotlight-target="launchPanel" data-spotlight-title="왜 이 앱이 필요한가" data-spotlight-desc="프리비전 모델링 준비는 추출만으로 끝나지 않습니다. 이 앱은 Condition 선별, 통계 기반 전처리, 시간축 보정, 검증 산출물 준비를 한 흐름으로 묶기 위해 만들어졌습니다.">i</button><div class="workflow-step-text"><b>왜 이 앱이 필요한가</b><br>프리비전 모델링 준비 병목을 줄이는 이유부터 확인합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="1"><button type="button" class="workflow-info-btn" data-spotlight-target="chartCard" data-spotlight-title="원본과 시간축 먼저 확인" data-spotlight-desc="바로 실행하지 말고 원본 추세와 시간축부터 봅니다. 전처리 강도를 감이 아니라 실제 데이터 모양과 간격 상태로 판단하는 단계입니다.">i</button><div class="workflow-step-text"><b>원본과 시간축 먼저 확인</b><br>차트와 시간축 상태를 먼저 보고 기준을 정합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="2"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-opc" data-spotlight-title="Condition 필터링 자동화" data-spotlight-desc="Model Tag 중심 데이터만으로는 운전 조건 선별이 어렵습니다. 보조 태그와 조건 필터를 써서 필요한 운전 구간만 남기는 단계입니다.">i</button><div class="workflow-step-text"><b>Condition 필터링 자동화</b><br>보조 태그와 필터로 필요한 운전 상태만 정밀하게 남깁니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="3"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-outlier" data-spotlight-title="통계 기반 전처리 표준화" data-spotlight-desc="엑셀 수식으로 하던 표준편차, IQR, 극단값 정리를 앱 안에서 선택형 기준으로 처리합니다. 수작업 통계 전처리를 반복 가능한 절차로 바꾸는 단계입니다.">i</button><div class="workflow-step-text"><b>통계 기반 전처리 표준화</b><br>이상값 처리와 선제거로 수작업 통계 정제를 대체합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="4"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-validation" data-spotlight-title="Validation / Simulation 연결" data-spotlight-desc="전처리 후 검증과 점검용 산출물을 따로 준비하지 않도록 같은 흐름에서 Validation과 Simulation 구성을 이어서 진행합니다.">i</button><div class="workflow-step-text"><b>Validation / Simulation 연결</b><br>전처리 뒤 검증용 산출물까지 같은 흐름에서 준비합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="5"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-time" data-spotlight-title="2분 시계열 적합성 설정" data-spotlight-desc="프리비전 업로드 적합성을 맞추기 위해 시간 정규화와 시간 재정렬 기준을 확인합니다. 시간축 설정은 실행 전에 의도를 알고 정해야 합니다.">i</button><div class="workflow-step-text"><b>2분 시계열 적합성 설정</b><br>시간축 보정 기준을 정해 업로드 가능한 시계열 형태로 맞춥니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="6"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-action" data-spotlight-title="전처리 실행 · 자동 저장" data-spotlight-desc="설정이 끝나면 여기서 전처리를 실행합니다. 실행 중에는 버튼이 비활성화되고, 완료 시 전처리데이터와 Simulation Data 저장이 진행됩니다.">i</button><div class="workflow-step-text"><b>전처리 실행 · 자동 저장</b><br>설정값으로 처리하고 저장 파일 생성을 시작합니다.</div></div>
+            <div class="workflow-step tutorial-step-trigger" role="button" tabindex="0" data-tutorial-step="7"><button type="button" class="workflow-info-btn" data-spotlight-target="workflowTarget-review" data-spotlight-title="저장 결과와 로그 재확인" data-spotlight-desc="실행 후에는 저장 파일 구성, 처리 로그, 전/후 비교와 차트를 다시 확인합니다. Simulation은 조건이 맞지 않으면 생략될 수 있으므로 로그를 꼭 확인해야 합니다.">i</button><div class="workflow-step-text"><b>저장 결과와 로그 재확인</b><br>파일 생성 여부와 제거 행 수, 차트 변화를 확인합니다.</div></div>
           </div>
         </div>
       </div>
 
       <!-- 이상값 처리 -->
-      <div class="sb-section" id="workflowTarget-controls">
+      <div class="sb-section" id="workflowTarget-outlier">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>📊</span> 이상값 처리
-          <i class="tip" data-tip="이상값 처리를 켜면 숫자 컬럼에서 튀는 행을 제거합니다.&#10;많이 제거할수록 학습 데이터는 더 촘촘하고 안정적이지만 전체 데이터 양은 줄어듭니다.&#10;덜 제거할수록 원본 데이터 양은 더 많이 남지만 이상값이 일부 포함될 수 있습니다.">i</i>
+          <i class="tip" data-tip="기존에는 표준편차나 범위를 엑셀에서 직접 계산해 이상값을 정리해야 했습니다.&#10;여기서는 그 과정을 앱 안에서 바로 수행합니다.&#10;많이 제거할수록 학습 데이터는 더 안정적이지만 전체 데이터 양은 줄어들고, 덜 제거할수록 데이터는 더 남지만 이상값이 일부 남을 수 있습니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
@@ -741,7 +747,7 @@ tr:hover td{background:var(--blue-light)}
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div style="display:flex;align-items:center;gap:4px">
               <span class="sb-label" style="margin:0">대상 컬럼</span>
-              <i class="tip" data-tip="이상값을 검사할 컬럼을 선택합니다.&#10;기본은 모든 숫자 컬럼입니다.&#10;특정 센서만 이상값 처리하고 싶을 때 활용하세요.">i</i>
+              <i class="tip" data-tip="이상값을 검사할 컬럼을 선택합니다.&#10;웹 UI에서는 기본 해제 상태이며, 이상값 처리가 켜져 있으면 1개 이상 선택해야 실행됩니다.&#10;특정 센서만 이상값 처리하고 싶을 때 활용하세요. 선택한 컬럼은 Simulation 대상에도 기본 동기화됩니다.">i</i>
             </div>
             <div style="display:flex;gap:4px">
               <button type="button" class="chip-action-btn" onclick="app.outlierSelectAll(true)">전체</button>
@@ -755,10 +761,10 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- OPC helper tags -->
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-opc">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🏷️</span> OPC 보조 태그
-          <i class="tip" data-tip="좌측 첫 시간 컬럼을 기준으로 OPC 태그 값을 맞춰 조건/소팅에만 사용합니다.&#10;최종 저장 파일에는 helper 컬럼이 포함되지 않습니다.&#10;태그를 추가하지 않아도 원본 컬럼 조건만으로 전처리할 수 있습니다.">i</i>
+          <i class="tip" data-tip="프리비전 모델링 데이터는 Model Tag 중심이라 Operation Condition 기준 선별이 어려울 수 있습니다.&#10;여기서는 OPC helper 태그를 붙여 운전 구간 판단 기준을 보완합니다.&#10;helper 컬럼은 필터/소팅 판단에만 쓰이며 최종 저장 파일에는 포함되지 않습니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
@@ -802,10 +808,10 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- 필터 -->
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-filter">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🔧</span> 필터
-          <i class="tip" data-tip="필터는 조건에 맞는 행만 남기는 기능입니다.&#10;예: UNIT TARG GRID = 1이면 값이 1인 행만 남습니다.&#10;특정 값을 제거하려면 반대 조건을 사용하세요. 예: != 1은 1이 아닌 행만 남깁니다.&#10;여러 필터는 AND 조건으로 모두 만족하는 행만 남습니다.">i</i>
+          <i class="tip" data-tip="기존 드래그 방식은 같은 조건을 다시 적용하기 어렵습니다.&#10;필터는 조건에 맞는 행만 남겨 Operation Condition 선별을 반복 가능하게 만듭니다.&#10;예: UNIT TARG GRID = 1이면 값이 1인 행만 남고, != 1이면 1이 아닌 행만 남습니다. 여러 필터는 AND 조건으로 함께 적용됩니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
@@ -815,20 +821,20 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- 시간 처리 -->
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-time">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🕐</span> 시간 처리 <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
           <label style="margin-bottom:4px">
             <input type="checkbox" id="applyTimeNorm" checked> 시간 정규화
-            <i class="tip" data-tip="밀린 시간을 가장 가까운 간격으로 보정합니다.&#10;장점: 엑셀 자동채우기 오류를 빠르게 고칠 수 있습니다.&#10;단점: 원래 시간 오차 정보는 사라집니다.">i</i>
+            <i class="tip" data-tip="엑셀 자동채우기나 추출 과정에서 어긋난 시간을 가장 가까운 간격으로 보정합니다.&#10;원래 시간 흐름은 유지하면서 2분 단위 같은 기준 간격에 맞추기 쉽게 만드는 단계입니다.&#10;대신 원래 시간 오차 정보는 사라질 수 있습니다.">i</i>
           </label>
           <div style="font-size:11px;color:var(--gray400);margin:0 0 8px 20px">기본 적용됩니다. 템플릿 시간축을 그대로 유지해야 하는 경우에만 체크 해제하세요. 00:01:00 → 00:02:00 같은 오차 보정</div>
           <hr class="sb-divider">
           <label style="margin-bottom:4px">
             <input type="checkbox" id="applyTimeRealign" checked> 시간 재정렬
-            <i class="tip" data-tip="남은 행에 새 시간축을 다시 붙입니다.&#10;장점: 학습/검증 구간을 일정 간격으로 맞추기 쉽습니다.&#10;단점: 원래 수집 시간과는 달라질 수 있습니다.">i</i>
+            <i class="tip" data-tip="남은 행에 새 시간축을 다시 붙여 프리비전 업로드에 맞는 일정 간격 시계열을 만듭니다.&#10;장점: 학습/검증 구간과 업로드 형식을 일정하게 맞추기 쉽습니다.&#10;단점: 원래 수집 시간과는 달라질 수 있으므로 의도를 알고 써야 합니다.">i</i>
           </label>
           <div style="display:flex;gap:8px;margin-top:6px">
             <div style="flex:1">
@@ -844,10 +850,10 @@ tr:hover td{background:var(--blue-light)}
       </div>
 
       <!-- Validation 생성 -->
-      <div class="sb-section">
+      <div class="sb-section" id="workflowTarget-validation">
         <div class="sb-head" onclick="toggleSection(this)">
           <span>🧪</span> Validation / Simulation
-          <i class="tip" data-tip="전처리 완료 데이터 중 일부를 정상 검증용 holdout으로 분리합니다.&#10;이상 데이터는 Validation에 넣지 않습니다.&#10;전체 태그 관계를 유지한 정상 데이터 검증용입니다.">i</i>
+          <i class="tip" data-tip="기존에는 전처리 후 검증용 데이터를 따로 분리해야 했습니다.&#10;여기서는 전처리 완료 데이터 중 일부를 정상 Validation holdout으로 바로 준비합니다.&#10;Validation에는 이상 데이터를 넣지 않고 전체 태그 관계를 유지합니다.">i</i>
           <span class="sb-toggle">▼</span>
         </div>
         <div class="sb-body">
@@ -857,7 +863,7 @@ tr:hover td{background:var(--blue-light)}
           </div>
 
           <div class="sb-label">Validation 비율
-            <i class="tip" data-tip="Validation은 20%로 고정됩니다.&#10;전처리 완료 데이터 중 뒤쪽 20%를 정상 검증 데이터로 자동 분리합니다.">i</i>
+            <i class="tip" data-tip="Validation은 20%로 고정되어 있어 사람마다 비율이 달라지는 것을 막습니다.&#10;전처리 완료 데이터 중 뒤쪽 20%를 정상 검증 데이터로 자동 분리합니다.">i</i>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
             <span class="filter-stat-focus">20% 고정</span>
@@ -867,13 +873,13 @@ tr:hover td{background:var(--blue-light)}
 
           <hr class="sb-divider">
           <div class="sb-label" style="margin-top:4px">Simulation Data
-            <i class="tip" data-tip="이상 데이터는 Simulation에서만 생성합니다.&#10;정상 → 전환 → 이상 구간 비율을 설정하고, 대상 태그와 강도를 선택해 시뮬레이션 데이터를 만듭니다.">i</i>
+            <i class="tip" data-tip="이상 데이터는 Simulation에서만 생성합니다.&#10;즉, 전처리 본문은 정상 데이터로 유지하고, 점검용 시나리오는 별도 Simulation 산출물로 만듭니다.&#10;정상 → 전환 → 이상 구간 비율과 대상 태그, 강도를 설정합니다.">i</i>
           </div>
           <div class="val-dl-desc" style="display:block;padding-top:0">
             총 길이는 <b>120~180분</b>으로 맞추는 것을 권장합니다. 이상값은 이 Simulation에서만 생성합니다.
           </div>
           <div class="sb-label">대상 태그
-            <i class="tip" data-tip="이상 패턴을 넣을 태그를 선택합니다. 선택한 태그만 정상→전환→이상으로 변화하고, 나머지 태그는 정상 흐름을 유지합니다.">i</i>
+            <i class="tip" data-tip="이상 패턴을 넣을 태그를 선택합니다. 선택한 태그만 정상 → 전환 → 이상으로 바뀌고, 나머지 태그는 정상 흐름을 유지합니다.&#10;즉, 어떤 태그를 경보 점검 대상으로 볼지 여기서 정합니다.">i</i>
           </div>
           <div class="val-col-grid" id="simColGrid">
             <span style="font-size:11px;color:var(--gray400)">파일 로드 후 표시</span>
@@ -897,7 +903,7 @@ tr:hover td{background:var(--blue-light)}
             </div>
           </div>
           <div class="sb-label">시뮬레이션 구간 비율 (합계 100%)
-            <i class="tip" data-tip="정상 / 전환 / 이상 구간 비율을 100 기준으로 입력합니다. 예: 25 / 25 / 50">i</i>
+            <i class="tip" data-tip="정상 / 전환 / 이상 구간 비율을 100 기준으로 입력합니다. 예: 25 / 25 / 50&#10;기존처럼 눈으로 대충 구간을 나누는 대신, 점검 시나리오를 비율 기준으로 반복 가능하게 만드는 설정입니다.">i</i>
           </div>
           <div class="seg-inputs">
             <input type="number" id="simSeg0" value="25" min="0" max="100" oninput="app.normSimSegs(0)">
@@ -978,6 +984,7 @@ tr:hover td{background:var(--blue-light)}
               <option value="50">50</option>
             </select>
             <button type="button" class="btn btn-sm" style="width:auto;padding:4px 10px;font-size:11px" id="chartToggleBtn" onclick="app.toggleChartMode()">원본 비교</button>
+            <button type="button" class="btn btn-sm" style="width:auto;padding:4px 10px;font-size:11px" id="chartCompareBtn" onclick="app.toggleCompareMode()">⇄ 전/후 겹쳐보기</button>
             <button type="button" class="btn btn-sm" style="width:auto;padding:4px 10px;font-size:11px;display:none" id="valChartBtn" onclick="app.toggleValChart()">📊 Val 보기</button>
           </div>
         </div>
@@ -990,12 +997,25 @@ tr:hover td{background:var(--blue-light)}
           </div>
         </div>
         <div class="chart-split">
-          <div class="chart-panel">
+          <div class="chart-panel" id="trendPanel">
             <div class="chart-panel-label">
               시계열 트렌드
               <span id="chartMeta" style="font-size:10px;color:var(--gray400);text-transform:none;letter-spacing:0;font-weight:400"></span>
             </div>
-            <div style="position:relative;height:calc(100% - 20px)"><canvas id="trendChart"></canvas></div>
+            <!-- 일반 모드 -->
+            <div id="trendNormal" style="position:relative;height:calc(100% - 20px)"><canvas id="trendChart"></canvas></div>
+            <!-- 비교 모드 (상하 분리) -->
+            <div id="trendCompare" style="display:none;height:calc(100% - 20px);flex-direction:column;gap:6px">
+              <div style="flex:1;min-height:0">
+                <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:.4px;margin-bottom:2px">▲ 전처리 전</div>
+                <div style="position:relative;height:calc(100% - 16px)"><canvas id="trendChartBefore"></canvas></div>
+              </div>
+              <div style="border-top:1px dashed var(--gray200)"></div>
+              <div style="flex:1;min-height:0">
+                <div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:.4px;margin-bottom:2px">▼ 전처리 후</div>
+                <div style="position:relative;height:calc(100% - 16px)"><canvas id="trendChartAfter"></canvas></div>
+              </div>
+            </div>
           </div>
           <div class="chart-panel">
             <div class="chart-panel-label">
@@ -1102,6 +1122,19 @@ function repeatTail(arr,n){
 }
 function arrMean(v){return v.reduce((s,x)=>s+x,0)/v.length}
 function arrStd(v){const m=arrMean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/Math.max(v.length-1,1))}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function escapeAttr(value){return escapeHtml(value)}
+function escapeFormulaValue(value){
+  if(typeof value!=='string')return value;
+  const normalized=value.replace(/[\r\n\t]/g,' ');
+  if(/^[=+\-@\t\r\n]/.test(value)||/^[=+\-@]/.test(normalized))return `'${normalized.trimStart()}`;
+  return normalized;
+}
+function csvCell(value){
+  if(value===null||value===undefined||(typeof value==='number'&&isNaN(value)))return'';
+  const escaped=String(escapeFormulaValue(value));
+  return /[,"\r\n]/.test(escaped)?'"'+escaped.replace(/"/g,'""')+'"':escaped;
+}
 
 /* ===== DATA PREPROCESSOR ===== */
 class DataPreprocessor{
@@ -1276,8 +1309,8 @@ class DataPreprocessor{
       const pos=diffs.filter(d=>d>0).sort((a,b)=>a-b);return pos.length?Math.max(1,Math.round(pos[Math.floor(pos.length/2)])):2}catch{return 2}
   }
   getSummary(){const s=this.stats;let t=`📊 전처리 결과 요약\n${'─'.repeat(40)}\n`;if(s.original_rows!==undefined)t+=`원본 데이터: ${s.original_rows.toLocaleString()}행\n`;if(s.filtered_rows!==undefined)t+=`필터링 후: ${s.filtered_rows.toLocaleString()}행 (-${(s.filter_removed||0).toLocaleString()})\n`;if(s.pre_removed)t+=`선제거: ${s.pre_removed.toLocaleString()}개\n`;if(s.outliers_removed!==undefined)t+=`이상값 처리: ${s.outliers_removed.toLocaleString()}개\n`;if(s.rows_after_outlier!==undefined)t+=`최종 데이터: ${s.rows_after_outlier.toLocaleString()}행`;return t}
-  toCSV(){if(!this.processedData||!this.processedData.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.join(',')];for(const row of this.processedData){const vals=cols.map(c=>{let v=row[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';v=String(v);if(v.includes(',')||v.includes('"')||v.includes('\n'))v='"'+v.replace(/"/g,'""')+'"';return v});lines.push(vals.join(','))}return lines.join('\n')}
-  dataToCSV(data){if(!data||!data.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.join(',')];for(const row of data){const vals=cols.map(c=>{let v=row[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';v=String(v);if(v.includes(',')||v.includes('"')||v.includes('\n'))v='"'+v.replace(/"/g,'""')+'"';return v});lines.push(vals.join(','))}return lines.join('\n')}
+  toCSV(){if(!this.processedData||!this.processedData.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.map(csvCell).join(',')];for(const row of this.processedData){lines.push(cols.map(c=>csvCell(row[c])).join(','))}return lines.join('\n')}
+  dataToCSV(data){if(!data||!data.length)return'';const cols=this.columns.filter(c=>!c.startsWith('_'));const lines=[cols.map(csvCell).join(',')];for(const row of data){lines.push(cols.map(c=>csvCell(row[c])).join(','))}return lines.join('\n')}
 }
 
 /* ===== PRESET MANAGER ===== */
@@ -1333,7 +1366,7 @@ const app={
   _chart:null,_distChart:null,_chartMode:'processed', // 'processed'|'original'|'validation'
   _hasProcessed:false,_activeDistCol:null,_valData:null,_valProcessed:null,
   _sortCol:null,_sortDir:1,_sourceFileName:'',_sourceBaseName:'processed_data',_pendingPresetName:null,_preservePendingOnNextFileDialog:false,
-  _opcSearchResults:[],_opcSelectedTags:[],_simulationTargetsTouched:false,
+  _opcSearchResults:[],_opcSelectedTags:[],_simulationTargetsTouched:false,_isBusy:false,_progressHideTimer:null,_chartBefore:null,_chartAfter:null,
 
   init(){
     const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
@@ -1365,28 +1398,77 @@ const app={
   applyTheme(theme){const next=theme==='dark'?'dark':'light';document.body.dataset.uiTheme=next;document.documentElement.dataset.theme=next;document.querySelectorAll('.theme-toggle').forEach(btn=>{const icon=btn.querySelector('.theme-toggle-icon'),label=btn.querySelector('.theme-toggle-label');if(icon)icon.textContent=next==='dark'?'☀️':'🌙';if(label)label.textContent=next==='dark'?'라이트 모드':'다크 모드';btn.setAttribute('aria-pressed',String(next==='dark'))});},
   toggleTheme(){const next=(document.body.dataset.uiTheme||'light')==='dark'?'light':'dark';localStorage.setItem('dp_ui_theme',next);this.applyTheme(next);this.toast(next==='dark'?'다크 모드로 전환했습니다.':'라이트 모드로 전환했습니다.');},
   _prepareFileDialog(){if(this._preservePendingOnNextFileDialog){this._preservePendingOnNextFileDialog=false}else{this._pendingPresetName=null}},
-  openFileChooser(){const fi=document.getElementById('fileInput');this._prepareFileDialog();fi.value='';fi.click()},
+  openFileChooser(){if(this._isBusy){this.toast('현재 파일 처리 중입니다. 완료 후 다시 시도하세요.',true);return}const fi=document.getElementById('fileInput');this._prepareFileDialog();fi.value='';fi.click()},
+  _sleep(ms=20){return new Promise(resolve=>setTimeout(resolve,ms))},
+  _sizeMB(file){return file?.size?(file.size/1024/1024):0},
+  _largeFileLabel(file,rows=0){const size=this._sizeMB(file);return(size>=10||rows>=100000)?`대용량 파일 감지 (${rows?rows.toLocaleString()+'행, ':''}${size.toFixed(1)}MB) — 브라우저 성능에 따라 시간이 걸릴 수 있습니다.`:''},
+  _setBusy(on){
+    this._isBusy=!!on;
+    const hasFile=!!this.dp.originalData;
+    const processBtn=document.getElementById('processBtn');
+    if(processBtn)processBtn.disabled=this._isBusy||!hasFile;
+    const fileInput=document.getElementById('fileInput');
+    if(fileInput)fileInput.disabled=this._isBusy;
+    const dz=document.getElementById('dropzone');
+    if(dz){dz.classList.toggle('is-busy',this._isBusy);dz.setAttribute('aria-busy',String(this._isBusy))}
+    document.body.style.cursor=this._isBusy?'progress':'';
+  },
+  _failBusy(message){
+    this.progress(0,'');
+    this._setBusy(false);
+    this.toast(message,true);
+  },
 
   _stripExt(name=''){const i=name.lastIndexOf('.');return i>0?name.slice(0,i):name},
   _timestamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`},
   _downloadNames(){const base=this._sourceBaseName||'processed_data';return{processed:`${base}_processed_${this._timestamp()}`,prepro:`${base}_prepro`,combined:`${base}_prepro_with_valid`,valid:`${base}_valid`}},
   _updateDownloadGuidance(){
     const names=this._downloadNames();
+    const safeCombined=escapeHtml(names.combined);
     const valDesc=document.getElementById('valDlDesc');
-    valDesc.innerHTML=`자동 저장 파일명: <b>${names.combined}.xlsx</b><br>의미: 전처리 완료 데이터 + 정상 Validation 20%가 합쳐진 최종 전처리데이터<br>※ Validation은 순수 정상 데이터만 포함하며, 실행 시 자동 저장됩니다.`;
+    valDesc.innerHTML=`자동 저장 파일명: <b>${safeCombined}.xlsx</b><br>의미: 전처리 완료 데이터 + 정상 Validation 20%가 합쳐진 최종 전처리데이터<br>※ Validation은 순수 정상 데이터만 포함하며, 실행 시 자동 저장됩니다.`;
     const simDesc=document.getElementById('simulationDlDesc');
     const simName=`Simulation_Data_${this._timestamp()}`;
-    simDesc.innerHTML=`저장 파일명: <b>${simName}.xlsx</b><br>시트명: <b>Simulation</b><br>구조: 정상 → 전환 → 이상 (비율 합계 100, 총 120~180분 권장)<br>※ 이상 데이터는 이 Simulation에서만 생성합니다. 브라우저 기본 다운로드 위치로 저장됩니다.`;
+    const safeSimName=escapeHtml(simName);
+    simDesc.innerHTML=`저장 파일명: <b>${safeSimName}.xlsx</b><br>시트명: <b>Simulation</b><br>구조: 정상 → 전환 → 이상 (비율 합계 100, 총 120~180분 권장)<br>※ 이상 데이터는 이 Simulation에서만 생성합니다. 브라우저 기본 다운로드 위치로 저장됩니다.`;
     const guide=document.getElementById('saveOutputGuide');
-    if(guide){guide.innerHTML=`<div class="save-output-title">저장 파일 구성</div><div class="save-output-item"><b>① ${names.combined}.xlsx</b><span>전처리 완료 데이터 + 정상 Validation 20%</span></div><div class="save-output-item"><b>② ${simName}.xlsx</b><span>정상 → 전환 → 이상 시나리오 점검 데이터</span></div>`}
+    if(guide){guide.innerHTML=`<div class="save-output-title">저장 파일 구성</div><div class="save-output-item"><b>① ${safeCombined}.xlsx</b><span>전처리 완료 데이터 + 정상 Validation 20%</span></div><div class="save-output-item"><b>② ${safeSimName}.xlsx</b><span>정상 → 전환 → 이상 시나리오 점검 데이터</span></div>`}
   },
 
   handleFile(file){
+    if(this._isBusy){this.toast('현재 파일 처리 중입니다. 완료 후 다시 시도하세요.',true);return}
     if(typeof XLSX==='undefined'){this.toast('Excel 라이브러리를 불러오지 못했습니다. 서버 배포 파일과 assets/vendor 폴더를 확인하세요.',true);return}
     const ext=file.name.split('.').pop().toLowerCase();
     if(ext!=='xlsx'){this.toast('XLSX 파일만 지원합니다',true);return}
+    const sizeMB=this._sizeMB(file).toFixed(1);
+    const largeLabel=this._largeFileLabel(file);
+    if(largeLabel)this.toast(largeLabel);
+    this._setBusy(true);
+    this.progress(3,`파일 읽는 중... (${sizeMB}MB)`);
     const reader=new FileReader();
-    reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const csv=XLSX.utils.sheet_to_csv(ws);let info;try{info=this.dp.loadData(csv)}catch(err){this.toast('파일 로드 실패: '+err.message,true);return}this._onFileLoaded(file,info)}catch(err){this.toast('Excel 로드 실패: '+err.message,true)}};
+    reader.onprogress=e=>{if(e.lengthComputable)this.progress(Math.max(3,Math.round(e.loaded/e.total*20)),`파일 읽는 중... ${(e.loaded/1024/1024).toFixed(1)}/${sizeMB}MB`)};
+    reader.onerror=()=>this._failBusy('파일 읽기 실패: 브라우저가 파일을 읽지 못했습니다.');
+    reader.onload=async e=>{
+      try{
+        this.progress(22,'엑셀 시트 파싱 중...');
+        await this._sleep(30);
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        this.progress(55,'데이터 변환 중...');
+        await this._sleep(30);
+        const csv=XLSX.utils.sheet_to_csv(ws);
+        this.progress(75,'컬럼/시간축 분석 중...');
+        await this._sleep(30);
+        const info=this.dp.loadData(csv);
+        this.progress(92,'화면 구성 중...');
+        await this._sleep(10);
+        this._onFileLoaded(file,info);
+        this.progress(100,'✅ 파일 로드 완료');
+        this._setBusy(false);
+      }catch(err){
+        this._failBusy('Excel 로드 실패: '+(err.message||err));
+      }
+    };
     reader.readAsArrayBuffer(file);
   },
 
@@ -1468,8 +1550,19 @@ const app={
       if(!result.ok)throw new Error(result.error||'태그 검색 실패');
       this._opcSearchResults=result.tags||[];
       if(!this._opcSearchResults.length){target.textContent='검색 결과 없음';return}
-      target.innerHTML=this._opcSearchResults.map((tag,i)=>`<div style="display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0"><button type="button" class="chip-action-btn" onclick="app.selectOpcTag(${i})">추가</button><div style="min-width:0"><div style="font-weight:600;color:var(--gray700);word-break:break-all">${tag.fulltagname}</div><div style="color:var(--gray500)">${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}</div></div></div>`).join('');
+      target.textContent='';
+      this._opcSearchResults.forEach((tag,i)=>target.appendChild(this._createOpcTagRow(tag,'추가',()=>this.selectOpcTag(i),'chip-action-btn')));
     }catch(err){target.textContent=err.message;this.toast(err.message,true)}
+  },
+  _createOpcTagRow(tag,buttonText,onClick,buttonClass){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0';
+    const btn=document.createElement('button');
+    btn.type='button';btn.className=buttonClass;btn.textContent=buttonText;btn.addEventListener('click',onClick);
+    const body=document.createElement('div');body.style.minWidth='0';
+    const title=document.createElement('div');title.style.cssText='font-weight:600;color:var(--gray700);word-break:break-all';title.textContent=tag.fulltagname||'';
+    const desc=document.createElement('div');desc.style.color='var(--gray500)';desc.textContent=`${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}`;
+    body.appendChild(title);body.appendChild(desc);row.appendChild(btn);row.appendChild(body);return row;
   },
   selectOpcTag(index){
     const tag=this._opcSearchResults[index];if(!tag)return;
@@ -1480,26 +1573,54 @@ const app={
   renderOpcSelectedTags(){
     const el=document.getElementById('opcSelectedTags');
     if(!this._opcSelectedTags.length){el.textContent='선택된 태그 없음';return}
-    el.innerHTML=this._opcSelectedTags.map((tag,i)=>`<div style="display:flex;gap:4px;align-items:flex-start;border-bottom:1px solid var(--gray100);padding:3px 0"><button type="button" class="del-btn" onclick="app.removeOpcSelectedTag(${i})">✕</button><div style="min-width:0"><div style="font-weight:600;color:var(--gray700);word-break:break-all">${tag.fulltagname}</div><div style="color:var(--gray500)">${tag.description||tag.tagname||''}${tag.units?` · ${tag.units}`:''}</div></div></div>`).join('');
+    el.textContent='';
+    this._opcSelectedTags.forEach((tag,i)=>el.appendChild(this._createOpcTagRow(tag,'✕',()=>this.removeOpcSelectedTag(i),'del-btn')));
   },
   async attachSelectedOpcTags(){
     const timeColumn=this.dp.templateTimeColumn||this.dp.columns[0];
     if(!this.dp.originalData||!timeColumn){this.toast('먼저 좌측 첫 시간 컬럼이 있는 XLSX 파일을 로드하세요',true);return}
     if(!this._opcSelectedTags.length){this.toast('OPC helper 태그를 먼저 선택하세요',true);return}
-    const status=document.getElementById('opcHelperStatus');status.textContent='OPC helper 값 조회 중...';
     const timestamps=this.dp.originalData.map(row=>row[timeColumn]);
     if(timestamps.some(v=>v===null||v===undefined||String(v).trim()==='')){this.toast('좌측 첫 시간 컬럼에 빈 값이 있어 OPC helper를 맞출 수 없습니다',true);return}
+    const status=document.getElementById('opcHelperStatus');
+    const tagCount=this._opcSelectedTags.length;
+    // 기간 계산 (ETA 추정용)
+    const t0wall=Date.now();
+    let fakeProgress=2;
+    this._setBusy(true);
+    this.progress(fakeProgress,`OPC 서버 연결 중... (태그 ${tagCount}개)`);
+    status.textContent='OPC 서버 연결 중...';
+    // 서버 처리 동안 경과 시간 + fake 진행률 표시
+    const _timer=setInterval(()=>{
+      const elapsed=Math.floor((Date.now()-t0wall)/1000);
+      // sqrt 곡선으로 천천히 90%까지 올라감 (절대 100% 도달 안 함)
+      fakeProgress=Math.min(90,2+Math.sqrt(elapsed)*9);
+      const m=Math.floor(elapsed/60),s=elapsed%60;
+      const elapsedStr=m>0?`${m}분 ${s}초`:`${s}초`;
+      this.progress(fakeProgress,`OPC 히스토리 읽는 중... ${elapsedStr} 경과 (태그 ${tagCount}개, 서버 처리 중)`);
+      status.textContent=`읽는 중... ${elapsedStr} 경과`;
+    },1000);
     try{
       const result=await portalApi.fetchHelperValues({tags:this._opcSelectedTags.map(t=>t.fulltagname),timestamps,chunk_minutes:60});
+      clearInterval(_timer);
       if(!result.ok)throw new Error(result.error||'OPC helper 조회 실패');
+      const elapsed=((Date.now()-t0wall)/1000).toFixed(1);
       for(const helper of result.helpers||[])this.dp.addHelperColumn(helper);
       this.refreshFilterColumnOptions();
       this._initOutlierCols();this._initSimulationCols();this.currentPage=0;this.updateTable();
       const summary=(result.helpers||[]).map(h=>`${h.display_name||h.fulltagname}: ${h.non_null_count}/${this.dp.originalData.length}`).join(' | ');
-      status.textContent=`helper 컬럼 추가 완료: ${summary}`;
+      status.textContent=`✅ 완료 (${elapsed}s): ${summary}`;
+      this.progress(100,`✅ OPC helper 완료 (${elapsed}초)`);
       this.log(`🏷️ OPC helper 컬럼 추가: ${summary}`);
-      this.toast('좌측 첫 시간 컬럼 기준 OPC helper를 필터/소팅에 사용할 수 있습니다. 새 필터를 추가해 확인하세요.');
-    }catch(err){status.textContent=err.message;this.toast(err.message,true)}
+      this.toast('OPC helper 컬럼이 추가됐습니다. 새 필터를 추가해 운전 구간을 선별하세요.');
+    }catch(err){
+      clearInterval(_timer);
+      status.textContent=`❌ ${err.message}`;
+      this.progress(0,'');
+      this.toast(err.message,true);
+    }finally{
+      this._setBusy(false);
+    }
   },
   saveOpcFavorite(){
     if(!this._opcSelectedTags.length){this.toast('저장할 선택 태그가 없습니다',true);return}
@@ -1534,7 +1655,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
     });
     bar.appendChild(actions);
     const distSel=document.getElementById('distColSel');
-    distSel.innerHTML=cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    distSel.innerHTML=cols.map(c=>`<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
     this._activeDistCol=cols[0];
     document.getElementById('chartCard').style.display='block';
     document.getElementById('chartToggleBtn').textContent='원본 비교';
@@ -1544,12 +1665,12 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
 
   _initSimulationCols(){
     const cols=this.dp.originalNumericColumns();
-    document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${c}" onchange="app.markSimulationTargetsTouched()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+    document.getElementById('simColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="sim-col-check" value="${escapeAttr(c)}" onchange="app.markSimulationTargetsTouched()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${escapeAttr(c)}">${escapeHtml(c)}</span></label>`).join('');
   },
 
   _initOutlierCols(){
     const cols=this.dp.originalNumericColumns();
-    document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${c}" onchange="app.syncSimulationTargetsFromOutliers()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${c}">${c}</span></label>`).join('');
+    document.getElementById('outlierColGrid').innerHTML=cols.map(c=>`<label style="font-size:11px;gap:4px;align-items:center"><input type="checkbox" class="outlier-col-check" value="${escapeAttr(c)}" onchange="app.syncSimulationTargetsFromOutliers()" style="width:12px;height:12px"> <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${escapeAttr(c)}">${escapeHtml(c)}</span></label>`).join('');
     this.syncSimulationTargetsFromOutliers(true);
   },
 
@@ -1573,6 +1694,57 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
     const sampleN=parseInt(document.getElementById('chartSample').value)||500;
     const useNorm=document.getElementById('normalizeChart').checked;
     const isValMode=this._chartMode==='validation';
+    const isCompare=this._chartMode==='compare';
+
+    // ── compare 모드: 상하 분리 패널 ─────────────────────────────
+    if(isCompare&&this._hasProcessed&&this.dp.processedData){
+      const origData=this.dp.originalData;
+      const procData=this.dp.processedData;
+      const removedN=origData.length-procData.length;
+      document.getElementById('chartMeta').textContent=`전 ${origData.length}행 → 후 ${procData.length}행 (제거 ${removedN}행, ${(removedN/origData.length*100).toFixed(1)}%)`;
+
+      const fmtTime=str=>{if(!str)return'';const d=new Date(str);if(isNaN(d))return str;const p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;};
+      const allCols=this.dp.numericColumns;
+
+      const mkChart=(canvasId,data,cols,isProc)=>{
+        const step=sampleN>0&&data.length>sampleN?Math.ceil(data.length/sampleN):1;
+        const sampled=data.filter((_,i)=>i%step===0);
+        const labels=sampled.map((r,i)=>this.dp.dateColumn&&r[this.dp.dateColumn]?fmtTime(r[this.dp.dateColumn]):String(i*step));
+        const datasets=cols.map(col=>{
+          const ci=allCols.indexOf(col);const color=PALETTE[ci%PALETTE.length];
+          const lineColor=isProc?color:color+'99';const bgColor=isProc?color+'22':color+'18';
+          const raw=sampled.map(r=>{const v=r[col];return(v===null||v===undefined||isNaN(Number(v)))?null:Number(v)});
+          const valid=raw.filter(v=>v!==null);
+          const mn=valid.length?valid.reduce((a,b)=>a<b?a:b,Infinity):0;
+          const mx=valid.length?valid.reduce((a,b)=>a>b?a:b,-Infinity):1;
+          const vals=useNorm&&mx>mn?raw.map(v=>v===null?null:(v-mn)/(mx-mn)):raw;
+          return{label:col,data:vals,_raw:raw,_mn:mn,_mx:mx,borderColor:lineColor,backgroundColor:bgColor,borderWidth:isProc?1.3:0.9,pointRadius:0,tension:0.1,spanGaps:false,fill:false};
+        });
+        const existing=canvasId==='trendChartAfter'?this._chartAfter:this._chartBefore;
+        if(existing){existing.destroy()}
+        const chart=new Chart(document.getElementById(canvasId),{
+          type:'line',data:{labels,datasets},
+          options:{
+            responsive:true,maintainAspectRatio:false,animation:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+              legend:{display:cols.length>1,position:'top',labels:{font:{size:8},boxWidth:8,padding:4,usePointStyle:true}},
+              tooltip:{callbacks:{label:ctx=>{const ds=ctx.dataset;const y=ctx.parsed.y;if(y===null)return null;if(useNorm&&ds._mn!==undefined&&ds._mx!==undefined){const orig=ds._mn+y*(ds._mx-ds._mn);return`${ds.label}: ${orig.toFixed(4)}`}return`${ds.label}: ${y.toFixed(4)}`}}}
+            },
+            scales:{
+              x:{ticks:{maxTicksLimit:6,font:{size:8},color:'#6B7280',maxRotation:0,callback:(val)=>{const[date,time]=String(val).split(' ');return time?[date,time]:[date]}},grid:{color:'#F3F4F6'}},
+              y:{ticks:{font:{size:8},color:'#6B7280'},grid:{color:'#F3F4F6'}}
+            }
+          }
+        });
+        if(canvasId==='trendChartAfter')this._chartAfter=chart;else this._chartBefore=chart;
+      };
+
+      mkChart('trendChartBefore',origData,checkedCols,false);
+      mkChart('trendChartAfter',procData,checkedCols,true);
+      return;
+    }
+
     const procData=this.dp.processedData||this.dp.originalData;
     const trainData=isValMode&&this._valProcessed?this._valProcessed:procData;
     const src=this._chartMode==='original'?this.dp.originalData:isValMode?[...trainData,...(this._valData||[])]:procData;
@@ -1695,8 +1867,40 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   toggleChartMode(){
     if(!this._hasProcessed){this.toast('먼저 전처리를 실행하세요');return}
     if(this._chartMode==='validation'){this._chartMode='processed';document.getElementById('valChartBtn').textContent='📊 Val 보기';document.getElementById('valChartBtn').style.cssText='width:auto;padding:4px 10px;font-size:11px'}
+    if(this._chartMode==='compare'){
+      // 비교 패널 복원
+      document.getElementById('trendNormal').style.display='';
+      document.getElementById('trendCompare').style.display='none';
+      if(this._chartBefore){this._chartBefore.destroy();this._chartBefore=null}
+      if(this._chartAfter){this._chartAfter.destroy();this._chartAfter=null}
+      document.getElementById('chartCompareBtn').style.cssText='width:auto;padding:4px 10px;font-size:11px';
+      this._chartMode='processed';
+    }
     this._chartMode=this._chartMode==='original'?'processed':'original';
     document.getElementById('chartToggleBtn').textContent=this._chartMode==='original'?'처리 후 보기':'원본 비교';
+    try{this.renderChart()}catch(e){}
+  },
+  toggleCompareMode(){
+    if(!this._hasProcessed){this.toast('먼저 전처리를 실행하세요');return}
+    const panel=document.getElementById('trendPanel');
+    if(this._chartMode==='compare'){
+      this._chartMode='processed';
+      document.getElementById('chartCompareBtn').style.cssText='width:auto;padding:4px 10px;font-size:11px';
+      // 패널 복원
+      document.getElementById('trendNormal').style.display='';
+      document.getElementById('trendCompare').style.display='none';
+      panel.classList.remove('is-compare');
+      if(this._chartBefore){this._chartBefore.destroy();this._chartBefore=null}
+      if(this._chartAfter){this._chartAfter.destroy();this._chartAfter=null}
+    }else{
+      this._chartMode='compare';
+      document.getElementById('chartCompareBtn').style.cssText='width:auto;padding:4px 10px;font-size:11px;background:var(--primary);color:#fff;border-color:var(--primary)';
+      // 패널 전환
+      document.getElementById('trendNormal').style.display='none';
+      document.getElementById('trendCompare').style.display='flex';
+      panel.classList.add('is-compare');
+      if(this._chart){this._chart.destroy();this._chart=null}
+    }
     try{this.renderChart()}catch(e){}
   },
 
@@ -1750,7 +1954,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
       const select=document.getElementById('fcol-'+id);
       if(!select)return;
       const current=select.value;
-      select.innerHTML=cols.map(c=>`<option value="${c}">${this.displayColumnName(c)}</option>`).join('');
+      select.innerHTML=cols.map(c=>`<option value="${escapeAttr(c)}">${escapeHtml(this.displayColumnName(c))}</option>`).join('');
       if(cols.includes(current))select.value=current;
       this.onFilterColChange(id);
     });
@@ -1758,7 +1962,7 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   addFilter(){
     const cols=this.dp.numericColumns;if(!cols.length){this.toast('먼저 파일을 로드하세요',true);return}
     const id=this.filterIdx++;const div=document.createElement('div');div.className='filter-row';div.id='filter-'+id;
-    const colOpts=cols.map(c=>`<option value="${c}">${this.displayColumnName(c)}</option>`).join('');
+    const colOpts=cols.map(c=>`<option value="${escapeAttr(c)}">${escapeHtml(this.displayColumnName(c))}</option>`).join('');
     div.innerHTML=`<div class="filter-inputs">
       <select id="fcol-${id}" onchange="app.onFilterColChange(${id})" style="flex:2;min-width:0">${colOpts}</select>
       <select id="fop-${id}" onchange="app.onFilterOpChange(${id})" style="flex:0 0 62px;min-width:0">
@@ -1810,10 +2014,10 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
     const start=this.currentPage*this.pageSize;const rows=data.slice(start,start+this.pageSize);
     document.getElementById('previewHead').innerHTML='<tr>'+cols.map(c=>{
       const arrow=this._sortCol===c?(this._sortDir>0?' ↑':' ↓'):'';
-      const esc=c.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-      return`<th data-col="${esc}">${this.displayColumnName(c)}${arrow}</th>`;
+      const esc=escapeAttr(c);
+      return`<th data-col="${esc}">${escapeHtml(this.displayColumnName(c)+arrow)}</th>`;
     }).join('')+'</tr>';
-    document.getElementById('previewBody').innerHTML=rows.map(r=>'<tr>'+cols.map(c=>{let v=r[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))v='';return`<td title="${String(v)}">${String(v).slice(0,20)}</td>`}).join('')+'</tr>').join('');
+    document.getElementById('previewBody').innerHTML=rows.map(r=>'<tr>'+cols.map(c=>{let v=r[c];if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))v='';const text=String(v);return`<td title="${escapeAttr(text)}">${escapeHtml(text.slice(0,20))}</td>`}).join('')+'</tr>').join('');
     document.getElementById('tableMeta').textContent=`총 ${total.toLocaleString()}행`;
     document.getElementById('pageInfo').textContent=`${start+1}-${Math.min(start+this.pageSize,total)} / ${total.toLocaleString()}`;
     document.getElementById('pageNum').textContent=`${this.currentPage+1} / ${pages}`;
@@ -1826,55 +2030,84 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   filterTable(){this.searchTerm=document.getElementById('tableSearch').value.toLowerCase().trim();this.currentPage=0;this.updateTable()},
 
   /* ===== PROCESSING ===== */
-  runPreprocessing(){
+  async runPreprocessing(){
+    if(this._isBusy){this.toast('현재 다른 작업이 진행 중입니다. 완료 후 다시 실행하세요.',true);return}
     if(!this.dp.originalData){this.toast('먼저 파일을 로드하세요',true);return}
     if(document.getElementById('applyOutlier').checked&&!this.getOutlierCols().length){this.toast('이상값 처리 대상 컬럼을 1개 이상 선택하세요',true);return}
-    const t0=performance.now();this.log('\n'+'='.repeat(50));
-    this.log(`🔄 전처리 시작... (총 ${this.dp.originalData.length.toLocaleString()}행)`);
-    this.dp.resetState();this.progress(10,'필터링 중...');
-    setTimeout(()=>{
-      const fr=this.dp.applyFilters(this.getFilters());this.log(fr.msg);this.progress(28,'선제거 확인 중...');
-      setTimeout(()=>{
-        const preMode=document.getElementById('preRemovalMode').value;
-        if(document.getElementById('applyOutlier').checked&&preMode!=='none'){
-          const cols=this.getOutlierCols();
-          this.log(this.dp.preRemoveOutliers(preMode,cols).msg);
-        }
-        this.progress(48,'이상값 처리 중...');
-        setTimeout(()=>{
-        if(document.getElementById('applyOutlier').checked){
-          const m=document.querySelector('input[name=outlierMethod]:checked').value;
-          const cols=this.getOutlierCols();
-          this.log(this.dp.removeOutliers(m,cols).msg);
-        }
-        this.progress(70,'시간 처리 중...');
-        setTimeout(()=>{
-          const iv=parseInt(document.getElementById('interval').value)||2;
-          if(document.getElementById('applyTimeNorm').checked)this.log(this.dp.normalizeTimestamps(iv).msg);
-          if(document.getElementById('applyTimeRealign').checked){const input=document.getElementById('startTime');const st=this.dp.snapStartTime(input.value);input.value=st;this.log(this.dp.realignTimestamps(st,iv).msg)}
-          const el=((performance.now()-t0)/1000).toFixed(2);this.progress(100,'✅ 전처리 완료!');
-          this.log('');this.log(this.dp.getSummary());this.log(`⏱ 총 소요 시간: ${el}초`);
-            this._hasProcessed=true;this._chartMode='processed';this._valData=null;
-            document.getElementById('chartToggleBtn').textContent='원본 비교';
-            document.getElementById('valDlDesc').style.display='none';
-            document.getElementById('simulationDlDesc').style.display='block';
-            document.getElementById('valChartBtn').style.display='none';
-            this.currentPage=0;this.updateTable();this.updateStats();
-            this._updateDownloadGuidance();
-            try{this.renderChart()}catch(e){console.error(e)}
-          try{this.renderDistribution()}catch(e){console.error(e)}
-          try{this.updateCompare()}catch(e){console.error(e)}
-            const valResult=this.generateValidation({auto:true,silent:true});
-            if(valResult.success){
-              const combined=[...this._valProcessed,...this._valData];
-              const combinedName=this._downloadNames().combined;
-              this._xlsxDownload(combined,combinedName,'Sheet');
-              this.log(`💾 자동 저장: ${combinedName}.xlsx (${combined.length.toLocaleString()}행)`);
-            }
-            const simResult=this.generateSimulationData({auto:true,silent:true});
-            if(!simResult.success)this.log(`⚠️ Simulation 자동 저장 생략: ${simResult.msg}`);
-            this.toast(simResult.success?'전처리데이터 + Simulation Data 자동 저장 완료!':'전처리데이터 자동 저장 완료!');
-          },10)},10)},10)},10)
+    const t0=performance.now();
+    this._setBusy(true);
+    try{
+      this.log('\n'+'='.repeat(50));
+      this.log(`🔄 전처리 시작... (총 ${this.dp.originalData.length.toLocaleString()}행)`);
+      this.dp.resetState();
+      this.progress(10,'1/8 조건 필터링 중...');
+      await this._sleep();
+      const fr=this.dp.applyFilters(this.getFilters());this.log(fr.msg);
+
+      this.progress(28,'2/8 선제거 기준 확인 중...');
+      await this._sleep();
+      const preMode=document.getElementById('preRemovalMode').value;
+      if(document.getElementById('applyOutlier').checked&&preMode!=='none'){
+        const cols=this.getOutlierCols();
+        this.log(this.dp.preRemoveOutliers(preMode,cols).msg);
+      }
+
+      this.progress(48,'3/8 이상값 처리 중...');
+      await this._sleep();
+      if(document.getElementById('applyOutlier').checked){
+        const m=document.querySelector('input[name=outlierMethod]:checked').value;
+        const cols=this.getOutlierCols();
+        this.log(this.dp.removeOutliers(m,cols).msg);
+      }
+
+      this.progress(70,'4/8 2분 시간축 보정 중...');
+      await this._sleep();
+      const iv=parseInt(document.getElementById('interval').value)||2;
+      if(document.getElementById('applyTimeNorm').checked)this.log(this.dp.normalizeTimestamps(iv).msg);
+      if(document.getElementById('applyTimeRealign').checked){const input=document.getElementById('startTime');const st=this.dp.snapStartTime(input.value);input.value=st;this.log(this.dp.realignTimestamps(st,iv).msg)}
+
+      this.progress(78,'5/8 차트/통계 갱신 중...');
+      await this._sleep();
+      this._hasProcessed=true;this._chartMode='processed';this._valData=null;
+      document.getElementById('chartToggleBtn').textContent='원본 비교';
+      document.getElementById('valDlDesc').style.display='none';
+      document.getElementById('simulationDlDesc').style.display='block';
+      document.getElementById('valChartBtn').style.display='none';
+      this.currentPage=0;this.updateTable();this.updateStats();
+      this._updateDownloadGuidance();
+      try{this.renderChart()}catch(e){console.error(e)}
+      try{this.renderDistribution()}catch(e){console.error(e)}
+      try{this.updateCompare()}catch(e){console.error(e)}
+
+      this.progress(88,'6/8 Validation 생성 중...');
+      await this._sleep();
+      const valResult=this.generateValidation({auto:true,silent:true});
+
+      this.progress(94,'7/8 Simulation 생성 중...');
+      await this._sleep();
+      const simResult=this.generateSimulationData({auto:true,silent:true});
+
+      this.progress(97,'8/8 Excel 다운로드 준비 중...');
+      await this._sleep();
+      if(valResult.success){
+        const combined=[...this._valProcessed,...this._valData];
+        const combinedName=this._downloadNames().combined;
+        this._xlsxDownload(combined,combinedName,'Sheet');
+        this.log(`💾 자동 저장: ${combinedName}.xlsx (${combined.length.toLocaleString()}행)`);
+      }
+      if(!simResult.success)this.log(`⚠️ Simulation 자동 저장 생략: ${simResult.msg}`);
+      const el=((performance.now()-t0)/1000).toFixed(2);
+      this.log('');this.log(this.dp.getSummary());this.log(`⏱ 총 소요 시간: ${el}초`);
+      this.progress(100,'✅ 완료! 다운로드를 확인하세요');
+      this.toast(simResult.success?'전처리데이터 + Simulation Data 자동 저장 완료!':'전처리데이터 자동 저장 완료!');
+    }catch(err){
+      console.error(err);
+      this.log(`❌ 전처리 실패: ${err.message||err}`);
+      this.progress(0,'');
+      this.toast(`전처리 실패: ${err.message||err}`,true);
+    }finally{
+      this._setBusy(false);
+    }
   },
 
   updateStats(){
@@ -1991,11 +2224,11 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   _xlsxDownload(data,filename,sheetName='Sheet'){
     const cols=this.dp.columns.filter(c=>!c.startsWith('_'));
     const dcIdx=this.dp.dateColumn?cols.indexOf(this.dp.dateColumn):-1;
-    const wsData=[cols,...data.map(row=>cols.map((c,ci)=>{
+    const wsData=[cols.map(c=>escapeFormulaValue(c)),...data.map(row=>cols.map((c,ci)=>{
       const v=row[c];
       if(v===null||v===undefined||(typeof v==='number'&&isNaN(v)))return'';
-      if(ci===dcIdx&&typeof v==='string'){const d=new Date(v);return isNaN(d)?v:d}
-      return v;
+      if(ci===dcIdx&&typeof v==='string'){const d=new Date(v);return isNaN(d)?escapeFormulaValue(v):d}
+      return escapeFormulaValue(v);
     }))];
     const ws=XLSX.utils.aoa_to_sheet(wsData,{cellDates:true});
     if(dcIdx>=0){
@@ -2032,9 +2265,9 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
       el.innerHTML='';
       list.forEach(p=>{
         const item=document.createElement('div');item.className='preset-item';
-        const safeName=p.name.replace(/</g,'&lt;');
-        const desc=p.description?`<div style="font-size:11px;color:var(--gray400);margin-top:2px">${String(p.description).replace(/</g,'&lt;')}</div>`:'';
-        item.innerHTML=`<div><span class="name">${safeName}</span>${desc}</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="date">${p.created?new Date(p.created).toLocaleDateString():''}</span><button type="button" class="chip-action-btn load-btn">적용</button><button type="button" class="chip-action-btn combo-btn">파일+프리셋</button><button type="button" class="chip-action-btn export-btn">내보내기</button><button type="button" class="del-btn" data-name="${p.name.replace(/"/g,'&quot;')}">✕</button></div>`;
+        const safeName=escapeHtml(p.name);
+        const desc=p.description?`<div style="font-size:11px;color:var(--gray400);margin-top:2px">${escapeHtml(p.description)}</div>`:'';
+        item.innerHTML=`<div><span class="name">${safeName}</span>${desc}</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="date">${p.created?escapeHtml(new Date(p.created).toLocaleDateString()):''}</span><button type="button" class="chip-action-btn load-btn">적용</button><button type="button" class="chip-action-btn combo-btn">파일+프리셋</button><button type="button" class="chip-action-btn export-btn">내보내기</button><button type="button" class="del-btn" data-name="${escapeAttr(p.name)}">✕</button></div>`;
         item.querySelector('.load-btn').addEventListener('click',e=>{e.stopPropagation();this.loadPreset(p.name)});
         item.querySelector('.combo-btn').addEventListener('click',e=>{e.stopPropagation();this.openFileWithPreset(p.name)});
         item.querySelector('.export-btn').addEventListener('click',e=>{e.stopPropagation();this.exportPreset(p.name)});
@@ -2054,7 +2287,17 @@ ${all.map(item=>'- '+item.name).join('\n')}`, all[0].name);
   openFileWithPreset(name){this._pendingPresetName=name;this._preservePendingOnNextFileDialog=true;this.closeModal('presetLoadModal');this.openFileChooser();},
 
   /* ===== UI ===== */
-  progress(val,text){document.getElementById('progressWrap').classList.toggle('show',val>0&&val<100);document.getElementById('progressFill').style.width=val+'%';document.getElementById('progressText').textContent=text;if(val>=100)setTimeout(()=>document.getElementById('progressWrap').classList.remove('show'),2000)},
+  progress(val,text){
+    const wrap=document.getElementById('progressWrap'),fill=document.getElementById('progressFill'),label=document.getElementById('progressText');
+    if(!wrap||!fill||!label)return;
+    clearTimeout(this._progressHideTimer);
+    const pct=Math.max(0,Math.min(100,Number(val)||0));
+    fill.style.width=pct+'%';
+    label.textContent=text||'대기 중...';
+    wrap.classList.toggle('show',pct>0);
+    if(pct<=0){fill.style.width='0%';return}
+    if(pct>=100)this._progressHideTimer=setTimeout(()=>wrap.classList.remove('show'),2200);
+  },
   log(msg){const el=document.getElementById('logOutput');el.textContent+=msg+'\n';el.scrollTop=el.scrollHeight},
   toast(msg,isErr=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(isErr?'err':'ok');clearTimeout(this._tt);this._tt=setTimeout(()=>el.classList.remove('show'),3200)}
 };
@@ -2685,40 +2928,108 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
 
   const TUTORIAL_STEPS = [
     {
-      title: '원본 트렌드 확인',
-      target: 'chartCard',
-      fallbackTarget: 'launchPanel',
-      summary: '업로드 직후에는 우측 차트에서 전체 추세와 튀는 구간을 먼저 봅니다.',
-      how: ['샘플 수와 구간 수를 조정해 전체 흐름과 상세 구간을 번갈아 봅니다.', '컬럼 칩을 켜고 끄며 특정 센서만 튀는지 확인합니다.', '오른쪽 분포도에서 한쪽으로 치우친 분포인지 확인합니다.'],
-      intent: '제거 기준을 정하기 전에 원본 데이터의 모양을 이해하기 위한 단계입니다.',
-      hiddenSummary: '파일을 업로드하면 원본 트렌드 차트가 이 위치에 표시됩니다. 먼저 XLSX 파일을 불러오세요.'
+      title: '왜 이 앱이 필요한가',
+      target: 'workflowTarget-overview',
+      fallbackTarget: 'dropzone',
+      calloutPreference: 'sidebar-intro',
+      summary: '프리비전 모델링 준비는 추출만으로 끝나지 않습니다. Condition 선별, 시간축 정리, 검증용 산출물 준비가 추가로 필요합니다.',
+      problem: '기존에는 엑셀, 드래그, 개별 수작업으로 전처리 절차가 흩어져 있어 반복 작업과 설명이 어려웠습니다.',
+      action: '지금부터 실제 화면을 따라가며 어떤 단계가 왜 필요한지, 어디가 자동화되었는지 순서대로 확인합니다.',
+      improvement: '이 앱은 흩어진 모델링 준비 절차를 한 화면의 표준 흐름으로 묶습니다.',
+      automation: '흩어진 전처리 절차 → 하나의 작업 흐름',
+      hiddenSummary: '현재 화면은 프리비전 모델링 준비 병목을 줄이기 위해 설계된 Control Room의 시작점입니다. 먼저 파일 업로드와 이후 흐름을 함께 봅니다.'
     },
     {
-      title: '이상값 / 필터 / 시간 설정',
-      target: 'workflowTarget-controls',
-      summary: '좌측 설정 영역에서 어떤 데이터를 남기고 제외할지 정합니다.',
-      how: ['이상값 방식은 2σ/2.5σ/3σ/IQR 중 데이터 성격에 맞게 고릅니다.', '선제거 모드는 큰 극단값이 기준을 오염시킬 때 사용합니다.', '대상 컬럼은 이상값을 검사할 센서만 체크합니다.', '필터는 운전 조건처럼 특정 값/범위만 남길 때 기입합니다.', '시간 처리는 수집 시간이 밀렸거나 간격이 불규칙할 때 맞춥니다.'],
-      intent: '모델 학습에 들어갈 데이터의 품질 기준과 시간축을 정하는 단계입니다.'
+      title: '원본과 시간축을 먼저 확인',
+      target: 'chartCard',
+      fallbackTarget: 'dropzone',
+      summary: '전처리의 첫 단계는 실행이 아니라 원본 확인입니다. 차트와 시간축을 먼저 봐야 전처리 강도를 제대로 정할 수 있습니다.',
+      problem: '기존에는 파일을 내린 뒤 엑셀에서 대충 훑고 바로 손대기 쉬워 과제거와 누락이 생기기 쉬웠습니다.',
+      action: '파일명, 행/열 수, 원본 추세, 분포, 시간축 상태를 확인합니다. 샘플 수와 컬럼 칩을 조절해 튀는 구간과 왜곡을 먼저 읽습니다.',
+      improvement: '감각적 판단 대신 실제 데이터 모양과 시간 간격 상태를 보고 기준을 정할 수 있습니다.',
+      automation: '감각적 판단 → 차트 기반 확인',
+      hiddenSummary: '파일을 업로드하면 원본 추세 차트와 분포가 표시됩니다. 먼저 이 화면에서 전체 흐름과 시간축 상태를 확인하세요.'
+    },
+    {
+      title: 'Condition 필터링 자동화',
+      target: 'workflowTarget-opc',
+      fallbackTarget: 'workflowTarget-filter',
+      calloutPreference: 'sidebar-near',
+      summary: '이 단계가 필터링 자동화의 핵심입니다. 필요한 운전 상태만 정밀하게 남길 수 있도록 보조 태그와 조건 필터를 사용합니다.',
+      problem: 'Model Tag 중심 데이터만으로는 Operation Condition 기준 선별이 어렵고, 기존 드래그 방식은 정밀한 재현이 어려웠습니다.',
+      action: '필요하면 OPC 보조 태그를 붙이고, 필터 컬럼·연산자·값을 넣어 운전 조건을 설정합니다. 여러 조건은 AND로 반복 적용됩니다.',
+      improvement: '기존의 감각적 구간 선택을 조건 기반의 반복 가능한 선별 방식으로 바꿉니다.',
+      automation: '드래그 기반 선별 → 조건 기반 필터링',
+      note: 'OPC 보조 태그는 모델 입력값이 아니라, 모델링에 사용할 운전 구간을 선별하기 위한 판단 기준입니다.'
+    },
+    {
+      title: '통계 기반 전처리 표준화',
+      target: 'workflowTarget-outlier',
+      calloutPreference: 'sidebar-near',
+      summary: '엑셀 수식으로 하던 통계 전처리를 앱 안에서 선택형 기준으로 바꾼 단계입니다.',
+      problem: '기존에는 MIN/MAX, 표준편차, IQR 같은 기준을 엑셀 수식으로 직접 계산해야 했고, 사람마다 결과가 달라질 수 있었습니다.',
+      action: '2σ, 2.5σ, 3σ, IQR 중 데이터 성격에 맞는 기준을 고르고, 필요하면 MAD 선제거나 반복 clipping으로 큰 극단값부터 먼저 정리합니다.',
+      improvement: '통계 기반 정제를 반복 가능한 설정으로 만들고, 로그와 차트로 결과를 다시 검토할 수 있습니다.',
+      automation: '엑셀 수식 계산 → 내장 통계 기준 선택',
+      note: '2.5σ는 처음 시작하기 좋은 기본값이고, 3σ는 데이터 보존을 더 중시할 때, IQR은 비대칭 분포에 더 잘 맞습니다.'
+    },
+    {
+      title: 'Validation / Simulation 연결',
+      target: 'workflowTarget-validation',
+      calloutPreference: 'sidebar-near',
+      summary: '전처리만 끝내는 것이 아니라, 검증과 점검용 산출물까지 같은 흐름에서 준비합니다.',
+      problem: '기존에는 전처리 뒤 Validation 준비와 점검용 데이터 구성이 별도 작업으로 분리되어 일부 데이터가 버려지거나 작업이 길어지기 쉬웠습니다.',
+      action: '정상 Validation 20% 포함 산출물을 확인하고, 필요하면 Simulation 대상 태그·길이·구간 비율을 설정합니다.',
+      improvement: '전처리 이후 검증용 데이터 준비까지 하나의 작업 흐름 안에 묶입니다.',
+      automation: '수동 구간 분리 → 산출물 자동 구성',
+      files: [
+        ['*_prepro_with_valid.xlsx', '전처리 완료 데이터와 정상 Validation 20%가 합쳐진 최종 전처리데이터입니다.'],
+        ['Simulation_Data_*.xlsx', '정상 → 전환 → 이상 구간으로 구성된 Alert 점검용 시뮬레이션 데이터입니다.']
+      ]
+    },
+    {
+      title: '2분 시계열 적합성 설정',
+      target: 'workflowTarget-time',
+      fallbackTarget: 'workflowTarget-action',
+      calloutPreference: 'sidebar-near',
+      summary: '프리비전 업로드 적합성을 맞추기 위해 시간 정규화와 시간 재정렬 기준을 실행 전에 확인합니다.',
+      problem: '기존에는 시간축 보정이 별도 작업처럼 분리되어, 데이터 제거 후 남은 행이 업로드 가능한 일정 간격 시계열인지 다시 확인해야 했습니다.',
+      action: '시간 정규화는 틀어진 시각을 가까운 간격으로 보정하고, 시간 재정렬은 남은 행에 새 시작 시각과 간격을 다시 부여합니다.',
+      improvement: '전처리 기준과 업로드 시간축 적합성을 같은 화면에서 함께 결정할 수 있습니다.',
+      automation: '시간축 수동 정리 → 업로드 적합성 보정',
+      note: '시간 재정렬은 원래 수집 시각을 새 시간표로 바꾸는 기능이므로, 템플릿 시간축을 보존해야 하면 체크 해제하세요.'
     },
     {
       title: '전처리 실행 · 자동 저장',
       target: 'workflowTarget-action',
-      summary: '설정이 끝나면 이 버튼으로 전처리와 자동 저장을 한 번에 실행합니다.',
-      how: ['버튼이 비활성화되어 있으면 먼저 파일을 업로드해야 합니다.', '실행 전 저장 파일 구성을 확인해 어떤 산출물이 만들어지는지 파악합니다.', 'Simulation 비율과 대상 컬럼을 설정하면 점검용 시나리오 파일도 같이 생성됩니다.'],
-      intent: '수작업 저장을 줄이고 같은 기준의 산출물을 반복 가능하게 만들기 위한 단계입니다.',
+      fallbackTarget: 'dropzone',
+      calloutPreference: 'sidebar-near',
+      summary: '모든 기준을 확인한 뒤 여기서 전처리를 실행합니다. 실행 중에는 버튼이 잠기고, 처리 완료 후 저장 파일 생성까지 이어집니다.',
+      problem: '기존에는 전처리 실행, Validation 분리, Simulation 구성, 저장을 각각 확인해야 해서 작업 완료 기준이 흩어져 있었습니다.',
+      action: '전처리 실행 버튼을 누르면 필터링, 선제거, 이상값 처리, 시간 처리, 차트/통계 갱신, Validation 생성, Simulation 생성, Excel 저장 준비가 순서대로 진행됩니다.',
+      improvement: '실행과 저장이 분리되지 않아 사용자는 진행률과 완료 로그만 확인하면 됩니다.',
+      automation: '수동 실행/저장 반복 → 실행 후 자동 저장 흐름',
       files: [
-        ['*_prepro_with_valid.xlsx', '전처리 완료 데이터와 정상 Validation 20%가 합쳐진 최종 전처리데이터입니다.'],
-        ['Simulation_Data_*.xlsx', '정상 → 전환 → 이상 구간으로 구성된 Alert 점검용 시뮬레이션 데이터입니다.'],
-        ['*_prepro.xlsx / *_valid.xlsx', '필요 시 수동 분리 저장에 쓰는 전처리 본문/Validation 구성입니다.']
-      ]
+        ['*_prepro_with_valid.xlsx', '전처리 완료 데이터와 정상 Validation 20%를 합친 기본 자동 저장 파일입니다.'],
+        ['Simulation_Data_*.xlsx', '정상 → 전환 → 이상 구간으로 만든 Alert 점검용 파일입니다. 조건이 맞지 않으면 로그에 생략 사유가 남습니다.']
+      ],
+      note: '이상값 처리 적용 상태에서는 대상 컬럼을 1개 이상 선택해야 실행됩니다.',
+      hiddenSummary: '파일 업로드 후 좌측 하단의 전처리 실행 영역에서 자동 저장 파일 구성을 확인할 수 있습니다.'
     },
     {
-      title: '차트와 로그 재확인',
+      title: '저장 결과와 로그 재확인',
       target: 'workflowTarget-review',
-      fallbackTarget: 'chartCard',
-      summary: '전처리 후 결과가 의도대로 바뀌었는지 차트와 로그를 다시 확인합니다.',
-      how: ['삭제 행 수가 예상보다 과하지 않은지 로그에서 확인합니다.', '전처리 후 추세와 분포가 안정적으로 바뀌었는지 봅니다.', '자동 저장 파일명과 생성 메시지가 로그에 남았는지 확인합니다.'],
-      intent: '설정이 과하거나 부족하지 않았는지 마지막으로 검토하기 위한 단계입니다.'
+      fallbackTarget: 'saveOutputGuide',
+      summary: '작업은 저장이 시작됐다고 끝나는 것이 아니라, 로그와 차트로 결과가 기대와 맞는지 확인해야 완료됩니다.',
+      problem: '파일만 만들어졌는지 보면 과도한 제거, Simulation 생략, 시간축 보정 결과를 놓칠 수 있습니다.',
+      action: '처리 로그에서 제거 행 수, Validation 생성, Simulation 저장 또는 생략 사유를 확인하고, 전/후 비교 카드와 원본 비교/Val 보기 차트로 결과를 검토합니다.',
+      improvement: '완료 판단을 파일명 확인이 아니라 로그, 통계, 차트까지 포함한 검토 절차로 바꿉니다.',
+      automation: '저장 후 수동 대조 → 로그/비교/차트 기반 검수',
+      files: [
+        ['처리 로그', '필터링, 선제거, 이상값, 시간 처리, Validation, Simulation 결과가 순서대로 남습니다.'],
+        ['전/후 비교와 Val 보기', '실행 후 제거 행 수와 통계 변화, Validation 구간을 화면에서 다시 확인합니다.']
+      ],
+      note: 'Simulation Data는 제거된 이상값과 대상 태그 조건이 있어야 생성됩니다. 저장이 생략되면 로그의 사유를 먼저 확인하세요.'
     }
   ];
 
@@ -2726,6 +3037,7 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
   let tutorialCallout = null;
   let tutorialTarget = null;
   let tutorialIndex = 0;
+  let tutorialPlacementFrame = null;
 
   const isVisibleNode = (node) => {
     if (!node) return false;
@@ -2753,28 +3065,38 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
     clearTutorialHighlight();
     if (tutorialOverlay) tutorialOverlay.classList.remove('show');
     if (tutorialCallout) tutorialCallout.classList.remove('show');
+    if (tutorialPlacementFrame) cancelAnimationFrame(tutorialPlacementFrame);
+    tutorialPlacementFrame = null;
   };
 
   const resolveTutorialTarget = (step) => {
     const primary = document.getElementById(step.target);
     if (isVisibleNode(primary)) return {node: primary, hidden: false};
     const fallback = document.getElementById(step.fallbackTarget || 'launchPanel') || primary;
-    return {node: fallback, hidden: true};
+    if (isVisibleNode(fallback)) return {node: fallback, hidden: true};
+    const landingFallback = document.getElementById('dropzone') || document.getElementById('launchPanel');
+    return {node: landingFallback || fallback, hidden: true};
   };
 
   const renderTutorialCallout = (index, hidden) => {
     const step = TUTORIAL_STEPS[index];
     const dots = TUTORIAL_STEPS.map((_, i) => `<span class="tutorial-dot ${i === index ? 'active' : ''}"></span>`).join('');
-    const how = (hidden && step.hiddenSummary ? [step.hiddenSummary] : step.how).map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const actionItems = step.action ? [step.action] : [];
+    const actionList = (hidden && step.hiddenSummary ? [step.hiddenSummary] : actionItems).map(item => `<li>${escapeHtml(item)}</li>`).join('');
     const files = step.files ? `<div class="tutorial-section-title">저장 파일 구성</div><div class="tutorial-files">${step.files.map(([name, body]) => `<div class="tutorial-file"><b>${escapeHtml(name)}</b>${escapeHtml(body)}</div>`).join('')}</div>` : '';
     tutorialCallout.innerHTML = `
       <div class="tutorial-kicker"><span>Step ${index + 1} / ${TUTORIAL_STEPS.length}</span><span class="tutorial-dots">${dots}</span></div>
       <h3>${escapeHtml(step.title)}</h3>
       <p>${escapeHtml(hidden && step.hiddenSummary ? step.hiddenSummary : step.summary)}</p>
-      <div class="tutorial-section-title">어떻게 기입하고 보나</div>
-      <ul class="tutorial-list">${how}</ul>
-      <div class="tutorial-section-title">의도</div>
-      <p>${escapeHtml(step.intent)}</p>
+      <div class="tutorial-section-title">왜 필요한가</div>
+      <p>${escapeHtml(step.problem || '')}</p>
+      <div class="tutorial-section-title">여기서 하는 일</div>
+      <ul class="tutorial-list">${actionList}</ul>
+      <div class="tutorial-section-title">기존 대비 개선</div>
+      <p>${escapeHtml(step.improvement || '')}</p>
+      <div class="tutorial-section-title">자동화 포인트</div>
+      <p>${escapeHtml(step.automation || '')}</p>
+      ${step.note ? `<div class="tutorial-section-title">실무 메모</div><p>${escapeHtml(step.note)}</p>` : ''}
       ${files}
       <div class="tutorial-actions">
         <div class="tutorial-actions-left"><button type="button" class="btn btn-sm" data-tutorial-action="close">닫기</button></div>
@@ -2791,21 +3113,119 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
     });
   };
 
+  const findScrollParent = (node) => {
+    let parent = node?.parentElement;
+    while (parent && parent !== document.body) {
+      const style = window.getComputedStyle(parent);
+      const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY);
+      if (canScrollY && parent.scrollHeight > parent.clientHeight) return parent;
+      parent = parent.parentElement;
+    }
+    return null;
+  };
+
+  const scrollTutorialTargetIntoView = (node) => {
+    const scrollParent = findScrollParent(node);
+    if (scrollParent) {
+      const parentRect = scrollParent.getBoundingClientRect();
+      const rect = node.getBoundingClientRect();
+      const targetTop = scrollParent.scrollTop + rect.top - parentRect.top - Math.max(0, (parentRect.height - rect.height) / 2);
+      scrollParent.scrollTo({top: Math.max(0, targetTop), behavior: 'auto'});
+    } else {
+      node.scrollIntoView({behavior:'auto', block:'center', inline:'nearest'});
+    }
+  };
+
+  const intersectRects = (...rects) => {
+    const valid = rects.filter(Boolean);
+    if (!valid.length) return null;
+    const left = Math.max(...valid.map(r => r.left));
+    const top = Math.max(...valid.map(r => r.top));
+    const right = Math.min(...valid.map(r => r.right));
+    const bottom = Math.min(...valid.map(r => r.bottom));
+    if (right <= left || bottom <= top) return null;
+    return {left, top, right, bottom, width: right - left, height: bottom - top};
+  };
+
+  const rectOverlapArea = (a, b) => {
+    const overlap = intersectRects(a, b);
+    return overlap ? overlap.width * overlap.height : 0;
+  };
+
+  const getVisibleTargetRect = (node) => {
+    const rect = node.getBoundingClientRect();
+    const viewportRect = {left:0, top:0, right:window.innerWidth, bottom:window.innerHeight};
+    const scrollParent = findScrollParent(node);
+    const scrollRect = scrollParent ? scrollParent.getBoundingClientRect() : null;
+    return intersectRects(rect, viewportRect, scrollRect) || intersectRects(rect, viewportRect) || rect;
+  };
+
+  const scheduleTutorialPlacement = (duration = 620) => {
+    if (tutorialPlacementFrame) cancelAnimationFrame(tutorialPlacementFrame);
+    const startedAt = performance.now();
+    const tick = () => {
+      placeTutorialCallout();
+      if (performance.now() - startedAt < duration) {
+        tutorialPlacementFrame = requestAnimationFrame(tick);
+      } else {
+        tutorialPlacementFrame = null;
+        placeTutorialCallout();
+      }
+    };
+    tutorialPlacementFrame = requestAnimationFrame(tick);
+  };
+
   const placeTutorialCallout = () => {
     if (!tutorialCallout || !tutorialTarget || !tutorialCallout.classList.contains('show')) return;
-    const rect = tutorialTarget.getBoundingClientRect();
+    const rawRect = tutorialTarget.getBoundingClientRect();
+    const rect = getVisibleTargetRect(tutorialTarget);
     const calloutRect = tutorialCallout.getBoundingClientRect();
     const pad = 14;
     const gap = 18;
+    const viewport = {left:pad, top:pad, right:window.innerWidth - pad, bottom:window.innerHeight - pad};
+    const width = Math.min(calloutRect.width, viewport.right - viewport.left);
+    const height = Math.min(calloutRect.height, viewport.bottom - viewport.top);
+    const centerTop = rect.top + rect.height / 2 - height / 2;
+    const centerLeft = rect.left + rect.width / 2 - width / 2;
+    const centerX = rawRect.left + rawRect.width / 2;
+    const centerY = rawRect.top + rawRect.height / 2;
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+    const makeRect = (left, top) => ({left, top, right:left + width, bottom:top + height, width, height});
+    const naturalOverflow = (left, top) =>
+      Math.max(0, viewport.left - left) +
+      Math.max(0, left + width - viewport.right) +
+      Math.max(0, viewport.top - top) +
+      Math.max(0, top + height - viewport.bottom);
+    const sidePreference = {
+      right: centerX <= window.innerWidth * 0.58 ? 0 : 18,
+      left: centerX >= window.innerWidth * 0.42 ? 0 : 18,
+      below: centerY <= window.innerHeight * 0.62 ? 6 : 22,
+      above: centerY >= window.innerHeight * 0.38 ? 6 : 22
+    };
     const candidates = [
-      {left: rect.right + gap, top: rect.top},
-      {left: rect.left - calloutRect.width - gap, top: rect.top},
-      {left: rect.left, top: rect.bottom + gap},
-      {left: rect.left, top: rect.top - calloutRect.height - gap}
-    ];
-    let pos = candidates.find(c => c.left >= pad && c.left + calloutRect.width <= window.innerWidth - pad && c.top >= pad && c.top + calloutRect.height <= window.innerHeight - pad) || candidates[0];
-    pos.left = Math.max(pad, Math.min(pos.left, window.innerWidth - calloutRect.width - pad));
-    pos.top = Math.max(pad, Math.min(pos.top, window.innerHeight - calloutRect.height - pad));
+      {side:'right', left: rawRect.right + gap, top: centerTop},
+      {side:'left', left: rawRect.left - width - gap, top: centerTop},
+      {side:'below', left: centerLeft, top: rawRect.bottom + gap},
+      {side:'above', left: centerLeft, top: rawRect.top - height - gap}
+    ].map(candidate => {
+      const overflow = naturalOverflow(candidate.left, candidate.top);
+      const left = clamp(candidate.left, viewport.left, viewport.right - width);
+      const top = clamp(candidate.top, viewport.top, viewport.bottom - height);
+      const placed = makeRect(left, top);
+      const overlap = rectOverlapArea(placed, rect);
+      const distance = Math.hypot(
+        Math.max(0, rect.left - placed.right, placed.left - rect.right),
+        Math.max(0, rect.top - placed.bottom, placed.top - rect.bottom)
+      );
+      return {
+        ...candidate,
+        left,
+        top,
+        score: overlap * 1000 + overflow * 18 + distance + (sidePreference[candidate.side] || 0)
+      };
+    }).sort((a, b) => a.score - b.score);
+    const pos = candidates[0];
+    tutorialCallout.dataset.placement = pos.side;
     tutorialCallout.style.left = `${pos.left}px`;
     tutorialCallout.style.top = `${pos.top}px`;
   };
@@ -2819,15 +3239,16 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
     if (!node) return;
     if (step.target === 'workflowTarget-review') document.getElementById('logOutput')?.classList.remove('hidden');
     tutorialTarget = node;
-    node.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+    scrollTutorialTargetIntoView(node);
     renderTutorialCallout(tutorialIndex, hidden);
     tutorialOverlay.classList.add('show');
     tutorialCallout.classList.add('show');
-    setTimeout(() => {
-      node.classList.add('tutorial-highlight');
-      placeTutorialCallout();
-    }, 240);
+    node.classList.add('tutorial-highlight');
+    placeTutorialCallout();
+    scheduleTutorialPlacement(360);
   };
+
+  window.startInteractiveTutorial = () => showTutorialStep(0);
 
   const bindTutorialSteps = () => {
     document.querySelectorAll('.tutorial-step-trigger[data-tutorial-step]').forEach(step => {
@@ -2890,11 +3311,15 @@ document.addEventListener('DOMContentLoaded',()=>app.init());
       if (spotlightTarget) placeSpotlight();
       placeTutorialCallout();
     }, { passive:true });
+    document.querySelector('.sidebar')?.addEventListener('scroll', () => {
+      if (spotlightTarget) placeSpotlight();
+      placeTutorialCallout();
+    }, { passive:true });
     window.addEventListener('resize', () => {
       if (activeTrigger && activePanel && activePanel.classList.contains('show')) placePanel(activeTrigger, activePanel);
       if (basicTipTrigger) placeBasicTip();
       if (spotlightTarget) placeSpotlight();
-      placeTutorialCallout();
+      scheduleTutorialPlacement(180);
     });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (activePanel) applyPanelTheme(activePanel); });
     document.addEventListener('keydown', (event) => {
