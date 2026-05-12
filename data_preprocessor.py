@@ -17,6 +17,8 @@ class DataPreprocessor:
 
     ZIP_SIGNATURE = b"PK\x03\x04"
     OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    SOURCE_ROW_ID_COLUMN = "_source_row_id"
+    FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r", "\n")
 
     # 처리 상수
     MAX_NUMERIC_COLUMNS = 30
@@ -78,6 +80,58 @@ class DataPreprocessor:
             self.stats["outliers_removed"] = 0
             self.stats["rows_after_outlier"] = len(self.original_df)
 
+    def _reset_detected_metadata(self) -> None:
+        """새 데이터 로드 전 이전 파일의 감지 상태를 제거합니다."""
+        self.date_column = None
+        self.original_date_format = None
+        self.numeric_columns = []
+
+    def _prepare_loaded_data(self) -> None:
+        """원본 행 추적 컬럼을 부여하고 감지 상태를 초기화합니다."""
+        self._reset_detected_metadata()
+        if self.original_df is None:
+            return
+        self.original_df = self.original_df.copy()
+        self.original_df[self.SOURCE_ROW_ID_COLUMN] = range(len(self.original_df))
+        self.processed_df = self.original_df.copy()
+
+    @classmethod
+    def _strip_internal_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """저장/사용자 표시용 데이터에서 내부 메타 컬럼을 제거합니다."""
+        return df.drop(columns=[cls.SOURCE_ROW_ID_COLUMN], errors="ignore")
+
+    @classmethod
+    def _escape_spreadsheet_formula(cls, value: Any) -> Any:
+        """Excel/CSV 수식 주입을 막기 위해 위험한 문자열 앞에 apostrophe를 붙입니다."""
+        if not isinstance(value, str):
+            return value
+        normalized = value.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+        if value.startswith(cls.FORMULA_PREFIXES) or normalized.startswith(("=", "+", "-", "@")):
+            return "'" + normalized.lstrip()
+        return normalized
+
+    @classmethod
+    def _escape_formula_values(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """문자열 셀의 spreadsheet formula injection을 방어합니다."""
+        escaped = df.copy()
+        for col in escaped.columns:
+            if pd.api.types.is_object_dtype(escaped[col]) or pd.api.types.is_string_dtype(escaped[col]):
+                escaped[col] = escaped[col].map(cls._escape_spreadsheet_formula)
+        return escaped
+
+    def get_removed_source_indices(self) -> List[int]:
+        """전처리 과정에서 제거된 원본 행 번호를 반환합니다."""
+        indices: List[int] = []
+        for removed in self.removed_rows:
+            if self.SOURCE_ROW_ID_COLUMN in removed.columns:
+                indices.extend(
+                    int(value)
+                    for value in removed[self.SOURCE_ROW_ID_COLUMN].dropna().tolist()
+                )
+            else:
+                indices.extend(int(value) for value in removed.index.tolist())
+        return sorted(set(indices))
+
     def load_data(self, file_path: str) -> Tuple[bool, str]:
         """
         Excel 또는 CSV 파일을 로드하고 컬럼을 자동 감지합니다.
@@ -105,8 +159,8 @@ class DataPreprocessor:
             else:
                 return False, f"지원하지 않는 파일 형식입니다: {path.suffix}"
 
-            self.processed_df = self.original_df.copy()
             self.removed_rows = []
+            self._reset_detected_metadata()
 
             # Unnamed 컬럼 제거
             unnamed_cols = [
@@ -114,9 +168,9 @@ class DataPreprocessor:
             ]
             if unnamed_cols:
                 self.original_df.drop(columns=unnamed_cols, inplace=True)
-                self.processed_df.drop(columns=unnamed_cols, inplace=True)
 
             self.columns = list(self.original_df.columns)
+            self._prepare_loaded_data()
 
             # 날짜 컬럼 자동 감지 (형식 보존)
             self._detect_date_column()
@@ -141,6 +195,28 @@ class DataPreprocessor:
             self.date_column = None
             self.original_date_format = None
             return False, self._format_load_error(Path(file_path), e)
+
+    def load_dataframe(self, df, source_name: str = "DataFrame") -> Tuple[bool, str]:
+        """이미 메모리에 있는 DataFrame을 전처리기에 로드합니다 (OPC 등)."""
+        try:
+            self.original_df = df.copy()
+            self.removed_rows = []
+            self.columns = list(self.original_df.columns)
+            self._prepare_loaded_data()
+            self._detect_date_column()
+            self._detect_numeric_columns()
+            self.stats["original_rows"] = len(self.original_df)
+            self.stats["columns"] = len(self.columns)
+            self.stats["numeric_columns"] = len(self.numeric_columns)
+            return True, f"{source_name} 로드 완료: {len(self.original_df):,}행, {len(self.columns)}열"
+        except Exception as e:
+            self.original_df = None
+            self.processed_df = None
+            self.columns = []
+            self.numeric_columns = []
+            self.date_column = None
+            self.original_date_format = None
+            return False, f"DataFrame 로드 오류: {e}"
 
     def _read_file_signature(self, path: Path, size: int = 8) -> bytes:
         """파일 시그니처를 읽습니다."""
@@ -197,6 +273,8 @@ class DataPreprocessor:
 
     def _detect_date_column(self):
         """날짜 컬럼을 자동 감지합니다. 원본 형식을 보존합니다."""
+        self.date_column = None
+        self.original_date_format = None
         date_keywords = ["date", "time", "datetime", "날짜", "시간", "timestamp"]
 
         for col in self.columns:
@@ -419,6 +497,7 @@ class DataPreprocessor:
 
         all_removed = pd.concat(self.removed_rows, ignore_index=True)
         meta_cols = [c for c in all_removed.columns if c.startswith("_")]
+        meta_cols.append(self.SOURCE_ROW_ID_COLUMN)
         return all_removed.drop(columns=meta_cols, errors="ignore")
 
     def _infer_interval_minutes(self, fallback_minutes: int = 2) -> int:
@@ -489,7 +568,10 @@ class DataPreprocessor:
         sheet_name: Optional[str] = None,
     ) -> None:
         """데이터프레임을 Excel 또는 CSV로 저장합니다."""
-        save_df = df.copy()
+        save_df = self._escape_formula_values(self._strip_internal_columns(df.copy()))
+        save_df.columns = [
+            self._escape_spreadsheet_formula(str(column)) for column in save_df.columns
+        ]
 
         if self.date_column and self.date_column in save_df.columns:
             try:
